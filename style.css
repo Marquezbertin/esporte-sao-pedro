@@ -1876,6 +1876,23 @@ body.admin-mode .admin-login-btn { display: none; }
 
 .sponsors-bar:has(.sponsors-grid:empty) { display: none; }
 
+/* ===== EDICAO INLINE ===== */
+.editavel-ativo {
+    border: 2px dashed var(--dourado);
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    background: var(--dourado-light);
+    outline: none;
+    cursor: text;
+    min-height: 60px;
+}
+
+.editavel-ativo:focus {
+    border-color: var(--azul-medio);
+    background: var(--branco);
+    box-shadow: 0 0 0 3px rgba(26,58,107,0.15);
+}
+
 /* ===== ANIMATIONS ===== */
 @keyframes fadeInUp {
     from { opacity: 0; transform: translateY(20px); }

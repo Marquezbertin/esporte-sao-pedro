@@ -160,17 +160,21 @@ function renderSobreEditavel() {
         if (t1 && saved.texto1) t1.innerHTML = saved.texto1;
         if (t2 && saved.texto2) t2.innerHTML = saved.texto2;
     }
+    // Ativar edicao inline se admin
+    if (isAdmin()) {
+        var campos = document.querySelectorAll(".sobre-editavel");
+        campos.forEach(function (el) {
+            el.setAttribute("contenteditable", "true");
+            el.classList.add("editavel-ativo");
+        });
+    }
 }
 
-function editarSobre() {
-    var saved = getSobreTextos() || {};
-    var t1 = prompt("Texto principal (paragrafo 1):", saved.texto1 || document.getElementById("sobreTexto1").textContent);
-    if (t1 === null) return;
-    var t2 = prompt("Texto secundario (paragrafo 2):", saved.texto2 || document.getElementById("sobreTexto2").textContent);
-    if (t2 === null) return;
+function salvarSobre() {
+    var t1 = document.getElementById("sobreTexto1").innerHTML;
+    var t2 = document.getElementById("sobreTexto2").innerHTML;
     SupaDB.setItem("sobre", { texto1: t1, texto2: t2 });
-    document.getElementById("sobreTexto1").textContent = t1;
-    document.getElementById("sobreTexto2").textContent = t2;
+    alert("Textos da pagina Sobre salvos com sucesso!");
 }
 
 // ===== INICIALIZACAO =====
