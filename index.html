@@ -426,6 +426,31 @@
                 <p style="color:#64748b;margin-top:12px;font-size:0.8rem;" id="liveStatus">Nenhuma live ativa.</p>
             </div>
 
+            <!-- ADMIN: PATROCINADORES -->
+            <div class="card-panel admin-only" style="margin-top:40px;">
+                <div class="card-panel-header">
+                    <h3>Gerenciar Patrocinadores</h3>
+                    <span class="badge">ADMIN</span>
+                </div>
+                <p style="color:#8892a4;margin-bottom:16px;">Cadastre patrocinadores. Somente os aprovados aparecem para o leitor na faixa dedicada acima do rodape.</p>
+
+                <div class="admin-form" style="display:block;margin-top:0;border-color:var(--cinza-200);">
+                    <h3>Novo Patrocinador</h3>
+                    <input type="text" id="patroNome" placeholder="Nome do patrocinador / empresa">
+                    <input type="text" id="patroLogo" placeholder="URL do logo (imagem)">
+                    <input type="text" id="patroSite" placeholder="Site do patrocinador (opcional)">
+                    <select id="patroPlano">
+                        <option value="ouro">Ouro (destaque maior)</option>
+                        <option value="prata">Prata</option>
+                        <option value="bronze">Bronze</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="salvarPatrocinador()">Cadastrar Patrocinador</button>
+                </div>
+
+                <h3 style="margin-top:20px;font-size:0.95rem;">Patrocinadores cadastrados</h3>
+                <div id="adminPatroList" style="margin-top:12px;"></div>
+            </div>
+
             <!-- BACKUP / EXPORT -->
             <div class="card-panel" style="margin-top:40px;">
                 <div class="card-panel-header">
@@ -444,6 +469,16 @@
             </div>
         </div>
     </section>
+
+    <!-- FAIXA DE PATROCINADORES (espaco dedicado, nao cobre conteudo) -->
+    <section class="sponsors-bar" id="sponsorsBar">
+        <div class="container">
+            <h3 class="sponsors-title">Patrocinadores</h3>
+            <div class="sponsors-grid" id="sponsorsGrid"></div>
+        </div>
+    </section>
+
+    <!-- ADMIN: GERENCIAR PATROCINADORES (dentro do Sobre) -->
 
     <!-- FOOTER -->
     <footer class="main-footer">

@@ -128,21 +128,15 @@ function renderMidia(imagem, video, alt) {
     return '';
 }
 
-// ===== LIMPAR DADOS DEMO (uma vez) =====
+// ===== LIMPAR DADOS DEMO (forca limpeza v2) =====
 function limparDadosDemo() {
-    if (localStorage.getItem("esp_demo_cleaned")) return;
-    // Remover dados fictícios que foram inseridos antes
-    var keys = ["esp_noticias","esp_resultados","esp_jogos","esp_classificacao_futebol","esp_artilheiros","esp_atletas","esp_galeria"];
-    keys.forEach(function (k) {
-        var data = [];
-        try { data = JSON.parse(localStorage.getItem(k) || "[]"); } catch(e) {}
-        // Se tem dados e nunca foi editado manualmente, limpar
-        if (data.length > 0 && localStorage.getItem("esp_demo_loaded")) {
-            localStorage.removeItem(k);
-        }
-    });
+    if (localStorage.getItem("esp_demo_cleaned_v2")) return;
+    // Forcar remocao de TODOS os dados fake antigos
+    var keys = ["esp_noticias","esp_resultados","esp_jogos","esp_classificacao_futebol","esp_classificacao_volei","esp_classificacao_basquete","esp_artilheiros","esp_atletas","esp_galeria"];
+    keys.forEach(function (k) { localStorage.removeItem(k); });
     localStorage.removeItem("esp_demo_loaded");
-    localStorage.setItem("esp_demo_cleaned", "1");
+    localStorage.removeItem("esp_demo_cleaned");
+    localStorage.setItem("esp_demo_cleaned_v2", "1");
 }
 
 // ===== EDITAR ABA SOBRE =====
@@ -185,6 +179,7 @@ document.addEventListener("DOMContentLoaded", function () {
     atualizarLiveNav();
     atualizarLiveStatus();
     renderSobreEditavel();
+    renderPatrocinadoresPublico();
 });
 
 function atualizarData() {
@@ -220,7 +215,7 @@ function navegar(secao, e) {
         case "calendario": renderCalendario(); break;
         case "atletas": renderAtletas(); break;
         case "galeria": renderGaleria(); break;
-        case "sobre": atualizarStorageInfo(); renderSobreEditavel(); atualizarLiveStatus(); break;
+        case "sobre": atualizarStorageInfo(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); break;
     }
 
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -991,7 +986,7 @@ function toggleAdmin(id) {
 // ===== BACKUP / EXPORT / IMPORT =====
 function exportarDados() {
     var data = {};
-    var keys = ["noticias", "resultados", "jogos", "classificacao_futebol", "classificacao_volei", "classificacao_basquete", "artilheiros", "atletas", "galeria"];
+    var keys = ["noticias", "resultados", "jogos", "classificacao_futebol", "classificacao_volei", "classificacao_basquete", "artilheiros", "atletas", "galeria", "patrocinadores"];
     keys.forEach(function (k) { data[k] = getData(k); });
 
     var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -1139,4 +1134,124 @@ function abrirLive(e) {
 function fecharLiveModal() {
     document.getElementById("liveModal").classList.remove("active");
     document.getElementById("liveContainer").innerHTML = "";
+}
+
+// ===== PATROCINADORES =====
+function getPatrocinadores() { return getData("patrocinadores"); }
+
+function salvarPatrocinador() {
+    var nome = document.getElementById("patroNome").value.trim();
+    var logo = document.getElementById("patroLogo").value.trim();
+    var site = document.getElementById("patroSite").value.trim();
+    var plano = document.getElementById("patroPlano").value;
+    if (!nome) return alert("Preencha o nome do patrocinador.");
+
+    var lista = getPatrocinadores();
+    lista.push({
+        id: gerarId(),
+        nome: nome,
+        logo: logo,
+        site: site,
+        plano: plano,
+        aprovado: false,
+        data: new Date().toISOString().split("T")[0]
+    });
+    setData("patrocinadores", lista);
+
+    document.getElementById("patroNome").value = "";
+    document.getElementById("patroLogo").value = "";
+    document.getElementById("patroSite").value = "";
+
+    renderAdminPatrocinadores();
+    renderPatrocinadoresPublico();
+    alert("Patrocinador cadastrado! Aprove para que apareca no site.");
+}
+
+function aprovarPatrocinador(id) {
+    var lista = getPatrocinadores();
+    var p = lista.find(function (x) { return x.id === id; });
+    if (p) {
+        p.aprovado = !p.aprovado;
+        setData("patrocinadores", lista);
+        renderAdminPatrocinadores();
+        renderPatrocinadoresPublico();
+    }
+}
+
+function deletarPatrocinador(id) {
+    if (!confirm("Excluir este patrocinador?")) return;
+    var lista = getPatrocinadores().filter(function (p) { return p.id !== id; });
+    setData("patrocinadores", lista);
+    renderAdminPatrocinadores();
+    renderPatrocinadoresPublico();
+}
+
+function renderAdminPatrocinadores() {
+    var lista = getPatrocinadores();
+    var container = document.getElementById("adminPatroList");
+    if (!container) return;
+    container.innerHTML = "";
+
+    if (lista.length === 0) {
+        container.innerHTML = '<p style="color:#94a3b8;font-size:0.85rem;">Nenhum patrocinador cadastrado.</p>';
+        return;
+    }
+
+    // Ordenar: ouro primeiro, depois prata, bronze
+    var ordem = { ouro: 0, prata: 1, bronze: 2 };
+    lista.sort(function (a, b) { return (ordem[a.plano] || 9) - (ordem[b.plano] || 9); });
+
+    lista.forEach(function (p) {
+        var logoHtml = p.logo ? '<img src="' + esc(p.logo) + '" alt="' + esc(p.nome) + '">' : '<div style="width:50px;height:35px;background:#e2e8f0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:#94a3b8;">LOGO</div>';
+        var statusClass = p.aprovado ? "aprovado" : "pendente";
+        var statusText = p.aprovado ? "Aprovado" : "Pendente";
+        var aprovarText = p.aprovado ? "Desaprovar" : "Aprovar";
+
+        container.innerHTML +=
+            '<div class="admin-patro-item">' +
+                logoHtml +
+                '<div class="admin-patro-info">' +
+                    '<strong>' + esc(p.nome) + '</strong>' +
+                    '<small>' + esc(p.plano).toUpperCase() + ' | ' + formatarData(p.data) + '</small>' +
+                '</div>' +
+                '<span class="admin-patro-status ' + statusClass + '">' + statusText + '</span>' +
+                '<div class="admin-patro-actions">' +
+                    '<button class="btn-aprovar" onclick="aprovarPatrocinador(\'' + p.id + '\')">' + aprovarText + '</button>' +
+                    '<button class="btn-excluir" onclick="deletarPatrocinador(\'' + p.id + '\')">Excluir</button>' +
+                '</div>' +
+            '</div>';
+    });
+}
+
+function renderPatrocinadoresPublico() {
+    var lista = getPatrocinadores().filter(function (p) { return p.aprovado; });
+    var grid = document.getElementById("sponsorsGrid");
+    var bar = document.getElementById("sponsorsBar");
+    if (!grid || !bar) return;
+    grid.innerHTML = "";
+
+    // Esconder faixa se nao tem patrocinadores aprovados
+    if (lista.length === 0) {
+        bar.style.display = "none";
+        return;
+    }
+    bar.style.display = "block";
+
+    // Ordenar: ouro primeiro
+    var ordem = { ouro: 0, prata: 1, bronze: 2 };
+    lista.sort(function (a, b) { return (ordem[a.plano] || 9) - (ordem[b.plano] || 9); });
+
+    lista.forEach(function (p) {
+        var href = p.site ? p.site : "#";
+        var target = p.site ? ' target="_blank" rel="noopener"' : '';
+        var logoHtml = p.logo
+            ? '<img class="sponsor-logo" src="' + esc(p.logo) + '" alt="' + esc(p.nome) + '">'
+            : '<span style="font-size:1.5rem;font-weight:800;color:var(--azul-medio);">' + esc(p.nome.substring(0, 3).toUpperCase()) + '</span>';
+
+        grid.innerHTML +=
+            '<a href="' + esc(href) + '"' + target + ' class="sponsor-item ' + esc(p.plano) + '">' +
+                logoHtml +
+                '<span class="sponsor-name">' + esc(p.nome) + '</span>' +
+            '</a>';
+    });
 }
