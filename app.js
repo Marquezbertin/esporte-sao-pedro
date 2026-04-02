@@ -128,8 +128,53 @@ function renderMidia(imagem, video, alt) {
     return '';
 }
 
+// ===== LIMPAR DADOS DEMO (uma vez) =====
+function limparDadosDemo() {
+    if (localStorage.getItem("esp_demo_cleaned")) return;
+    // Remover dados fictícios que foram inseridos antes
+    var keys = ["esp_noticias","esp_resultados","esp_jogos","esp_classificacao_futebol","esp_artilheiros","esp_atletas","esp_galeria"];
+    keys.forEach(function (k) {
+        var data = [];
+        try { data = JSON.parse(localStorage.getItem(k) || "[]"); } catch(e) {}
+        // Se tem dados e nunca foi editado manualmente, limpar
+        if (data.length > 0 && localStorage.getItem("esp_demo_loaded")) {
+            localStorage.removeItem(k);
+        }
+    });
+    localStorage.removeItem("esp_demo_loaded");
+    localStorage.setItem("esp_demo_cleaned", "1");
+}
+
+// ===== EDITAR ABA SOBRE =====
+function getSobreTextos() {
+    try { return JSON.parse(localStorage.getItem("esp_sobre") || "null"); }
+    catch(e) { return null; }
+}
+
+function renderSobreEditavel() {
+    var saved = getSobreTextos();
+    if (saved) {
+        var t1 = document.getElementById("sobreTexto1");
+        var t2 = document.getElementById("sobreTexto2");
+        if (t1 && saved.texto1) t1.innerHTML = saved.texto1;
+        if (t2 && saved.texto2) t2.innerHTML = saved.texto2;
+    }
+}
+
+function editarSobre() {
+    var saved = getSobreTextos() || {};
+    var t1 = prompt("Texto principal (paragrafo 1):", saved.texto1 || document.getElementById("sobreTexto1").textContent);
+    if (t1 === null) return;
+    var t2 = prompt("Texto secundario (paragrafo 2):", saved.texto2 || document.getElementById("sobreTexto2").textContent);
+    if (t2 === null) return;
+    localStorage.setItem("esp_sobre", JSON.stringify({ texto1: t1, texto2: t2 }));
+    document.getElementById("sobreTexto1").textContent = t1;
+    document.getElementById("sobreTexto2").textContent = t2;
+}
+
 // ===== INICIALIZACAO =====
 document.addEventListener("DOMContentLoaded", function () {
+    limparDadosDemo();
     checkAdminSession();
     atualizarData();
     renderTicker();
@@ -139,6 +184,7 @@ document.addEventListener("DOMContentLoaded", function () {
     initScrollTop();
     atualizarLiveNav();
     atualizarLiveStatus();
+    renderSobreEditavel();
 });
 
 function atualizarData() {
@@ -174,7 +220,7 @@ function navegar(secao, e) {
         case "calendario": renderCalendario(); break;
         case "atletas": renderAtletas(); break;
         case "galeria": renderGaleria(); break;
-        case "sobre": atualizarStorageInfo(); break;
+        case "sobre": atualizarStorageInfo(); renderSobreEditavel(); atualizarLiveStatus(); break;
     }
 
     window.scrollTo({ top: 0, behavior: "smooth" });
