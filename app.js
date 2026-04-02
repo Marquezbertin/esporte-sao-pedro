@@ -126,6 +126,7 @@ function renderMidia(imagem, video, alt) {
         return '<div class="news-card-img"><img src="' + esc(imagem) + '" alt="' + esc(alt || "") + '" loading="lazy"></div>';
     }
     return '';
+}
 
 // ===== INICIALIZACAO =====
 document.addEventListener("DOMContentLoaded", function () {
