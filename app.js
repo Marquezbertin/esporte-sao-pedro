@@ -245,22 +245,22 @@ function renderTicker() {
 
 // ===== HERO STATS =====
 function renderHeroStats() {
-    var classificacao = getData("classificacao_futebol");
+    var campeonatos = getCampeonatos();
     var jogos = getData("jogos");
-    var resultados = getData("resultados");
+    var totalTimes = 0;
+    var totalResultados = 0;
     var totalGols = 0;
 
-    resultados.forEach(function (r) {
-        totalGols += (parseInt(r.placarCasa) || 0) + (parseInt(r.placarFora) || 0);
+    campeonatos.forEach(function (c) {
+        totalTimes += (c.times || []).length;
+        (c.resultados || []).forEach(function (r) {
+            totalResultados++;
+            totalGols += (parseInt(r.placarCasa) || 0) + (parseInt(r.placarFora) || 0);
+        });
     });
 
-    var times = [];
-    classificacao.forEach(function (c) {
-        if (times.indexOf(c.time) === -1) times.push(c.time);
-    });
-
-    animateCounter("statTimes", times.length);
-    animateCounter("statJogos", jogos.length + resultados.length);
+    animateCounter("statTimes", totalTimes);
+    animateCounter("statJogos", jogos.length + totalResultados);
     animateCounter("statGols", totalGols);
 }
 
@@ -403,21 +403,26 @@ function renderGameCard(j) {
 }
 
 function renderArtilheirosHome() {
-    var artilheiros = getData("artilheiros")
-        .filter(function (a) { return a.esporte === "futebol"; })
-        .sort(function (a, b) { return b.gols - a.gols; })
-        .slice(0, 5);
+    // Pegar artilheiros de todos os campeonatos
+    var todos = [];
+    getCampeonatos().forEach(function (c) {
+        (c.artilheiros || []).forEach(function (a) {
+            todos.push({ nome: a.nome, time: a.time, gols: a.gols });
+        });
+    });
+    todos.sort(function (a, b) { return b.gols - a.gols; });
+    var top5 = todos.slice(0, 5);
 
     var container = document.getElementById("scorersTable");
     if (!container) return;
     container.innerHTML = "";
 
-    if (artilheiros.length === 0) {
+    if (top5.length === 0) {
         container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">\u26BD</div><div class="empty-state-text">Nenhum artilheiro registrado.</div></div>';
         return;
     }
 
-    artilheiros.forEach(function (a, i) {
+    top5.forEach(function (a, i) {
         var rankClass = i === 0 ? "gold" : (i === 1 ? "silver" : (i === 2 ? "bronze" : ""));
         var initials = a.nome.split(" ").map(function (w) { return w[0]; }).join("").substr(0, 2);
         container.innerHTML +=
@@ -522,157 +527,314 @@ function deletarNoticia(id) {
     renderTicker();
 }
 
-// ===== CAMPEONATOS =====
-var _campTab = "futebol";
+// ===== CAMPEONATOS (SISTEMA EDITORIAL COMPLETO) =====
+var _campAtivo = null; // id do campeonato selecionado
 
-function renderCampeonatos(esporte) {
-    if (esporte) _campTab = esporte;
-    renderClassificacao();
-    renderArtilheirosFull();
-    renderResultados();
+function getCampeonatos() { return getData("campeonatos"); }
+
+function criarCampeonato() {
+    var nome = document.getElementById("campNome").value.trim();
+    var esporte = document.getElementById("campEsporte").value;
+    var ano = document.getElementById("campAno").value.trim() || "2026";
+    if (!nome) return alert("Preencha o nome do campeonato.");
+
+    var lista = getCampeonatos();
+    lista.push({ id: gerarId(), nome: nome, esporte: esporte, ano: ano, times: [], artilheiros: [], resultados: [] });
+    setData("campeonatos", lista);
+
+    document.getElementById("campNome").value = "";
+    document.getElementById("adminCampeonato").style.display = "none";
+    renderCampeonatos();
+    alert("Campeonato criado!");
 }
 
-function selectCampTab(esporte, btn) {
-    _campTab = esporte;
+function deletarCampeonato(id) {
+    if (!confirm("Excluir este campeonato e TODOS os seus dados?")) return;
+    if (!confirm("Tem certeza? Isso apaga times, resultados e artilheiros.")) return;
+    var lista = getCampeonatos().filter(function (c) { return c.id !== id; });
+    setData("campeonatos", lista);
+    _campAtivo = null;
+    renderCampeonatos();
+}
+
+function renderCampeonatos() {
+    var lista = getCampeonatos();
+    var tabs = document.getElementById("campTabs");
+    var conteudo = document.getElementById("campConteudo");
+    if (!tabs || !conteudo) return;
+    tabs.innerHTML = "";
+
+    if (lista.length === 0) {
+        conteudo.innerHTML = '<div class="empty-state"><div class="empty-state-icon">&#127942;</div><div class="empty-state-text">Nenhum campeonato criado.' + (isAdmin() ? ' Clique em "+ Criar Campeonato" acima.' : '') + '</div></div>';
+        return;
+    }
+
+    // Se nao tem ativo, selecionar o primeiro
+    if (!_campAtivo || !lista.find(function (c) { return c.id === _campAtivo; })) {
+        _campAtivo = lista[0].id;
+    }
+
+    lista.forEach(function (c) {
+        var esporte = ESPORTES.find(function (e) { return e.id === c.esporte; });
+        var icon = esporte ? esporte.icon + " " : "";
+        var active = c.id === _campAtivo ? " active" : "";
+        tabs.innerHTML += '<button class="tab' + active + '" onclick="selecionarCampeonato(\'' + c.id + '\')">' + icon + esc(c.nome) + '</button>';
+    });
+
+    renderCampeonatoAtivo();
+}
+
+function selecionarCampeonato(id) {
+    _campAtivo = id;
     document.querySelectorAll("#campTabs .tab").forEach(function (t) { t.classList.remove("active"); });
-    if (btn) {
-        btn.classList.add("active");
+    // Ativar o tab correto
+    var tabs = document.querySelectorAll("#campTabs .tab");
+    var lista = getCampeonatos();
+    lista.forEach(function (c, i) {
+        if (c.id === id && tabs[i]) tabs[i].classList.add("active");
+    });
+    renderCampeonatoAtivo();
+}
+
+function getCampAtivo() {
+    var lista = getCampeonatos();
+    return lista.find(function (c) { return c.id === _campAtivo; }) || null;
+}
+
+function salvarCampAtivo(camp) {
+    var lista = getCampeonatos();
+    for (var i = 0; i < lista.length; i++) {
+        if (lista[i].id === camp.id) { lista[i] = camp; break; }
+    }
+    setData("campeonatos", lista);
+}
+
+function renderCampeonatoAtivo() {
+    var camp = getCampAtivo();
+    var conteudo = document.getElementById("campConteudo");
+    if (!conteudo || !camp) return;
+
+    var esporte = ESPORTES.find(function (e) { return e.id === camp.esporte; });
+    var esporteNome = esporte ? esporte.icon + " " + esporte.nome : camp.esporte;
+
+    // Ordenar classificacao
+    var times = (camp.times || []).slice();
+    times.sort(function (a, b) { return b.p - a.p || (b.gp - b.gc) - (a.gp - a.gc); });
+
+    // Ordenar artilheiros
+    var artilheiros = (camp.artilheiros || []).slice();
+    artilheiros.sort(function (a, b) { return b.gols - a.gols; });
+
+    // Resultados
+    var resultados = (camp.resultados || []).slice();
+    resultados.sort(function (a, b) { return (b.data || "").localeCompare(a.data || ""); });
+
+    var html = '';
+
+    // HEADER DO CAMPEONATO
+    html += '<div class="card-panel" style="margin-bottom:24px;">';
+    html += '<div class="card-panel-header"><h3>' + esporteNome + ' - ' + esc(camp.nome) + '</h3><span class="badge">' + esc(camp.ano) + '</span></div>';
+    if (isAdmin()) {
+        html += '<button class="btn btn-danger" onclick="deletarCampeonato(\'' + camp.id + '\')" style="font-size:0.75rem;padding:4px 12px;">Excluir Campeonato</button>';
+    }
+    html += '</div>';
+
+    // TABELA DE CLASSIFICACAO
+    html += '<div class="card-panel" style="margin-bottom:24px;">';
+    html += '<div class="card-panel-header"><h3>Classificacao</h3></div>';
+    if (times.length === 0) {
+        html += '<div class="empty-state"><div class="empty-state-icon">&#9917;</div><div class="empty-state-text">Nenhum time cadastrado.' + (isAdmin() ? ' Adicione times abaixo.' : '') + '</div></div>';
     } else {
-        document.querySelectorAll("#campTabs .tab").forEach(function (t) {
-            var onclick = t.getAttribute("onclick") || "";
-            if (onclick.indexOf("'" + esporte + "'") !== -1) t.classList.add("active");
+        html += '<div class="table-responsive"><table class="standings-table"><thead><tr><th>#</th><th>Time</th><th>P</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th><th>SG</th>';
+        if (isAdmin()) html += '<th>Acoes</th>';
+        html += '</tr></thead><tbody>';
+        times.forEach(function (t, i) {
+            var sg = t.gp - t.gc;
+            html += '<tr><td>' + (i + 1) + '</td><td>' + esc(t.nome) + '</td><td><strong>' + t.p + '</strong></td><td>' + t.j + '</td><td>' + t.v + '</td><td>' + t.e + '</td><td>' + t.d + '</td><td>' + t.gp + '</td><td>' + t.gc + '</td><td>' + (sg > 0 ? "+" : "") + sg + '</td>';
+            if (isAdmin()) {
+                html += '<td><button onclick="editarTimeClassificacao(\'' + t.id + '\')" style="font-size:0.7rem;padding:2px 6px;border:1px solid #cbd5e1;border-radius:3px;background:#fff;cursor:pointer;">Editar</button> <button onclick="removerTime(\'' + t.id + '\')" style="font-size:0.7rem;padding:2px 6px;border:1px solid #fca5a5;border-radius:3px;background:#fff;color:#dc2626;cursor:pointer;">X</button></td>';
+            }
+            html += '</tr>';
+        });
+        html += '</tbody></table></div>';
+    }
+    // Admin: adicionar time
+    if (isAdmin()) {
+        html += '<div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">';
+        html += '<input type="text" id="novoTimeNome" placeholder="Nome do time" style="flex:1;min-width:200px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.85rem;">';
+        html += '<button class="btn btn-secondary" onclick="adicionarTime()" style="padding:8px 16px;">+ Adicionar Time</button>';
+        html += '</div>';
+    }
+    html += '</div>';
+
+    // ARTILHEIROS
+    html += '<div class="card-panel" style="margin-bottom:24px;">';
+    html += '<div class="card-panel-header"><h3>Artilheiros</h3></div>';
+    if (artilheiros.length === 0) {
+        html += '<div class="empty-state"><div class="empty-state-icon">&#127942;</div><div class="empty-state-text">Nenhum artilheiro.' + (isAdmin() ? ' Adicione abaixo.' : '') + '</div></div>';
+    } else {
+        artilheiros.forEach(function (a, i) {
+            var rankClass = i === 0 ? "gold" : (i === 1 ? "silver" : (i === 2 ? "bronze" : ""));
+            var initials = a.nome.split(" ").map(function (w) { return w[0]; }).join("").substr(0, 2);
+            html += '<div class="scorer-row"><span class="scorer-rank ' + rankClass + '">' + (i + 1) + '</span><div class="scorer-avatar">' + initials + '</div><div class="scorer-info"><div class="scorer-name">' + esc(a.nome) + '</div><div class="scorer-team">' + esc(a.time) + '</div></div><div class="scorer-goals">' + a.gols + '</div>';
+            if (isAdmin()) {
+                html += '<div style="display:flex;gap:4px;margin-left:8px;"><button onclick="editarArtilheiro(\'' + a.id + '\')" style="font-size:0.7rem;padding:2px 6px;border:1px solid #cbd5e1;border-radius:3px;background:#fff;cursor:pointer;">Editar</button><button onclick="removerArtilheiro(\'' + a.id + '\')" style="font-size:0.7rem;padding:2px 6px;border:1px solid #fca5a5;border-radius:3px;background:#fff;color:#dc2626;cursor:pointer;">X</button></div>';
+            }
+            html += '</div>';
         });
     }
-    renderCampeonatos(esporte);
-}
-
-function renderClassificacao() {
-    var dados = getData("classificacao_" + _campTab);
-    var tbody = document.getElementById("standingsBody");
-    if (!tbody) return;
-    tbody.innerHTML = "";
-
-    if (dados.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#94a3b8;padding:30px;">Nenhuma classificacao registrada para ' + _campTab + '.</td></tr>';
-        return;
+    // Admin: adicionar artilheiro
+    if (isAdmin()) {
+        html += '<div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">';
+        html += '<input type="text" id="novoArtNome" placeholder="Nome do jogador" style="flex:1;min-width:150px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.85rem;">';
+        html += '<input type="text" id="novoArtTime" placeholder="Time" style="width:150px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.85rem;">';
+        html += '<input type="number" id="novoArtGols" placeholder="Gols" min="0" style="width:80px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.85rem;">';
+        html += '<button class="btn btn-secondary" onclick="adicionarArtilheiro()" style="padding:8px 16px;">+ Artilheiro</button>';
+        html += '</div>';
     }
+    html += '</div>';
 
-    dados.sort(function (a, b) { return b.p - a.p || (b.gp - b.gc) - (a.gp - a.gc); });
-
-    dados.forEach(function (t, i) {
-        var sg = t.gp - t.gc;
-        tbody.innerHTML +=
-            '<tr>' +
-                '<td>' + (i + 1) + '</td>' +
-                '<td>' + esc(t.time) + '</td>' +
-                '<td><strong>' + t.p + '</strong></td>' +
-                '<td>' + t.j + '</td>' +
-                '<td>' + t.v + '</td>' +
-                '<td>' + t.e + '</td>' +
-                '<td>' + t.d + '</td>' +
-                '<td>' + t.gp + '</td>' +
-                '<td>' + t.gc + '</td>' +
-                '<td>' + (sg > 0 ? "+" : "") + sg + '</td>' +
-            '</tr>';
-    });
-}
-
-function renderArtilheirosFull() {
-    var artilheiros = getData("artilheiros")
-        .filter(function (a) { return a.esporte === _campTab; })
-        .sort(function (a, b) { return b.gols - a.gols; });
-
-    var container = document.getElementById("scorersFull");
-    if (!container) return;
-    container.innerHTML = "";
-
-    if (artilheiros.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">\uD83C\uDFC6</div><div class="empty-state-text">Nenhum artilheiro registrado.</div></div>';
-        return;
-    }
-
-    artilheiros.forEach(function (a, i) {
-        var rankClass = i === 0 ? "gold" : (i === 1 ? "silver" : (i === 2 ? "bronze" : ""));
-        var initials = a.nome.split(" ").map(function (w) { return w[0]; }).join("").substr(0, 2);
-        container.innerHTML +=
-            '<div class="scorer-row">' +
-                '<span class="scorer-rank ' + rankClass + '">' + (i + 1) + '</span>' +
-                '<div class="scorer-avatar">' + initials + '</div>' +
-                '<div class="scorer-info">' +
-                    '<div class="scorer-name">' + esc(a.nome) + '</div>' +
-                    '<div class="scorer-team">' + esc(a.time) + '</div>' +
-                '</div>' +
-                '<div class="scorer-goals">' + a.gols + '</div>' +
-            '</div>';
-    });
-}
-
-function renderResultados() {
-    var resultados = getData("resultados")
-        .filter(function (r) { return r.esporte === _campTab; })
-        .sort(function (a, b) { return b.data.localeCompare(a.data); });
-
-    var container = document.getElementById("resultsList");
-    if (!container) return;
-    container.innerHTML = "";
-
+    // RESULTADOS
+    html += '<div class="card-panel" style="margin-bottom:24px;">';
+    html += '<div class="card-panel-header"><h3>Resultados</h3></div>';
     if (resultados.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">\uD83D\uDCCB</div><div class="empty-state-text">Nenhum resultado registrado.</div></div>';
-        return;
+        html += '<div class="empty-state"><div class="empty-state-icon">&#128203;</div><div class="empty-state-text">Nenhum resultado.' + (isAdmin() ? ' Registre abaixo.' : '') + '</div></div>';
+    } else {
+        html += '<div class="results-list">';
+        resultados.forEach(function (r) {
+            html += '<div class="result-card"><div class="result-team">' + esc(r.timeCasa) + '</div><div style="text-align:center;"><div class="result-score">' + r.placarCasa + ' x ' + r.placarFora + '</div><div class="result-meta">' + formatarData(r.data) + ' - ' + esc(r.local || "") + '</div></div><div class="result-team away">' + esc(r.timeFora) + '</div>';
+            if (isAdmin()) {
+                html += '<div class="result-card-actions"><button onclick="deletarResultado(\'' + r.id + '\')" title="Excluir">X</button></div>';
+            }
+            html += '</div>';
+        });
+        html += '</div>';
     }
+    // Admin: registrar resultado
+    if (isAdmin()) {
+        html += '<div style="margin-top:16px;padding:16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;">';
+        html += '<h4 style="margin-bottom:12px;font-size:0.9rem;color:#1e293b;">Registrar Resultado</h4>';
+        html += '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">';
+        html += '<input type="text" id="resTimeCasa" placeholder="Time casa" style="flex:1;min-width:120px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.85rem;">';
+        html += '<input type="number" id="resPlacarCasa" placeholder="Gols" min="0" style="width:60px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.85rem;text-align:center;">';
+        html += '<span style="font-weight:800;color:#94a3b8;">X</span>';
+        html += '<input type="number" id="resPlacarFora" placeholder="Gols" min="0" style="width:60px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.85rem;text-align:center;">';
+        html += '<input type="text" id="resTimeFora" placeholder="Time fora" style="flex:1;min-width:120px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.85rem;">';
+        html += '</div>';
+        html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">';
+        html += '<input type="date" id="resData" style="padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.85rem;">';
+        html += '<input type="text" id="resLocal" placeholder="Local" style="flex:1;padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.85rem;">';
+        html += '<button class="btn btn-primary" onclick="salvarResultado()" style="padding:8px 16px;">Salvar</button>';
+        html += '</div></div>';
+    }
+    html += '</div>';
 
-    resultados.forEach(function (r) {
-        container.innerHTML +=
-            '<div class="result-card">' +
-                '<div class="result-team">' + esc(r.timeCasa) + '</div>' +
-                '<div style="text-align:center;">' +
-                    '<div class="result-score">' + r.placarCasa + ' x ' + r.placarFora + '</div>' +
-                    '<div class="result-meta">' + formatarData(r.data) + ' - ' + esc(r.local || "") + '</div>' +
-                '</div>' +
-                '<div class="result-team away">' + esc(r.timeFora) + '</div>' +
-                '<div class="result-card-actions">' +
-                    '<button onclick="deletarResultado(\'' + r.id + '\')" title="Excluir">X</button>' +
-                '</div>' +
-            '</div>';
-    });
+    conteudo.innerHTML = html;
 }
 
+// --- TIMES ---
+function adicionarTime() {
+    var nome = document.getElementById("novoTimeNome").value.trim();
+    if (!nome) return alert("Preencha o nome do time.");
+    var camp = getCampAtivo();
+    if (!camp) return;
+    if (!camp.times) camp.times = [];
+    camp.times.push({ id: gerarId(), nome: nome, p: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0 });
+    salvarCampAtivo(camp);
+    renderCampeonatoAtivo();
+    renderHeroStats();
+}
+
+function editarTimeClassificacao(timeId) {
+    var camp = getCampAtivo();
+    if (!camp) return;
+    var t = camp.times.find(function (x) { return x.id === timeId; });
+    if (!t) return;
+    var p = prompt("Pontos (" + t.nome + "):", t.p); if (p === null) return;
+    var j = prompt("Jogos:", t.j); if (j === null) return;
+    var v = prompt("Vitorias:", t.v); if (v === null) return;
+    var e = prompt("Empates:", t.e); if (e === null) return;
+    var d = prompt("Derrotas:", t.d); if (d === null) return;
+    var gp = prompt("Gols Pro:", t.gp); if (gp === null) return;
+    var gc = prompt("Gols Contra:", t.gc); if (gc === null) return;
+    t.p = parseInt(p) || 0; t.j = parseInt(j) || 0; t.v = parseInt(v) || 0;
+    t.e = parseInt(e) || 0; t.d = parseInt(d) || 0; t.gp = parseInt(gp) || 0; t.gc = parseInt(gc) || 0;
+    salvarCampAtivo(camp);
+    renderCampeonatoAtivo();
+}
+
+function removerTime(timeId) {
+    if (!confirm("Remover este time?")) return;
+    var camp = getCampAtivo();
+    if (!camp) return;
+    camp.times = camp.times.filter(function (t) { return t.id !== timeId; });
+    salvarCampAtivo(camp);
+    renderCampeonatoAtivo();
+    renderHeroStats();
+}
+
+// --- ARTILHEIROS ---
+function adicionarArtilheiro() {
+    var nome = document.getElementById("novoArtNome").value.trim();
+    var time = document.getElementById("novoArtTime").value.trim();
+    var gols = parseInt(document.getElementById("novoArtGols").value) || 0;
+    if (!nome) return alert("Preencha o nome do jogador.");
+    var camp = getCampAtivo();
+    if (!camp) return;
+    if (!camp.artilheiros) camp.artilheiros = [];
+    camp.artilheiros.push({ id: gerarId(), nome: nome, time: time, gols: gols });
+    salvarCampAtivo(camp);
+    renderCampeonatoAtivo();
+}
+
+function editarArtilheiro(artId) {
+    var camp = getCampAtivo();
+    if (!camp) return;
+    var a = camp.artilheiros.find(function (x) { return x.id === artId; });
+    if (!a) return;
+    var gols = prompt("Gols de " + a.nome + ":", a.gols);
+    if (gols === null) return;
+    a.gols = parseInt(gols) || 0;
+    salvarCampAtivo(camp);
+    renderCampeonatoAtivo();
+}
+
+function removerArtilheiro(artId) {
+    if (!confirm("Remover este artilheiro?")) return;
+    var camp = getCampAtivo();
+    if (!camp) return;
+    camp.artilheiros = camp.artilheiros.filter(function (a) { return a.id !== artId; });
+    salvarCampAtivo(camp);
+    renderCampeonatoAtivo();
+}
+
+// --- RESULTADOS ---
 function salvarResultado() {
-    var esporte = document.getElementById("resEsporte").value;
     var timeCasa = document.getElementById("resTimeCasa").value.trim();
     var placarCasa = parseInt(document.getElementById("resPlacarCasa").value) || 0;
     var placarFora = parseInt(document.getElementById("resPlacarFora").value) || 0;
     var timeFora = document.getElementById("resTimeFora").value.trim();
     var data = document.getElementById("resData").value;
     var local = document.getElementById("resLocal").value.trim();
-    var artilheiros = document.getElementById("resArtilheiros").value.trim();
-
-    if (!timeCasa || !timeFora) return alert("Preencha os times.");
+    if (!timeCasa || !timeFora) return alert("Preencha os dois times.");
     if (!data) return alert("Preencha a data.");
-
-    var resultados = getData("resultados");
-    resultados.push({ id: gerarId(), esporte: esporte, timeCasa: timeCasa, placarCasa: placarCasa, placarFora: placarFora, timeFora: timeFora, data: data, local: local, artilheiros: artilheiros });
-    setData("resultados", resultados);
-
-    document.getElementById("resTimeCasa").value = "";
-    document.getElementById("resPlacarCasa").value = "";
-    document.getElementById("resPlacarFora").value = "";
-    document.getElementById("resTimeFora").value = "";
-    document.getElementById("resData").value = "";
-    document.getElementById("resLocal").value = "";
-    document.getElementById("resArtilheiros").value = "";
-    document.getElementById("adminResultado").style.display = "none";
-
-    renderCampeonatos();
+    var camp = getCampAtivo();
+    if (!camp) return;
+    if (!camp.resultados) camp.resultados = [];
+    camp.resultados.push({ id: gerarId(), timeCasa: timeCasa, placarCasa: placarCasa, placarFora: placarFora, timeFora: timeFora, data: data, local: local });
+    salvarCampAtivo(camp);
+    renderCampeonatoAtivo();
     renderHeroStats();
     alert("Resultado salvo!");
 }
 
-function deletarResultado(id) {
+function deletarResultado(resId) {
     if (!confirm("Excluir este resultado?")) return;
-    var resultados = getData("resultados").filter(function (r) { return r.id !== id; });
-    setData("resultados", resultados);
-    renderCampeonatos();
+    var camp = getCampAtivo();
+    if (!camp) return;
+    camp.resultados = camp.resultados.filter(function (r) { return r.id !== resId; });
+    salvarCampAtivo(camp);
+    renderCampeonatoAtivo();
     renderHeroStats();
 }
 
@@ -986,7 +1148,7 @@ function toggleAdmin(id) {
 // ===== BACKUP / EXPORT / IMPORT =====
 function exportarDados() {
     var data = {};
-    var keys = ["noticias", "resultados", "jogos", "classificacao_futebol", "classificacao_volei", "classificacao_basquete", "artilheiros", "atletas", "galeria", "patrocinadores"];
+    var keys = ["noticias", "jogos", "atletas", "galeria", "patrocinadores", "campeonatos"];
     keys.forEach(function (k) { data[k] = getData(k); });
 
     var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });

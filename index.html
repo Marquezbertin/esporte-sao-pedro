@@ -184,74 +184,33 @@
                 <p class="section-sub">Tabelas, classificacao e artilharia</p>
             </div>
 
-            <!-- TABS DE ESPORTE -->
-            <div class="tabs" id="campTabs">
-                <button class="tab active" onclick="selectCampTab('futebol', this)">Futebol</button>
-                <button class="tab" onclick="selectCampTab('volei', this)">Volei</button>
-                <button class="tab" onclick="selectCampTab('basquete', this)">Basquete</button>
-            </div>
-
-            <!-- TABELA DE CLASSIFICACAO -->
-            <div class="card-panel">
-                <div class="card-panel-header">
-                    <h3>Classificacao</h3>
-                    <span class="badge" id="campBadge">2026</span>
-                </div>
-                <div class="table-responsive">
-                    <table class="standings-table" id="standingsTable">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Time</th>
-                                <th>P</th>
-                                <th>J</th>
-                                <th>V</th>
-                                <th>E</th>
-                                <th>D</th>
-                                <th>GP</th>
-                                <th>GC</th>
-                                <th>SG</th>
-                            </tr>
-                        </thead>
-                        <tbody id="standingsBody"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- ARTILHEIROS -->
-            <div class="card-panel" style="margin-top:24px;">
-                <div class="card-panel-header">
-                    <h3>Artilheiros</h3>
-                </div>
-                <div class="scorers-list" id="scorersFull"></div>
-            </div>
-
-            <!-- ULTIMOS RESULTADOS -->
-            <div class="card-panel" style="margin-top:24px;">
-                <div class="card-panel-header">
-                    <h3>Ultimos Resultados</h3>
-                </div>
-                <div class="results-list" id="resultsList"></div>
-            </div>
-
-            <!-- ADMIN: ADICIONAR RESULTADO -->
-            <div class="admin-section admin-only">
-                <button class="btn btn-secondary" onclick="toggleAdmin('adminResultado')">+ Registrar Resultado</button>
-                <div class="admin-form" id="adminResultado" style="display:none;">
-                    <h3>Novo Resultado</h3>
-                    <select id="resEsporte">
+            <!-- ADMIN: CRIAR CAMPEONATO -->
+            <div class="admin-section admin-only" style="border:none;padding:0;margin:0 0 24px 0;">
+                <button class="btn btn-primary" onclick="toggleAdmin('adminCampeonato')">+ Criar Campeonato</button>
+                <div class="admin-form" id="adminCampeonato" style="display:none;">
+                    <h3>Novo Campeonato</h3>
+                    <input type="text" id="campNome" placeholder="Nome do campeonato (ex: Municipal de Futebol 2026)">
+                    <select id="campEsporte">
                         <option value="futebol">Futebol</option>
                         <option value="volei">Volei</option>
                         <option value="basquete">Basquete</option>
+                        <option value="corrida">Corrida</option>
+                        <option value="ciclismo">Ciclismo</option>
+                        <option value="artes-marciais">Artes Marciais</option>
                     </select>
-                    <input type="text" id="resTimeCasa" placeholder="Time da casa">
-                    <input type="number" id="resPlacarCasa" placeholder="Gols casa" min="0">
-                    <input type="number" id="resPlacarFora" placeholder="Gols fora" min="0">
-                    <input type="text" id="resTimeFora" placeholder="Time visitante">
-                    <input type="date" id="resData">
-                    <input type="text" id="resLocal" placeholder="Local do jogo">
-                    <input type="text" id="resArtilheiros" placeholder="Artilheiros (ex: Joao 2, Pedro 1)">
-                    <button class="btn btn-primary" onclick="salvarResultado()">Salvar Resultado</button>
+                    <input type="text" id="campAno" placeholder="Ano (ex: 2026)" value="2026">
+                    <button class="btn btn-primary" onclick="criarCampeonato()">Criar</button>
+                </div>
+            </div>
+
+            <!-- SELETOR DE CAMPEONATO -->
+            <div class="tabs" id="campTabs" style="flex-wrap:wrap;width:100%;"></div>
+
+            <!-- CONTEUDO DO CAMPEONATO SELECIONADO -->
+            <div id="campConteudo">
+                <div class="empty-state">
+                    <div class="empty-state-icon">&#127942;</div>
+                    <div class="empty-state-text">Nenhum campeonato criado. Logue como admin para criar.</div>
                 </div>
             </div>
         </div>
