@@ -1876,6 +1876,39 @@ body.admin-mode .admin-login-btn { display: none; }
 
 .sponsors-bar:has(.sponsors-grid:empty) { display: none; }
 
+/* ===== UPLOAD DE FOTOS ===== */
+.upload-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.upload-btn {
+    white-space: nowrap;
+    padding: 8px 16px !important;
+    font-size: 0.85rem !important;
+}
+
+.upload-btn:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.upload-status {
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.upload-preview {
+    width: 80px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    border: 2px solid var(--cinza-200);
+}
+
 /* ===== EDICAO INLINE ===== */
 .editavel-ativo {
     border: 2px dashed var(--dourado);

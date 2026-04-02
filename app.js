@@ -75,6 +75,7 @@ function confirmarLoginAdmin() {
         fecharModalAdmin();
         renderPaginaAtual();
         atualizarLiveNav();
+        CloudUpload.init();
     } else {
         document.getElementById("adminError").style.display = "block";
         document.getElementById("adminSenhaInput").value = "";
@@ -98,6 +99,7 @@ function checkAdminSession() {
     if (sessionStorage.getItem("esp_admin") === "1") {
         _isAdmin = true;
         document.body.classList.add("admin-mode");
+        setTimeout(function () { CloudUpload.init(); }, 500);
     }
 }
 

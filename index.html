@@ -167,7 +167,7 @@
                         <option value="artes-marciais">Artes Marciais</option>
                         <option value="geral">Geral</option>
                     </select>
-                    <input type="text" id="noticiaImg" placeholder="URL da imagem (opcional)">
+                    <input type="text" id="noticiaImg" placeholder="URL da imagem (opcional)" data-upload-target="noticiaImg">
                     <input type="text" id="noticiaVideo" placeholder="Link do video YouTube (opcional)">
                     <input type="text" id="noticiaFonte" placeholder="URL da fonte original (ex: link da materia)">
                     <button class="btn btn-primary" onclick="salvarNoticia()">Publicar</button>
@@ -280,7 +280,7 @@
                     </select>
                     <input type="text" id="atletaTime" placeholder="Time/Equipe">
                     <input type="text" id="atletaPosicao" placeholder="Posicao/Modalidade">
-                    <input type="text" id="atletaImg" placeholder="URL da foto (opcional)">
+                    <input type="text" id="atletaImg" placeholder="URL da foto (opcional)" data-upload-target="atletaImg">
                     <textarea id="atletaBio" placeholder="Breve biografia / conquistas" rows="3"></textarea>
                     <button class="btn btn-primary" onclick="salvarAtleta()">Salvar Atleta</button>
                 </div>
@@ -309,7 +309,7 @@
                 <button class="btn btn-secondary" onclick="toggleAdmin('adminFoto')">+ Adicionar Foto</button>
                 <div class="admin-form" id="adminFoto" style="display:none;">
                     <h3>Nova Foto</h3>
-                    <input type="text" id="fotoUrl" placeholder="URL da imagem">
+                    <input type="text" id="fotoUrl" placeholder="URL da imagem" data-upload-target="fotoUrl">
                     <input type="text" id="fotoLegenda" placeholder="Legenda / descricao">
                     <select id="fotoCategoria">
                         <option value="futebol">Futebol</option>
@@ -399,7 +399,7 @@
                 <div class="admin-form" style="display:block;margin-top:0;border-color:var(--cinza-200);">
                     <h3>Novo Patrocinador</h3>
                     <input type="text" id="patroNome" placeholder="Nome do patrocinador / empresa">
-                    <input type="text" id="patroLogo" placeholder="URL do logo (imagem)">
+                    <input type="text" id="patroLogo" placeholder="URL do logo (imagem)" data-upload-target="patroLogo">
                     <input type="text" id="patroSite" placeholder="Site do patrocinador (opcional)">
                     <select id="patroPlano">
                         <option value="ouro">Ouro (destaque maior)</option>
@@ -515,6 +515,7 @@
     <button class="scroll-top" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Voltar ao topo">&#9650;</button>
 
     <script src="supabase.js"></script>
+    <script src="upload.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
