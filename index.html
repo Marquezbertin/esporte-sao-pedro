@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Esporte Sao Pedro - Portal Esportivo de Sao Pedro/SP</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0a1628">
+    <meta name="description" content="Portal esportivo de Sao Pedro/SP. Resultados, tabelas, artilheiros, calendario e noticias do esporte local.">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- HEADER -->
+    <header class="main-header">
+        <div class="header-top">
+            <div class="container header-top-inner">
+                <span class="header-date" id="headerDate"></span>
+                <div class="header-social">
+                    <a href="#" title="Instagram">&#9679; Instagram</a>
+                    <a href="#" title="Facebook">&#9679; Facebook</a>
+                </div>
+            </div>
+        </div>
+        <div class="header-main">
+            <div class="container header-main-inner">
+                <div class="logo">
+                    <div class="logo-icon">SP</div>
+                    <div class="logo-text">
+                        <span class="logo-title">ESPORTE SAO PEDRO</span>
+                        <span class="logo-sub">Portal Esportivo da Cidade</span>
+                    </div>
+                </div>
+                <button class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileMenu()">
+                    <span></span><span></span><span></span>
+                </button>
+                <nav class="main-nav" id="mainNav">
+                    <a href="#" class="nav-link active" onclick="navegar('inicio', event)">Inicio</a>
+                    <a href="#" class="nav-link" onclick="navegar('noticias', event)">Noticias</a>
+                    <a href="#" class="nav-link" onclick="navegar('campeonatos', event)">Campeonatos</a>
+                    <a href="#" class="nav-link" onclick="navegar('calendario', event)">Calendario</a>
+                    <a href="#" class="nav-link" onclick="navegar('atletas', event)">Atletas</a>
+                    <a href="#" class="nav-link" onclick="navegar('galeria', event)">Galeria</a>
+                    <a href="#" class="nav-link" onclick="navegar('sobre', event)">Sobre</a>
+                </nav>
+            </div>
+        </div>
+        <!-- BREAKING NEWS TICKER -->
+        <div class="ticker-bar">
+            <div class="container">
+                <span class="ticker-label">AO VIVO</span>
+                <div class="ticker-content" id="tickerContent">
+                    <span class="ticker-text" id="tickerText"></span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- HERO -->
+    <section class="hero" id="heroSection">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-badge">PORTAL ESPORTIVO</div>
+                <h1 class="hero-title">O Esporte de<br><span class="hero-city">Sao Pedro</span></h1>
+                <p class="hero-desc">Resultados, tabelas, artilheiros, calendario e tudo sobre o esporte da nossa cidade. Feito por quem vive o esporte local.</p>
+                <div class="hero-stats">
+                    <div class="hero-stat">
+                        <span class="hero-stat-num" id="statTimes">0</span>
+                        <span class="hero-stat-label">Times</span>
+                    </div>
+                    <div class="hero-stat">
+                        <span class="hero-stat-num" id="statJogos">0</span>
+                        <span class="hero-stat-label">Jogos</span>
+                    </div>
+                    <div class="hero-stat">
+                        <span class="hero-stat-num" id="statGols">0</span>
+                        <span class="hero-stat-label">Gols</span>
+                    </div>
+                    <div class="hero-stat">
+                        <span class="hero-stat-num" id="statEsportes">6</span>
+                        <span class="hero-stat-label">Esportes</span>
+                    </div>
+                </div>
+                <div class="hero-actions">
+                    <button class="btn btn-primary" onclick="navegar('campeonatos', null)">Ver Campeonatos</button>
+                    <button class="btn btn-outline" onclick="navegar('calendario', null)">Calendario de Jogos</button>
+                </div>
+            </div>
+        </div>
+        <div class="hero-overlay"></div>
+    </section>
+
+    <!-- SECAO: ESPORTES (CARDS) -->
+    <section class="section" id="secao-esportes-cards">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Esportes</h2>
+                <p class="section-sub">Acompanhe todos os esportes de Sao Pedro</p>
+            </div>
+            <div class="sports-grid" id="sportsGrid"></div>
+        </div>
+    </section>
+
+    <!-- SECAO: INICIO -->
+    <section class="section secao-page active" id="secao-inicio">
+        <div class="container">
+            <!-- ULTIMAS NOTICIAS -->
+            <div class="section-header">
+                <h2 class="section-title">Ultimas Noticias</h2>
+                <a href="#" class="section-link" onclick="navegar('noticias', event)">Ver todas &rarr;</a>
+            </div>
+            <div class="news-grid" id="newsGrid"></div>
+
+            <!-- PROXIMOS JOGOS -->
+            <div class="section-header" style="margin-top:50px;">
+                <h2 class="section-title">Proximos Jogos</h2>
+                <a href="#" class="section-link" onclick="navegar('calendario', event)">Ver calendario &rarr;</a>
+            </div>
+            <div class="games-list" id="nextGamesList"></div>
+
+            <!-- DESTAQUE: ARTILHEIROS -->
+            <div class="section-header" style="margin-top:50px;">
+                <h2 class="section-title">Artilheiros</h2>
+                <a href="#" class="section-link" onclick="navegar('campeonatos', event)">Ver tabela completa &rarr;</a>
+            </div>
+            <div class="scorers-table" id="scorersTable"></div>
+        </div>
+    </section>
+
+    <!-- SECAO: NOTICIAS -->
+    <section class="section secao-page" id="secao-noticias">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Noticias</h2>
+                <div class="news-filters">
+                    <button class="chip active" onclick="filtrarNoticias('todas', this)">Todas</button>
+                    <button class="chip" onclick="filtrarNoticias('futebol', this)">Futebol</button>
+                    <button class="chip" onclick="filtrarNoticias('volei', this)">Volei</button>
+                    <button class="chip" onclick="filtrarNoticias('basquete', this)">Basquete</button>
+                    <button class="chip" onclick="filtrarNoticias('corrida', this)">Corrida</button>
+                    <button class="chip" onclick="filtrarNoticias('ciclismo', this)">Ciclismo</button>
+                    <button class="chip" onclick="filtrarNoticias('artes-marciais', this)">Artes Marciais</button>
+                </div>
+            </div>
+            <div class="news-full-grid" id="newsFullGrid"></div>
+
+            <!-- ADMIN: ADICIONAR NOTICIA -->
+            <div class="admin-section">
+                <button class="btn btn-secondary" onclick="toggleAdmin('adminNoticia')">+ Adicionar Noticia</button>
+                <div class="admin-form" id="adminNoticia" style="display:none;">
+                    <h3>Nova Noticia</h3>
+                    <input type="text" id="noticiaTitle" placeholder="Titulo da noticia">
+                    <textarea id="noticiaBody" placeholder="Texto da noticia..." rows="4"></textarea>
+                    <select id="noticiaCategoria">
+                        <option value="futebol">Futebol</option>
+                        <option value="volei">Volei</option>
+                        <option value="basquete">Basquete</option>
+                        <option value="corrida">Corrida</option>
+                        <option value="ciclismo">Ciclismo</option>
+                        <option value="artes-marciais">Artes Marciais</option>
+                        <option value="geral">Geral</option>
+                    </select>
+                    <input type="text" id="noticiaImg" placeholder="URL da imagem (opcional)">
+                    <button class="btn btn-primary" onclick="salvarNoticia()">Publicar</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECAO: CAMPEONATOS -->
+    <section class="section secao-page" id="secao-campeonatos">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Campeonatos</h2>
+                <p class="section-sub">Tabelas, classificacao e artilharia</p>
+            </div>
+
+            <!-- TABS DE ESPORTE -->
+            <div class="tabs" id="campTabs">
+                <button class="tab active" onclick="selectCampTab('futebol', this)">Futebol</button>
+                <button class="tab" onclick="selectCampTab('volei', this)">Volei</button>
+                <button class="tab" onclick="selectCampTab('basquete', this)">Basquete</button>
+            </div>
+
+            <!-- TABELA DE CLASSIFICACAO -->
+            <div class="card-panel">
+                <div class="card-panel-header">
+                    <h3>Classificacao</h3>
+                    <span class="badge" id="campBadge">2026</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="standings-table" id="standingsTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Time</th>
+                                <th>P</th>
+                                <th>J</th>
+                                <th>V</th>
+                                <th>E</th>
+                                <th>D</th>
+                                <th>GP</th>
+                                <th>GC</th>
+                                <th>SG</th>
+                            </tr>
+                        </thead>
+                        <tbody id="standingsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ARTILHEIROS -->
+            <div class="card-panel" style="margin-top:24px;">
+                <div class="card-panel-header">
+                    <h3>Artilheiros</h3>
+                </div>
+                <div class="scorers-list" id="scorersFull"></div>
+            </div>
+
+            <!-- ULTIMOS RESULTADOS -->
+            <div class="card-panel" style="margin-top:24px;">
+                <div class="card-panel-header">
+                    <h3>Ultimos Resultados</h3>
+                </div>
+                <div class="results-list" id="resultsList"></div>
+            </div>
+
+            <!-- ADMIN: ADICIONAR RESULTADO -->
+            <div class="admin-section">
+                <button class="btn btn-secondary" onclick="toggleAdmin('adminResultado')">+ Registrar Resultado</button>
+                <div class="admin-form" id="adminResultado" style="display:none;">
+                    <h3>Novo Resultado</h3>
+                    <select id="resEsporte">
+                        <option value="futebol">Futebol</option>
+                        <option value="volei">Volei</option>
+                        <option value="basquete">Basquete</option>
+                    </select>
+                    <input type="text" id="resTimeCasa" placeholder="Time da casa">
+                    <input type="number" id="resPlacarCasa" placeholder="Gols casa" min="0">
+                    <input type="number" id="resPlacarFora" placeholder="Gols fora" min="0">
+                    <input type="text" id="resTimeFora" placeholder="Time visitante">
+                    <input type="date" id="resData">
+                    <input type="text" id="resLocal" placeholder="Local do jogo">
+                    <input type="text" id="resArtilheiros" placeholder="Artilheiros (ex: Joao 2, Pedro 1)">
+                    <button class="btn btn-primary" onclick="salvarResultado()">Salvar Resultado</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECAO: CALENDARIO -->
+    <section class="section secao-page" id="secao-calendario">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Calendario de Jogos</h2>
+                <p class="section-sub">Todos os jogos e eventos esportivos</p>
+            </div>
+            <div class="calendar-controls">
+                <button class="btn btn-sm" onclick="mesCalendario(-1)">&larr; Anterior</button>
+                <span class="calendar-month" id="calendarMonth"></span>
+                <button class="btn btn-sm" onclick="mesCalendario(1)">Proximo &rarr;</button>
+            </div>
+            <div class="calendar-grid" id="calendarGrid"></div>
+            <div class="games-list" id="calendarGamesList" style="margin-top:30px;"></div>
+
+            <!-- ADMIN: ADICIONAR JOGO -->
+            <div class="admin-section">
+                <button class="btn btn-secondary" onclick="toggleAdmin('adminJogo')">+ Agendar Jogo</button>
+                <div class="admin-form" id="adminJogo" style="display:none;">
+                    <h3>Novo Jogo</h3>
+                    <select id="jogoEsporte">
+                        <option value="futebol">Futebol</option>
+                        <option value="volei">Volei</option>
+                        <option value="basquete">Basquete</option>
+                        <option value="corrida">Corrida</option>
+                        <option value="ciclismo">Ciclismo</option>
+                        <option value="artes-marciais">Artes Marciais</option>
+                    </select>
+                    <input type="text" id="jogoTimeCasa" placeholder="Time da casa / Evento">
+                    <input type="text" id="jogoTimeFora" placeholder="Time visitante (se houver)">
+                    <input type="date" id="jogoData">
+                    <input type="time" id="jogoHora">
+                    <input type="text" id="jogoLocal" placeholder="Local">
+                    <button class="btn btn-primary" onclick="salvarJogo()">Agendar</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECAO: ATLETAS -->
+    <section class="section secao-page" id="secao-atletas">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Atletas de Sao Pedro</h2>
+                <p class="section-sub">Conheca os atletas que representam nossa cidade</p>
+            </div>
+            <div class="athletes-grid" id="athletesGrid"></div>
+
+            <!-- ADMIN: ADICIONAR ATLETA -->
+            <div class="admin-section">
+                <button class="btn btn-secondary" onclick="toggleAdmin('adminAtleta')">+ Adicionar Atleta</button>
+                <div class="admin-form" id="adminAtleta" style="display:none;">
+                    <h3>Novo Atleta</h3>
+                    <input type="text" id="atletaNome" placeholder="Nome completo">
+                    <select id="atletaEsporte">
+                        <option value="futebol">Futebol</option>
+                        <option value="volei">Volei</option>
+                        <option value="basquete">Basquete</option>
+                        <option value="corrida">Corrida</option>
+                        <option value="ciclismo">Ciclismo</option>
+                        <option value="artes-marciais">Artes Marciais</option>
+                    </select>
+                    <input type="text" id="atletaTime" placeholder="Time/Equipe">
+                    <input type="text" id="atletaPosicao" placeholder="Posicao/Modalidade">
+                    <input type="text" id="atletaImg" placeholder="URL da foto (opcional)">
+                    <textarea id="atletaBio" placeholder="Breve biografia / conquistas" rows="3"></textarea>
+                    <button class="btn btn-primary" onclick="salvarAtleta()">Salvar Atleta</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECAO: GALERIA -->
+    <section class="section secao-page" id="secao-galeria">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Galeria de Fotos</h2>
+                <p class="section-sub">Registros do esporte sampedrano</p>
+            </div>
+            <div class="gallery-filters">
+                <button class="chip active" onclick="filtrarGaleria('todas', this)">Todas</button>
+                <button class="chip" onclick="filtrarGaleria('futebol', this)">Futebol</button>
+                <button class="chip" onclick="filtrarGaleria('volei', this)">Volei</button>
+                <button class="chip" onclick="filtrarGaleria('basquete', this)">Basquete</button>
+                <button class="chip" onclick="filtrarGaleria('eventos', this)">Eventos</button>
+            </div>
+            <div class="gallery-grid" id="galleryGrid"></div>
+
+            <!-- ADMIN: ADICIONAR FOTO -->
+            <div class="admin-section">
+                <button class="btn btn-secondary" onclick="toggleAdmin('adminFoto')">+ Adicionar Foto</button>
+                <div class="admin-form" id="adminFoto" style="display:none;">
+                    <h3>Nova Foto</h3>
+                    <input type="text" id="fotoUrl" placeholder="URL da imagem">
+                    <input type="text" id="fotoLegenda" placeholder="Legenda / descricao">
+                    <select id="fotoCategoria">
+                        <option value="futebol">Futebol</option>
+                        <option value="volei">Volei</option>
+                        <option value="basquete">Basquete</option>
+                        <option value="eventos">Eventos</option>
+                    </select>
+                    <input type="date" id="fotoData">
+                    <button class="btn btn-primary" onclick="salvarFoto()">Adicionar</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- LIGHTBOX -->
+    <div class="lightbox" id="lightbox" onclick="fecharLightbox()">
+        <button class="lightbox-close" onclick="fecharLightbox()">&times;</button>
+        <img id="lightboxImg" src="" alt="">
+        <p class="lightbox-caption" id="lightboxCaption"></p>
+    </div>
+
+    <!-- SECAO: SOBRE -->
+    <section class="section secao-page" id="secao-sobre">
+        <div class="container">
+            <div class="about-hero">
+                <h2 class="section-title">Sobre o Portal</h2>
+                <p class="about-text">
+                    O <strong>Esporte Sao Pedro</strong> nasceu da paixao pelo esporte da nossa cidade.
+                    Nosso objetivo e registrar, valorizar e divulgar o esporte sampedrano em todas as suas formas.
+                </p>
+                <p class="about-text">
+                    De campeonatos de futebol a corridas de rua, de torneios de volei a competicoes de artes marciais,
+                    queremos que cada gol, cada ponto e cada conquista fiquem registrados na historia esportiva de Sao Pedro.
+                </p>
+                <div class="about-features">
+                    <div class="about-feature">
+                        <div class="about-feature-icon">&#9917;</div>
+                        <h3>Resultados em Tempo Real</h3>
+                        <p>Acompanhe placares, tabelas e artilheiros dos campeonatos locais.</p>
+                    </div>
+                    <div class="about-feature">
+                        <div class="about-feature-icon">&#128197;</div>
+                        <h3>Calendario Completo</h3>
+                        <p>Saiba quando e onde acontecem os jogos e eventos esportivos.</p>
+                    </div>
+                    <div class="about-feature">
+                        <div class="about-feature-icon">&#127942;</div>
+                        <h3>Atletas da Cidade</h3>
+                        <p>Conheca os atletas que representam Sao Pedro no esporte.</p>
+                    </div>
+                    <div class="about-feature">
+                        <div class="about-feature-icon">&#128247;</div>
+                        <h3>Galeria de Fotos</h3>
+                        <p>Registros visuais de jogos, eventos e conquistas.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BACKUP / EXPORT -->
+            <div class="card-panel" style="margin-top:40px;">
+                <div class="card-panel-header">
+                    <h3>Dados do Portal</h3>
+                </div>
+                <p style="color:#8892a4;margin-bottom:16px;">Seus dados ficam salvos no navegador. Faca backup regularmente.</p>
+                <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                    <button class="btn btn-primary" onclick="exportarDados()">Exportar Dados (JSON)</button>
+                    <label class="btn btn-secondary" style="cursor:pointer;">
+                        Importar Dados
+                        <input type="file" accept=".json" onchange="importarDados(event)" style="display:none;">
+                    </label>
+                    <button class="btn btn-danger" onclick="limparDados()">Limpar Tudo</button>
+                </div>
+                <p style="color:#64748b;margin-top:12px;font-size:0.8rem;" id="storageInfo"></p>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="main-footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="logo" style="margin-bottom:12px;">
+                        <div class="logo-icon">SP</div>
+                        <div class="logo-text">
+                            <span class="logo-title">ESPORTE SAO PEDRO</span>
+                            <span class="logo-sub">Portal Esportivo</span>
+                        </div>
+                    </div>
+                    <p class="footer-about">Registrando e valorizando o esporte de Sao Pedro/SP desde 2026.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Navegacao</h4>
+                    <a href="#" onclick="navegar('inicio', event)">Inicio</a>
+                    <a href="#" onclick="navegar('noticias', event)">Noticias</a>
+                    <a href="#" onclick="navegar('campeonatos', event)">Campeonatos</a>
+                    <a href="#" onclick="navegar('calendario', event)">Calendario</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Esportes</h4>
+                    <a href="#">Futebol</a>
+                    <a href="#">Volei</a>
+                    <a href="#">Basquete</a>
+                    <a href="#">Corrida & Ciclismo</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Contato</h4>
+                    <p style="color:#8892a4;">Sao Pedro - SP</p>
+                    <p style="color:#8892a4;">contato@esportesaopedro.com</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Esporte Sao Pedro. Feito com paixao pelo esporte local.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- SCROLL TO TOP -->
+    <button class="scroll-top" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Voltar ao topo">&#9650;</button>
+
+    <script src="app.js"></script>
+</body>
+</html>
