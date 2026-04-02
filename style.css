@@ -1547,11 +1547,22 @@ body.admin-mode .athlete-card-actions,
 body.admin-mode .result-card-actions { display: flex; }
 body.admin-mode .gallery-item:hover .gallery-item-actions { display: flex; }
 
-/* Admin login link */
-.admin-login-link { color: var(--cinza-500) !important; font-size: 0.7rem; }
-.admin-login-link:hover { color: var(--dourado) !important; }
-body.admin-mode .admin-login-link { display: none; }
-.admin-logout-link { color: var(--dourado) !important; font-size: 0.7rem; }
+/* Admin login/logout buttons */
+.admin-login-btn, .admin-logout-btn {
+    background: none;
+    border: 1px solid var(--cinza-500);
+    color: var(--cinza-400);
+    font-size: 0.72rem;
+    padding: 3px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: var(--font-main);
+    transition: all var(--transition);
+    margin-left: 12px;
+}
+.admin-login-btn:hover { color: var(--dourado); border-color: var(--dourado); }
+body.admin-mode .admin-login-btn { display: none; }
+.admin-logout-btn { color: var(--dourado); border-color: var(--dourado); }
 
 /* ===== VIDEO EMBED ===== */
 .news-card-video {
