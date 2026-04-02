@@ -55,16 +55,30 @@ var _isAdmin = false;
 function isAdmin() { return _isAdmin; }
 
 function loginAdmin() {
-    var senha = prompt("Digite a senha de administrador:");
+    document.getElementById("adminModal").classList.add("active");
+    document.getElementById("adminSenhaInput").value = "";
+    document.getElementById("adminError").style.display = "none";
+    setTimeout(function () { document.getElementById("adminSenhaInput").focus(); }, 100);
+}
+
+function confirmarLoginAdmin() {
+    var senha = document.getElementById("adminSenhaInput").value;
     if (senha === ADMIN_SENHA) {
         _isAdmin = true;
         sessionStorage.setItem("esp_admin", "1");
         document.body.classList.add("admin-mode");
-        alert("Modo administrador ativado! Agora voce pode publicar conteudo.");
+        fecharModalAdmin();
         renderPaginaAtual();
-    } else if (senha !== null) {
-        alert("Senha incorreta.");
+        atualizarLiveNav();
+    } else {
+        document.getElementById("adminError").style.display = "block";
+        document.getElementById("adminSenhaInput").value = "";
+        document.getElementById("adminSenhaInput").focus();
     }
+}
+
+function fecharModalAdmin() {
+    document.getElementById("adminModal").classList.remove("active");
 }
 
 function logoutAdmin() {
@@ -72,6 +86,7 @@ function logoutAdmin() {
     sessionStorage.removeItem("esp_admin");
     document.body.classList.remove("admin-mode");
     renderPaginaAtual();
+    atualizarLiveNav();
 }
 
 function checkAdminSession() {
@@ -121,6 +136,8 @@ document.addEventListener("DOMContentLoaded", function () {
     renderInicio();
     renderHeroStats();
     initScrollTop();
+    atualizarLiveNav();
+    atualizarLiveStatus();
 });
 
 function atualizarData() {
@@ -993,4 +1010,86 @@ function initScrollTop() {
             btn.classList.remove("visible");
         }
     });
+}
+
+// ===== TRANSMISSAO AO VIVO =====
+function getLive() {
+    try { return JSON.parse(localStorage.getItem("esp_live") || "null"); }
+    catch (e) { return null; }
+}
+
+function iniciarLive() {
+    var url = document.getElementById("liveUrl").value.trim();
+    var titulo = document.getElementById("liveTitulo").value.trim();
+    if (!url) return alert("Cole o link da live.");
+
+    var embedUrl = "";
+    // YouTube Live
+    var ytId = extrairYoutubeId(url);
+    if (ytId) {
+        embedUrl = "https://www.youtube.com/embed/" + ytId + "?autoplay=1";
+    }
+    // Twitch
+    var twitchMatch = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
+    if (twitchMatch) {
+        embedUrl = "https://player.twitch.tv/?channel=" + twitchMatch[1] + "&parent=" + location.hostname;
+    }
+
+    if (!embedUrl) {
+        embedUrl = url; // URL direta como fallback
+    }
+
+    var live = { url: embedUrl, titulo: titulo || "Transmissao ao Vivo", ativa: true };
+    localStorage.setItem("esp_live", JSON.stringify(live));
+
+    document.getElementById("liveUrl").value = "";
+    document.getElementById("liveTitulo").value = "";
+    atualizarLiveStatus();
+    atualizarLiveNav();
+    alert("Live iniciada! O botao AO VIVO aparecera no menu.");
+}
+
+function encerrarLive() {
+    localStorage.removeItem("esp_live");
+    atualizarLiveStatus();
+    atualizarLiveNav();
+    alert("Live encerrada.");
+}
+
+function atualizarLiveStatus() {
+    var el = document.getElementById("liveStatus");
+    if (!el) return;
+    var live = getLive();
+    if (live && live.ativa) {
+        el.textContent = "LIVE ATIVA: " + live.titulo;
+        el.style.color = "#c41e3a";
+        el.style.fontWeight = "700";
+    } else {
+        el.textContent = "Nenhuma live ativa.";
+        el.style.color = "#64748b";
+        el.style.fontWeight = "400";
+    }
+}
+
+function atualizarLiveNav() {
+    var btn = document.getElementById("navLive");
+    if (!btn) return;
+    var live = getLive();
+    btn.style.display = (live && live.ativa) ? "inline-flex" : "none";
+}
+
+function abrirLive(e) {
+    if (e) e.preventDefault();
+    var live = getLive();
+    if (!live || !live.ativa) return;
+
+    var container = document.getElementById("liveContainer");
+    container.innerHTML = '<iframe src="' + esc(live.url) + '" allowfullscreen allow="autoplay" style="width:100%;aspect-ratio:16/9;border:none;border-radius:8px;"></iframe>';
+    document.getElementById("liveTitle").textContent = live.titulo;
+    document.getElementById("liveModal").classList.add("active");
+}
+
+function fecharLiveModal() {
+    document.getElementById("liveModal").classList.remove("active");
+    document.getElementById("liveContainer").innerHTML = "";
 }
