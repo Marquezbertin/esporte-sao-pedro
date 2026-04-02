@@ -23,6 +23,8 @@
                 <div class="header-social">
                     <a href="#" title="Instagram">&#9679; Instagram</a>
                     <a href="#" title="Facebook">&#9679; Facebook</a>
+                    <a href="#" class="admin-login-link" onclick="event.preventDefault();loginAdmin();" id="adminLoginLink" title="Area do Editor">&#9881; Editor</a>
+                    <a href="#" class="admin-logout-link admin-only" onclick="event.preventDefault();logoutAdmin();" id="adminLogoutLink" title="Sair do modo editor">Sair (Admin)</a>
                 </div>
             </div>
         </div>
@@ -149,7 +151,7 @@
             <div class="news-full-grid" id="newsFullGrid"></div>
 
             <!-- ADMIN: ADICIONAR NOTICIA -->
-            <div class="admin-section">
+            <div class="admin-section admin-only">
                 <button class="btn btn-secondary" onclick="toggleAdmin('adminNoticia')">+ Adicionar Noticia</button>
                 <div class="admin-form" id="adminNoticia" style="display:none;">
                     <h3>Nova Noticia</h3>
@@ -165,6 +167,8 @@
                         <option value="geral">Geral</option>
                     </select>
                     <input type="text" id="noticiaImg" placeholder="URL da imagem (opcional)">
+                    <input type="text" id="noticiaVideo" placeholder="Link do video YouTube (opcional)">
+                    <input type="text" id="noticiaFonte" placeholder="URL da fonte original (ex: link da materia)">
                     <button class="btn btn-primary" onclick="salvarNoticia()">Publicar</button>
                 </div>
             </div>
@@ -230,7 +234,7 @@
             </div>
 
             <!-- ADMIN: ADICIONAR RESULTADO -->
-            <div class="admin-section">
+            <div class="admin-section admin-only">
                 <button class="btn btn-secondary" onclick="toggleAdmin('adminResultado')">+ Registrar Resultado</button>
                 <div class="admin-form" id="adminResultado" style="display:none;">
                     <h3>Novo Resultado</h3>
@@ -268,7 +272,7 @@
             <div class="games-list" id="calendarGamesList" style="margin-top:30px;"></div>
 
             <!-- ADMIN: ADICIONAR JOGO -->
-            <div class="admin-section">
+            <div class="admin-section admin-only">
                 <button class="btn btn-secondary" onclick="toggleAdmin('adminJogo')">+ Agendar Jogo</button>
                 <div class="admin-form" id="adminJogo" style="display:none;">
                     <h3>Novo Jogo</h3>
@@ -301,7 +305,7 @@
             <div class="athletes-grid" id="athletesGrid"></div>
 
             <!-- ADMIN: ADICIONAR ATLETA -->
-            <div class="admin-section">
+            <div class="admin-section admin-only">
                 <button class="btn btn-secondary" onclick="toggleAdmin('adminAtleta')">+ Adicionar Atleta</button>
                 <div class="admin-form" id="adminAtleta" style="display:none;">
                     <h3>Novo Atleta</h3>
@@ -341,7 +345,7 @@
             <div class="gallery-grid" id="galleryGrid"></div>
 
             <!-- ADMIN: ADICIONAR FOTO -->
-            <div class="admin-section">
+            <div class="admin-section admin-only">
                 <button class="btn btn-secondary" onclick="toggleAdmin('adminFoto')">+ Adicionar Foto</button>
                 <div class="admin-form" id="adminFoto" style="display:none;">
                     <h3>Nova Foto</h3>

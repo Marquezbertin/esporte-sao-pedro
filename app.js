@@ -48,79 +48,73 @@ var ESPORTES = [
     { id: "artes-marciais", nome: "Artes Marciais", icon: "\uD83E\uDD4B", cor: "#dc2626" }
 ];
 
-// ===== DADOS DEMO =====
-function carregarDadosDemo() {
-    if (localStorage.getItem("esp_demo_loaded")) return;
+// ===== MODO ADMIN (senha para editor/jornalista) =====
+var ADMIN_SENHA = "sp2026";
+var _isAdmin = false;
 
-    var noticias = [
-        { id: gerarId(), titulo: "Campeonato Municipal de Futebol 2026 comeca em maio", corpo: "A Prefeitura de Sao Pedro confirmou o inicio do Campeonato Municipal de Futebol para o dia 10 de maio. Doze equipes ja confirmaram participacao. Os jogos acontecerao no Estadio Municipal aos sabados e domingos.", categoria: "futebol", imagem: "", data: "2026-04-01" },
-        { id: gerarId(), titulo: "Torneio de Volei reune 8 equipes no Ginasio Municipal", corpo: "O Primeiro Torneio Aberto de Volei de Sao Pedro reuniu atletas de toda a regiao. A equipe Volei SP ficou com o titulo apos vencer a final por 3 sets a 1.", categoria: "volei", imagem: "", data: "2026-03-28" },
-        { id: gerarId(), titulo: "Corrida de Rua Sao Pedro 10K bate recorde de inscritos", corpo: "Com mais de 500 inscritos, a 3a edicao da Corrida de Rua Sao Pedro 10K promete ser a maior da historia. A largada sera na Praca Central no dia 15 de abril.", categoria: "corrida", imagem: "", data: "2026-03-25" },
-        { id: gerarId(), titulo: "Basquete sampedrano conquista vice no regional", corpo: "A selecao de basquete de Sao Pedro conquistou o vice-campeonato regional apos uma campanha invicta ate a final. O destaque ficou para o armador Lucas Santos com media de 22 pontos por jogo.", categoria: "basquete", imagem: "", data: "2026-03-20" },
-        { id: gerarId(), titulo: "Ciclistas de Sao Pedro participam do Desafio Serra da Mantiqueira", corpo: "Um grupo de 15 ciclistas representou Sao Pedro no Desafio Serra da Mantiqueira, com destino de 120km. Tres atletas ficaram entre os 20 primeiros colocados.", categoria: "ciclismo", imagem: "", data: "2026-03-15" },
-        { id: gerarId(), titulo: "Academia de Jiu-Jitsu revela talentos juvenis", corpo: "A Academia Arte Suave de Sao Pedro conquistou 5 medalhas no Campeonato Paulista de Jiu-Jitsu na categoria juvenil. O destaque foi Maria Clara, ouro na categoria 55kg.", categoria: "artes-marciais", imagem: "", data: "2026-03-10" }
-    ];
+function isAdmin() { return _isAdmin; }
 
-    var resultados = [
-        { id: gerarId(), esporte: "futebol", timeCasa: "Atletico SP", placarCasa: 3, placarFora: 1, timeFora: "Uniao FC", data: "2026-03-30", local: "Estadio Municipal", artilheiros: "Marcos 2, Rafael 1" },
-        { id: gerarId(), esporte: "futebol", timeCasa: "Real Sao Pedro", placarCasa: 2, placarFora: 2, timeFora: "Esporte Clube", data: "2026-03-30", local: "Campo do Bairro Alto", artilheiros: "Thiago 1, Pedro 1, Joao 1, Leandro 1" },
-        { id: gerarId(), esporte: "futebol", timeCasa: "Juventude FC", placarCasa: 1, placarFora: 0, timeFora: "Cruzeiro SP", data: "2026-03-23", local: "Estadio Municipal", artilheiros: "Carlos 1" },
-        { id: gerarId(), esporte: "volei", timeCasa: "Volei SP", placarCasa: 3, placarFora: 1, timeFora: "Volei Piracicaba", data: "2026-03-28", local: "Ginasio Municipal", artilheiros: "" },
-        { id: gerarId(), esporte: "basquete", timeCasa: "Basquete SP", placarCasa: 78, placarFora: 82, timeFora: "Limeira Basquete", data: "2026-03-20", local: "Ginasio Municipal", artilheiros: "Lucas 22, Pedro 18" }
-    ];
-
-    var jogos = [
-        { id: gerarId(), esporte: "futebol", timeCasa: "Atletico SP", timeFora: "Juventude FC", data: "2026-04-05", hora: "15:00", local: "Estadio Municipal" },
-        { id: gerarId(), esporte: "futebol", timeCasa: "Cruzeiro SP", timeFora: "Real Sao Pedro", data: "2026-04-05", hora: "17:00", local: "Campo do Bairro Alto" },
-        { id: gerarId(), esporte: "futebol", timeCasa: "Esporte Clube", timeFora: "Uniao FC", data: "2026-04-06", hora: "10:00", local: "Estadio Municipal" },
-        { id: gerarId(), esporte: "corrida", timeCasa: "Corrida Sao Pedro 10K", timeFora: "", data: "2026-04-15", hora: "07:00", local: "Praca Central" },
-        { id: gerarId(), esporte: "volei", timeCasa: "Volei SP", timeFora: "Volei Rio Claro", data: "2026-04-12", hora: "19:00", local: "Ginasio Municipal" },
-        { id: gerarId(), esporte: "basquete", timeCasa: "Basquete SP", timeFora: "Piracicaba Basquete", data: "2026-04-19", hora: "16:00", local: "Ginasio Municipal" },
-        { id: gerarId(), esporte: "ciclismo", timeCasa: "Pedal Sao Pedro - 60km", timeFora: "", data: "2026-04-20", hora: "06:30", local: "Praca da Matriz" }
-    ];
-
-    var classificacao = [
-        { time: "Atletico SP", p: 15, j: 6, v: 5, e: 0, d: 1, gp: 14, gc: 5 },
-        { time: "Real Sao Pedro", p: 13, j: 6, v: 4, e: 1, d: 1, gp: 12, gc: 7 },
-        { time: "Juventude FC", p: 10, j: 6, v: 3, e: 1, d: 2, gp: 8, gc: 6 },
-        { time: "Esporte Clube", p: 9, j: 6, v: 2, e: 3, d: 1, gp: 10, gc: 8 },
-        { time: "Cruzeiro SP", p: 7, j: 6, v: 2, e: 1, d: 3, gp: 7, gc: 10 },
-        { time: "Uniao FC", p: 4, j: 6, v: 1, e: 1, d: 4, gp: 5, gc: 12 },
-        { time: "Santos SP", p: 3, j: 6, v: 0, e: 3, d: 3, gp: 4, gc: 9 },
-        { time: "Palmeiras SP", p: 2, j: 6, v: 0, e: 2, d: 4, gp: 3, gc: 11 }
-    ];
-
-    var artilheiros = [
-        { nome: "Marcos Silva", time: "Atletico SP", gols: 8, esporte: "futebol" },
-        { nome: "Rafael Costa", time: "Real Sao Pedro", gols: 6, esporte: "futebol" },
-        { nome: "Thiago Mendes", time: "Esporte Clube", gols: 5, esporte: "futebol" },
-        { nome: "Carlos Eduardo", time: "Juventude FC", gols: 4, esporte: "futebol" },
-        { nome: "Pedro Henrique", time: "Real Sao Pedro", gols: 4, esporte: "futebol" },
-        { nome: "Lucas Santos", time: "Basquete SP", gols: 132, esporte: "basquete" }
-    ];
-
-    var atletas = [
-        { id: gerarId(), nome: "Marcos Silva", esporte: "futebol", time: "Atletico SP", posicao: "Atacante", imagem: "", bio: "Artilheiro do campeonato municipal com 8 gols em 6 jogos. Revelado nas categorias de base do Atletico SP." },
-        { id: gerarId(), nome: "Lucas Santos", esporte: "basquete", time: "Basquete SP", posicao: "Armador", imagem: "", bio: "Media de 22 pontos por jogo. Destaque da selecao de Sao Pedro no campeonato regional." },
-        { id: gerarId(), nome: "Maria Clara Souza", esporte: "artes-marciais", time: "Academia Arte Suave", posicao: "Jiu-Jitsu - 55kg", imagem: "", bio: "Ouro no Campeonato Paulista Juvenil de Jiu-Jitsu. Atleta promessa de Sao Pedro." },
-        { id: gerarId(), nome: "Ana Paula Ferreira", esporte: "corrida", time: "Sao Pedro Runners", posicao: "10K / Meia Maratona", imagem: "", bio: "Melhor tempo feminino na Corrida Sao Pedro 10K nas ultimas duas edicoes." },
-        { id: gerarId(), nome: "Roberto Almeida", esporte: "ciclismo", time: "Pedal SP", posicao: "Mountain Bike", imagem: "", bio: "Top 20 no Desafio Serra da Mantiqueira. 5 anos de experiencia em competicoes regionais." }
-    ];
-
-    setData("noticias", noticias);
-    setData("resultados", resultados);
-    setData("jogos", jogos);
-    setData("classificacao_futebol", classificacao);
-    setData("artilheiros", artilheiros);
-    setData("atletas", atletas);
-    setData("galeria", []);
-
-    localStorage.setItem("esp_demo_loaded", "1");
+function loginAdmin() {
+    var senha = prompt("Digite a senha de administrador:");
+    if (senha === ADMIN_SENHA) {
+        _isAdmin = true;
+        sessionStorage.setItem("esp_admin", "1");
+        document.body.classList.add("admin-mode");
+        alert("Modo administrador ativado! Agora voce pode publicar conteudo.");
+        renderPaginaAtual();
+    } else if (senha !== null) {
+        alert("Senha incorreta.");
+    }
 }
+
+function logoutAdmin() {
+    _isAdmin = false;
+    sessionStorage.removeItem("esp_admin");
+    document.body.classList.remove("admin-mode");
+    renderPaginaAtual();
+}
+
+function checkAdminSession() {
+    if (sessionStorage.getItem("esp_admin") === "1") {
+        _isAdmin = true;
+        document.body.classList.add("admin-mode");
+    }
+}
+
+function renderPaginaAtual() {
+    var ativa = document.querySelector(".secao-page.active");
+    if (ativa) {
+        var id = ativa.id.replace("secao-", "");
+        navegar(id, null);
+    }
+}
+
+// ===== YOUTUBE EMBED HELPER =====
+function extrairYoutubeId(url) {
+    if (!url) return null;
+    var match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/);
+    return match ? match[1] : null;
+}
+
+function renderMidia(imagem, video, alt) {
+    // Video do YouTube
+    if (video) {
+        var ytId = extrairYoutubeId(video);
+        if (ytId) {
+            return '<div class="news-card-video"><iframe src="https://www.youtube.com/embed/' + ytId + '" frameborder="0" allowfullscreen loading="lazy"></iframe></div>';
+        }
+        // Outro video (url direta)
+        return '<div class="news-card-video"><video src="' + esc(video) + '" controls preload="metadata"></video></div>';
+    }
+    // Imagem
+    if (imagem) {
+        return '<div class="news-card-img"><img src="' + esc(imagem) + '" alt="' + esc(alt || "") + '" loading="lazy"></div>';
+    }
+    return '';
 
 // ===== INICIALIZACAO =====
 document.addEventListener("DOMContentLoaded", function () {
-    carregarDadosDemo();
+    checkAdminSession();
     atualizarData();
     renderTicker();
     renderSportsGrid();
@@ -283,21 +277,29 @@ function renderNoticiasHome() {
 function renderNewsCard(n) {
     var esporte = ESPORTES.find(function (e) { return e.id === n.categoria; });
     var icon = esporte ? esporte.icon : "\uD83D\uDCF0";
-    var imgHtml = n.imagem
-        ? '<div class="news-card-img"><img src="' + esc(n.imagem) + '" alt="' + esc(n.titulo) + '"></div>'
-        : '<div class="news-card-img">' + icon + '</div>';
+    var midiaHtml = renderMidia(n.imagem, n.video, n.titulo);
+    if (!midiaHtml) midiaHtml = '<div class="news-card-img">' + icon + '</div>';
+
+    var fonteHtml = n.fonte
+        ? '<div class="news-card-fonte"><a href="' + esc(n.fonte) + '" target="_blank" rel="noopener" onclick="event.stopPropagation();">Ver fonte original &rarr;</a></div>'
+        : '';
+
+    var adminHtml = isAdmin()
+        ? '<div class="news-card-actions admin-only">' +
+                '<button onclick="event.stopPropagation();editarNoticia(\'' + n.id + '\')">Editar</button>' +
+                '<button onclick="event.stopPropagation();deletarNoticia(\'' + n.id + '\')">Excluir</button>' +
+            '</div>'
+        : '';
 
     return '<div class="news-card">' +
-        imgHtml +
+        midiaHtml +
         '<div class="news-card-body">' +
             '<span class="news-card-cat ' + esc(n.categoria) + '">' + esc(n.categoria) + '</span>' +
             '<h3 class="news-card-title">' + esc(n.titulo) + '</h3>' +
             '<p class="news-card-excerpt">' + esc(n.corpo) + '</p>' +
             '<div class="news-card-date">' + formatarData(n.data) + '</div>' +
-            '<div class="news-card-actions">' +
-                '<button onclick="event.stopPropagation();editarNoticia(\'' + n.id + '\')">Editar</button>' +
-                '<button onclick="event.stopPropagation();deletarNoticia(\'' + n.id + '\')">Excluir</button>' +
-            '</div>' +
+            fonteHtml +
+            adminHtml +
         '</div></div>';
 }
 
@@ -405,6 +407,8 @@ function salvarNoticia() {
     var corpo = document.getElementById("noticiaBody").value.trim();
     var cat = document.getElementById("noticiaCategoria").value;
     var img = document.getElementById("noticiaImg").value.trim();
+    var video = document.getElementById("noticiaVideo").value.trim();
+    var fonte = document.getElementById("noticiaFonte").value.trim();
     if (!titulo) return alert("Preencha o titulo.");
 
     var noticias = getData("noticias");
@@ -414,6 +418,8 @@ function salvarNoticia() {
         corpo: corpo,
         categoria: cat,
         imagem: img,
+        video: video,
+        fonte: fonte,
         data: new Date().toISOString().split("T")[0]
     });
     setData("noticias", noticias);
@@ -421,6 +427,8 @@ function salvarNoticia() {
     document.getElementById("noticiaTitle").value = "";
     document.getElementById("noticiaBody").value = "";
     document.getElementById("noticiaImg").value = "";
+    document.getElementById("noticiaVideo").value = "";
+    document.getElementById("noticiaFonte").value = "";
     document.getElementById("adminNoticia").style.display = "none";
 
     renderNoticias();

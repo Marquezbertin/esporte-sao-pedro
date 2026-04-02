@@ -1526,6 +1526,63 @@ img { max-width: 100%; display: block; }
     .footer-grid { grid-template-columns: 1fr; }
 }
 
+/* ===== ADMIN MODE ===== */
+/* Esconder tudo de admin para leitores */
+.admin-only { display: none !important; }
+body.admin-mode .admin-only { display: flex !important; }
+body.admin-mode .admin-section.admin-only { display: block !important; }
+body.admin-mode .news-card-actions.admin-only { display: flex !important; }
+body.admin-mode .athlete-card-actions { display: flex !important; }
+body.admin-mode .result-card-actions { display: flex !important; }
+body.admin-mode .gallery-item-actions { display: flex !important; }
+
+/* Esconder acoes para leitores */
+.news-card-actions,
+.athlete-card-actions,
+.result-card-actions { display: none; }
+.gallery-item .gallery-item-actions { display: none; }
+
+body.admin-mode .news-card-actions,
+body.admin-mode .athlete-card-actions,
+body.admin-mode .result-card-actions { display: flex; }
+body.admin-mode .gallery-item:hover .gallery-item-actions { display: flex; }
+
+/* Admin login link */
+.admin-login-link { color: var(--cinza-500) !important; font-size: 0.7rem; }
+.admin-login-link:hover { color: var(--dourado) !important; }
+body.admin-mode .admin-login-link { display: none; }
+.admin-logout-link { color: var(--dourado) !important; font-size: 0.7rem; }
+
+/* ===== VIDEO EMBED ===== */
+.news-card-video {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: #000;
+}
+
+.news-card-video iframe,
+.news-card-video video {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+/* ===== FONTE LINK ===== */
+.news-card-fonte {
+    margin-top: 10px;
+}
+
+.news-card-fonte a {
+    color: var(--azul-medio);
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: color var(--transition);
+}
+
+.news-card-fonte a:hover {
+    color: var(--vermelho);
+}
+
 /* ===== ANIMATIONS ===== */
 @keyframes fadeInUp {
     from { opacity: 0; transform: translateY(20px); }
