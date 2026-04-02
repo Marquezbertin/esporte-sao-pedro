@@ -28,14 +28,19 @@ function formatarDataCurta(dateStr) {
 var MESES_FULL = ["Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 var DIAS_SEMANA = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 
-// ===== STORAGE =====
+// ===== STORAGE (Supabase na nuvem + localStorage como cache) =====
 function getData(key) {
+    // Primeiro tenta do cache do Supabase (carregado no init)
+    var cached = SupaDB.getCache()[key];
+    if (cached !== undefined && cached !== null) return cached;
+    // Fallback localStorage
     try { return JSON.parse(localStorage.getItem("esp_" + key) || "[]"); }
     catch (e) { return []; }
 }
 
 function setData(key, data) {
-    localStorage.setItem("esp_" + key, JSON.stringify(data));
+    // Salvar na nuvem (Supabase) + localStorage como cache
+    SupaDB.setItem(key, data);
 }
 
 // ===== ESPORTES =====
@@ -141,6 +146,8 @@ function limparDadosDemo() {
 
 // ===== EDITAR ABA SOBRE =====
 function getSobreTextos() {
+    var cached = SupaDB.getCache()["sobre"];
+    if (cached !== undefined) return cached;
     try { return JSON.parse(localStorage.getItem("esp_sobre") || "null"); }
     catch(e) { return null; }
 }
@@ -161,7 +168,7 @@ function editarSobre() {
     if (t1 === null) return;
     var t2 = prompt("Texto secundario (paragrafo 2):", saved.texto2 || document.getElementById("sobreTexto2").textContent);
     if (t2 === null) return;
-    localStorage.setItem("esp_sobre", JSON.stringify({ texto1: t1, texto2: t2 }));
+    SupaDB.setItem("sobre", { texto1: t1, texto2: t2 });
     document.getElementById("sobreTexto1").textContent = t1;
     document.getElementById("sobreTexto2").textContent = t2;
 }
@@ -170,16 +177,24 @@ function editarSobre() {
 document.addEventListener("DOMContentLoaded", function () {
     limparDadosDemo();
     checkAdminSession();
-    atualizarData();
-    renderTicker();
-    renderSportsGrid();
-    renderInicio();
-    renderHeroStats();
-    initScrollTop();
-    atualizarLiveNav();
-    atualizarLiveStatus();
-    renderSobreEditavel();
-    renderPatrocinadoresPublico();
+
+    // Carregar dados do Supabase e depois renderizar
+    SupaDB.loadAll().then(function () {
+        atualizarData();
+        renderTicker();
+        renderSportsGrid();
+        renderInicio();
+        renderHeroStats();
+        initScrollTop();
+        atualizarLiveNav();
+        atualizarLiveStatus();
+        renderSobreEditavel();
+        renderPatrocinadoresPublico();
+
+        // Esconder loading
+        var loadEl = document.getElementById("supaLoading");
+        if (loadEl) loadEl.style.display = "none";
+    });
 });
 
 function atualizarData() {
@@ -1218,6 +1233,8 @@ function initScrollTop() {
 
 // ===== TRANSMISSAO AO VIVO =====
 function getLive() {
+    var cached = SupaDB.getCache()["live"];
+    if (cached !== undefined) return cached;
     try { return JSON.parse(localStorage.getItem("esp_live") || "null"); }
     catch (e) { return null; }
 }
@@ -1244,7 +1261,7 @@ function iniciarLive() {
     }
 
     var live = { url: embedUrl, titulo: titulo || "Transmissao ao Vivo", ativa: true };
-    localStorage.setItem("esp_live", JSON.stringify(live));
+    SupaDB.setItem("live", live);
 
     document.getElementById("liveUrl").value = "";
     document.getElementById("liveTitulo").value = "";
@@ -1254,7 +1271,7 @@ function iniciarLive() {
 }
 
 function encerrarLive() {
-    localStorage.removeItem("esp_live");
+    SupaDB.setItem("live", null);
     atualizarLiveStatus();
     atualizarLiveNav();
     alert("Live encerrada.");
