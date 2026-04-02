@@ -511,6 +511,14 @@
         </div>
     </div>
 
+    <!-- MODAL NOTICIA COMPLETA -->
+    <div class="modal-overlay" id="noticiaModal" onclick="if(event.target===this)fecharNoticiaModal()">
+        <div class="modal modal-wide">
+            <button class="modal-close" onclick="fecharNoticiaModal()">&times;</button>
+            <div class="noticia-modal-content" id="noticiaModalContent"></div>
+        </div>
+    </div>
+
     <!-- SCROLL TO TOP -->
     <button class="scroll-top" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Voltar ao topo">&#9650;</button>
 

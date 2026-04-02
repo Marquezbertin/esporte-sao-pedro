@@ -360,7 +360,8 @@ function renderNewsCard(n) {
     var midiaHtml = renderMidia(n.imagem, n.video, n.titulo);
     if (!midiaHtml) midiaHtml = '<div class="news-card-img">' + icon + '</div>';
 
-    var fonteHtml = n.fonte
+    var temFonteUrl = n.fonte && /^https?:\/\//i.test(n.fonte.trim());
+    var fonteHtml = temFonteUrl
         ? '<div class="news-card-fonte"><a href="' + esc(n.fonte) + '" target="_blank" rel="noopener" onclick="event.stopPropagation();">Ver fonte original &rarr;</a></div>'
         : '';
 
@@ -371,7 +372,7 @@ function renderNewsCard(n) {
             '</div>'
         : '';
 
-    return '<div class="news-card">' +
+    return '<div class="news-card" onclick="abrirNoticia(\'' + n.id + '\')">' +
         midiaHtml +
         '<div class="news-card-body">' +
             '<span class="news-card-cat ' + esc(n.categoria) + '">' + esc(n.categoria) + '</span>' +
@@ -381,6 +382,47 @@ function renderNewsCard(n) {
             fonteHtml +
             adminHtml +
         '</div></div>';
+}
+
+function abrirNoticia(id) {
+    var noticias = getData("noticias");
+    var n = noticias.find(function (x) { return x.id === id; });
+    if (!n) return;
+
+    var esporte = ESPORTES.find(function (e) { return e.id === n.categoria; });
+    var catClass = esc(n.categoria);
+
+    var midiaHtml = '';
+    if (n.video) {
+        var ytId = extrairYoutubeId(n.video);
+        if (ytId) {
+            midiaHtml = '<div class="news-modal-video"><iframe src="https://www.youtube.com/embed/' + ytId + '" frameborder="0" allowfullscreen></iframe></div>';
+        } else {
+            midiaHtml = '<div class="news-modal-video"><video src="' + esc(n.video) + '" controls></video></div>';
+        }
+    } else if (n.imagem) {
+        midiaHtml = '<img class="news-modal-img" src="' + esc(n.imagem) + '" alt="' + esc(n.titulo) + '">';
+    }
+
+    var temFonteUrl = n.fonte && /^https?:\/\//i.test(n.fonte.trim());
+    var fonteHtml = temFonteUrl
+        ? '<div class="news-modal-fonte"><a href="' + esc(n.fonte) + '" target="_blank" rel="noopener">Ver fonte original &rarr;</a></div>'
+        : '';
+
+    var content = document.getElementById("noticiaModalContent");
+    content.innerHTML =
+        midiaHtml +
+        '<span class="news-modal-cat news-card-cat ' + catClass + '">' + esc(n.categoria) + '</span>' +
+        '<h2 class="news-modal-title">' + esc(n.titulo) + '</h2>' +
+        '<div class="news-modal-date">' + formatarData(n.data) + '</div>' +
+        '<div class="news-modal-text">' + esc(n.corpo) + '</div>' +
+        fonteHtml;
+
+    document.getElementById("noticiaModal").classList.add("active");
+}
+
+function fecharNoticiaModal() {
+    document.getElementById("noticiaModal").classList.remove("active");
 }
 
 function renderProximosJogos() {
