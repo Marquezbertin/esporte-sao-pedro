@@ -259,7 +259,7 @@ function renderHeroStats() {
         if (times.indexOf(c.time) === -1) times.push(c.time);
     });
 
-    animateCounter("statTimes", times.length || 8);
+    animateCounter("statTimes", times.length);
     animateCounter("statJogos", jogos.length + resultados.length);
     animateCounter("statGols", totalGols);
 }
