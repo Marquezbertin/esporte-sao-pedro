@@ -575,6 +575,43 @@
                 <div id="adminPatroList" style="margin-top:12px;"></div>
             </div>
 
+            <!-- ADMIN: PAUTAS / REDACAO -->
+            <div class="card-panel admin-only" style="margin-top:40px;">
+                <div class="card-panel-header">
+                    <h3>Pautas da Redacao</h3>
+                    <span class="badge">ADMIN</span>
+                </div>
+                <p style="color:#8892a4;margin-bottom:16px;">Sugestoes de materia e templates prontos. Clique em "Usar como base" para criar a noticia direto.</p>
+
+                <div class="admin-form" style="display:block;margin-top:0;border-color:var(--cinza-200);">
+                    <h4 style="font-size:0.85rem;margin-bottom:8px;">Criar nova pauta</h4>
+                    <input type="text" id="pautaTitulo" placeholder="Titulo da pauta (ex: Resultado CRV Voleibol - Rodada 2)">
+                    <select id="pautaCategoria">
+                        <option value="futebol">Futebol</option>
+                        <option value="volei">Volei</option>
+                        <option value="basquete">Basquete</option>
+                        <option value="corrida">Corrida</option>
+                        <option value="ciclismo">Ciclismo</option>
+                        <option value="artes-marciais">Artes Marciais</option>
+                        <option value="geral">Geral</option>
+                    </select>
+                    <select id="pautaPrioridade">
+                        <option value="alta">Prioridade Alta</option>
+                        <option value="media">Prioridade Media</option>
+                        <option value="baixa">Prioridade Baixa</option>
+                    </select>
+                    <textarea id="pautaNotas" placeholder="Anotacoes, fontes, contatos, dados a coletar..." rows="3"></textarea>
+                    <input type="date" id="pautaPrazo" placeholder="Prazo">
+                    <button class="btn btn-primary" onclick="salvarPauta()">Salvar Pauta</button>
+                </div>
+
+                <div id="pautasTemplateList" style="margin-top:20px;"></div>
+                <div style="border-top:1px solid var(--cinza-200);margin-top:20px;padding-top:16px;">
+                    <h4 style="font-size:0.85rem;margin-bottom:12px;">Minhas pautas</h4>
+                    <div id="adminPautasList"></div>
+                </div>
+            </div>
+
             <!-- ADMIN: ENQUETE -->
             <div class="card-panel admin-only" style="margin-top:40px;">
                 <div class="card-panel-header">

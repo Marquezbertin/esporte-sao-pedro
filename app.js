@@ -322,7 +322,7 @@ function navegar(secao, e) {
         case "galeria": renderGaleria(); break;
         case "opiniao": renderOpinioes(); break;
         case "conquistas": renderConquistas(); break;
-        case "sobre": atualizarStorageInfo(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminTimes(); renderNewsletterAdmin(); break;
+        case "sobre": atualizarStorageInfo(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderTemplatesPauta(); renderAdminPautas(); renderAdminEnquetes(); renderAdminResumos(); renderAdminTimes(); renderNewsletterAdmin(); break;
     }
 
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -813,6 +813,193 @@ function deletarNoticia(id) {
     renderNoticias();
     renderInicio();
     renderTicker();
+}
+
+// ===== PAUTAS DA REDACAO =====
+var TEMPLATES_PAUTA = [
+    {
+        titulo: "Resultado de jogo / rodada",
+        categoria: "futebol",
+        template: "RESULTADO: [Time A] [X] x [X] [Time B]\n\nData: [data]\nLocal: [local]\nCampeonato: [nome do campeonato]\n\nDestaques da partida:\n- Gols: [jogador] aos [min]\n- Cartoes: [detalhes]\n\nClassificacao atualizada:\n1o - [time] - [pts] pontos\n2o - [time] - [pts] pontos\n\nProximo jogo: [data] - [adversario]"
+    },
+    {
+        titulo: "Cobertura de corrida / prova de atletismo",
+        categoria: "corrida",
+        template: "CORRIDA: [Nome do evento]\n\nData: [data]\nLocal: [cidade]\nPercurso: [distancia] km\nParticipantes de Sao Pedro: [numero]\n\nResultados - Podio por categoria:\n\nCategoria [faixa etaria]:\n1o - [nome] - [tempo]\n2o - [nome] - [tempo]\n3o - [nome] - [tempo]\n\nEquipe de Sao Pedro recebeu: [trofeu/resultado geral]\n\nAtletas que representaram SP:\n[lista de nomes]\n\nFonte: [organizacao/site do evento]"
+    },
+    {
+        titulo: "Resultado CRV Voleibol",
+        categoria: "volei",
+        template: "CIRCUITO REGIONAL DE VOLEIBOL - [Etapa/Rodada]\n\nData: [data]\nLocal: [ginasio] - [cidade]\n\nCategoria Adulto:\nSao Pedro [X] x [X] [Adversario]\nSets: [detalhes]\nMelhor jogador: [nome]\n\nCategoria Sub-21 Masculino:\nSao Pedro [X] x [X] [Adversario]\nMelhor jogador: [nome]\n\nCategoria Sub-21 Feminino:\nSao Pedro [X] x [X] [Adversario]\n\nProxima etapa: [data] em [cidade]"
+    },
+    {
+        titulo: "Campeonato de Futsal / Society",
+        categoria: "futebol",
+        template: "CAMPEONATO MUNICIPAL DE [FUTSAL/SOCIETY] 2026\n\nCategoria: [Sub-9/Sub-11/Sub-13/Sub-15]\nRodada: [numero]\nData: [data]\nLocal: [local]\n\nResultados:\n[Time A] [X] x [X] [Time B]\n[Time C] [X] x [X] [Time D]\n\nClassificacao do grupo:\n[tabela]\n\nDestaques: [gols bonitos, jogadores, publico]"
+    },
+    {
+        titulo: "Evento esportivo / Premiacao",
+        categoria: "geral",
+        template: "EVENTO: [Nome do evento]\n\nData: [data]\nLocal: [local]\nOrganizacao: Secretaria de Esporte e Lazer\n\nO que aconteceu:\n[descricao]\n\nParticipantes/Premiados:\n- [nome] - [conquista]\n- [nome] - [conquista]\n\nFotos: [coletar no local]\nContato: Marcelo Vieira - (19) 3481-9393"
+    },
+    {
+        titulo: "Perfil de atleta destaque",
+        categoria: "geral",
+        template: "ATLETA: [Nome completo]\nIdade: [idade]\nEsporte: [modalidade]\nEquipe: [time/EMA]\n\nTrajetoria:\n[como comecou, ha quanto tempo pratica]\n\nPrincipais conquistas:\n- [ano] - [conquista]\n- [ano] - [conquista]\n\nProximos objetivos:\n[metas, competicoes]\n\nFrase do atleta:\n\"[depoimento]\"\n\nFoto: [coletar]"
+    },
+    {
+        titulo: "Resumo semanal do esporte",
+        categoria: "geral",
+        template: "RESUMO DA SEMANA - [data inicio] a [data fim]\n\nFUTEBOL/FUTSAL:\n- [resultado ou novidade]\n\nVOLEI:\n- [resultado ou novidade]\n\nCORRIDA/ATLETISMO:\n- [resultado ou novidade]\n\nAGENDA DA SEMANA:\n- [dia] - [evento] - [local] - [horario]\n- [dia] - [evento] - [local] - [horario]\n\nDESTAQUE DA SEMANA:\n[atleta ou equipe que se destacou]"
+    },
+    {
+        titulo: "XV Copa Voleibol Adaptado - Proxima rodada",
+        categoria: "volei",
+        template: "XV COPA DE VOLEIBOL ADAPTADO - [Rodada X]\n\nData: [data]\nLocal: [cidade sede]\nCidades: Sao Pedro, Jundiai, Lencois Paulista, Limeira, Mogi Guacu, Piracicaba, Tatui\n\nResultados Sao Pedro:\nFeminino 58+: SP [X] x [X] [adversario]\nMasculino 58+: SP [X] x [X] [adversario]\nFeminino 68+: SP [X] x [X] [adversario]\nMasculino 68+: SP [X] x [X] [adversario]\n\nClassificacao geral: [posicao]"
+    },
+    {
+        titulo: "Triathlon / Duathlon / Aquathlon",
+        categoria: "corrida",
+        template: "COPA INTERIOR DE [TRIATHLON/DUATHLON/AQUATHLON]\n\nEtapa: [numero/cidade]\nData: [data]\n\nAtletas de Sao Pedro:\n- [nome] - [categoria] - [colocacao]\n\nResultado geral da equipe SP:\n[posicao entre X municipios]\n\nTrofeus conquistados: [numero]\nAcumulado na temporada: [X] trofeus\n\nSao Pedro ocupa a [X]a posicao geral (de 223 municipios)"
+    }
+];
+
+function renderTemplatesPauta() {
+    var container = document.getElementById("pautasTemplateList");
+    if (!container) return;
+    container.innerHTML = '<h4 style="font-size:0.85rem;margin-bottom:12px;">Templates prontos</h4>';
+    TEMPLATES_PAUTA.forEach(function (t, i) {
+        container.innerHTML +=
+            '<div class="pauta-template-card">' +
+                '<div class="pauta-template-header">' +
+                    '<span class="news-card-cat ' + t.categoria + '" style="font-size:0.65rem;">' + t.categoria + '</span>' +
+                    '<strong style="font-size:0.85rem;">' + esc(t.titulo) + '</strong>' +
+                '</div>' +
+                '<div class="pauta-template-actions">' +
+                    '<button class="btn btn-sm" onclick="usarTemplate(' + i + ')">Usar como base</button>' +
+                    '<button class="btn btn-sm" onclick="copiarTemplate(' + i + ')">Copiar texto</button>' +
+                '</div>' +
+            '</div>';
+    });
+}
+
+function usarTemplate(idx) {
+    var t = TEMPLATES_PAUTA[idx];
+    if (!t) return;
+    // Preencher o form de nova noticia
+    document.getElementById("noticiaTitle").value = t.titulo;
+    document.getElementById("noticiaBody").innerHTML = esc(t.template).replace(/\n/g, '<br>');
+    document.getElementById("noticiaCategoria").value = t.categoria;
+    // Navegar para noticias e abrir form
+    navegar("noticias", null);
+    var form = document.getElementById("adminNoticia");
+    if (form) form.style.display = "block";
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+}
+
+function copiarTemplate(idx) {
+    var t = TEMPLATES_PAUTA[idx];
+    if (!t) return;
+    var texto = t.titulo + "\n\n" + t.template;
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(texto).then(function () { alert("Template copiado!"); });
+    } else {
+        prompt("Copie:", texto);
+    }
+}
+
+function salvarPauta() {
+    var titulo = document.getElementById("pautaTitulo").value.trim();
+    var categoria = document.getElementById("pautaCategoria").value;
+    var prioridade = document.getElementById("pautaPrioridade").value;
+    var notas = document.getElementById("pautaNotas").value.trim();
+    var prazo = document.getElementById("pautaPrazo").value;
+    if (!titulo) return alert("Preencha o titulo da pauta.");
+
+    var pautas = getData("pautas");
+    pautas.push({
+        id: gerarId(),
+        titulo: titulo,
+        categoria: categoria,
+        prioridade: prioridade,
+        notas: notas,
+        prazo: prazo,
+        status: "pendente",
+        data: new Date().toISOString().split("T")[0]
+    });
+    setData("pautas", pautas);
+
+    document.getElementById("pautaTitulo").value = "";
+    document.getElementById("pautaNotas").value = "";
+    document.getElementById("pautaPrazo").value = "";
+    renderAdminPautas();
+    alert("Pauta salva!");
+}
+
+function marcarPautaFeita(id) {
+    var pautas = getData("pautas");
+    var p = pautas.find(function (x) { return x.id === id; });
+    if (p) p.status = (p.status === "pendente") ? "feita" : "pendente";
+    setData("pautas", pautas);
+    renderAdminPautas();
+}
+
+function deletarPauta(id) {
+    if (!confirm("Excluir pauta?")) return;
+    var pautas = getData("pautas").filter(function (x) { return x.id !== id; });
+    setData("pautas", pautas);
+    renderAdminPautas();
+}
+
+function usarPautaComoNoticia(id) {
+    var pautas = getData("pautas");
+    var p = pautas.find(function (x) { return x.id === id; });
+    if (!p) return;
+    document.getElementById("noticiaTitle").value = p.titulo;
+    document.getElementById("noticiaBody").innerHTML = esc(p.notas || "").replace(/\n/g, '<br>');
+    document.getElementById("noticiaCategoria").value = p.categoria;
+    navegar("noticias", null);
+    var form = document.getElementById("adminNoticia");
+    if (form) form.style.display = "block";
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+}
+
+function renderAdminPautas() {
+    var container = document.getElementById("adminPautasList");
+    if (!container) return;
+    var pautas = getData("pautas").sort(function (a, b) {
+        var prioOrder = { alta: 0, media: 1, baixa: 2 };
+        if (a.status !== b.status) return a.status === "pendente" ? -1 : 1;
+        return (prioOrder[a.prioridade] || 1) - (prioOrder[b.prioridade] || 1);
+    });
+
+    if (pautas.length === 0) {
+        container.innerHTML = "<p style='color:#8892a4;font-size:0.85rem;'>Nenhuma pauta criada.</p>";
+        return;
+    }
+
+    container.innerHTML = "";
+    pautas.forEach(function (p) {
+        var prioColor = { alta: "#ef4444", media: "#d97706", baixa: "#16a34a" };
+        var isDone = p.status === "feita";
+        var prazoTxt = p.prazo ? " | Prazo: " + formatarData(p.prazo) : "";
+
+        container.innerHTML +=
+            '<div class="pauta-item' + (isDone ? ' pauta-feita' : '') + '">' +
+                '<div class="pauta-item-header">' +
+                    '<span class="pauta-prio" style="background:' + (prioColor[p.prioridade] || "#999") + ';">' + esc(p.prioridade) + '</span>' +
+                    '<span class="news-card-cat ' + p.categoria + '" style="font-size:0.6rem;">' + esc(p.categoria) + '</span>' +
+                    '<strong style="font-size:0.85rem;' + (isDone ? 'text-decoration:line-through;color:#9ca3af;' : '') + '">' + esc(p.titulo) + '</strong>' +
+                '</div>' +
+                (p.notas ? '<p style="font-size:0.8rem;color:#64748b;margin:4px 0;white-space:pre-line;">' + esc(p.notas).substring(0, 150) + '</p>' : '') +
+                '<div style="font-size:0.7rem;color:#9ca3af;">' + formatarData(p.data) + prazoTxt + '</div>' +
+                '<div style="display:flex;gap:6px;margin-top:6px;">' +
+                    '<button class="btn btn-sm" onclick="marcarPautaFeita(\'' + p.id + '\')">' + (isDone ? 'Reabrir' : 'Concluir') + '</button>' +
+                    '<button class="btn btn-sm" onclick="usarPautaComoNoticia(\'' + p.id + '\')">Criar noticia</button>' +
+                    '<button class="btn btn-sm" onclick="deletarPauta(\'' + p.id + '\')">Excluir</button>' +
+                '</div>' +
+            '</div>';
+    });
 }
 
 // ===== ENQUETES / VOTACOES =====
