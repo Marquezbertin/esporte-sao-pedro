@@ -7,6 +7,77 @@ function esc(str) {
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+// Galeria de fotos inline (para noticias)
+var _galeriaFotos = {};
+
+function adicionarFotoGaleria(inputId, containerId) {
+    var input = document.getElementById(inputId);
+    var url = input.value.trim();
+    if (!url) return;
+
+    if (!_galeriaFotos[containerId]) _galeriaFotos[containerId] = [];
+    _galeriaFotos[containerId].push(url);
+    input.value = "";
+    renderGaleriaItems(containerId);
+}
+
+function removerFotoGaleria(containerId, index) {
+    if (!_galeriaFotos[containerId]) return;
+    _galeriaFotos[containerId].splice(index, 1);
+    renderGaleriaItems(containerId);
+}
+
+function renderGaleriaItems(containerId) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+    var fotos = _galeriaFotos[containerId] || [];
+    container.innerHTML = "";
+    fotos.forEach(function (url, i) {
+        container.innerHTML +=
+            '<div class="galeria-thumb">' +
+                '<img src="' + esc(url) + '" alt="Foto ' + (i + 1) + '">' +
+                '<button type="button" onclick="removerFotoGaleria(\'' + containerId + '\',' + i + ')">&times;</button>' +
+            '</div>';
+    });
+}
+
+function getGaleriaFotos(containerId) {
+    return (_galeriaFotos[containerId] || []).slice();
+}
+
+function setGaleriaFotos(containerId, fotos) {
+    _galeriaFotos[containerId] = (fotos || []).slice();
+    renderGaleriaItems(containerId);
+}
+
+function richCmd(command) {
+    document.execCommand(command, false, null);
+}
+
+function sanitizeHtml(html) {
+    if (!html) return "";
+    var tmp = document.createElement("div");
+    tmp.innerHTML = html;
+    // Remove scripts and event handlers
+    var scripts = tmp.querySelectorAll("script,style,iframe,object,embed");
+    for (var i = 0; i < scripts.length; i++) scripts[i].remove();
+    var all = tmp.querySelectorAll("*");
+    for (var j = 0; j < all.length; j++) {
+        var attrs = all[j].attributes;
+        for (var k = attrs.length - 1; k >= 0; k--) {
+            if (attrs[k].name.indexOf("on") === 0) all[j].removeAttribute(attrs[k].name);
+        }
+    }
+    return tmp.innerHTML;
+}
+
+function stripHtml(html) {
+    if (!html) return "";
+    var tmp = document.createElement("div");
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || "";
+}
+
 function gerarId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
 }
@@ -23,6 +94,19 @@ function formatarDataCurta(dateStr) {
     var d = new Date(dateStr + "T12:00:00");
     var meses = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
     return { dia: d.getDate(), mes: meses[d.getMonth()] };
+}
+
+var CIDADES = {
+    "sao-pedro": "Sao Pedro",
+    "rio-das-pedras": "Rio das Pedras",
+    "charqueada": "Charqueada",
+    "piracicaba": "Piracicaba",
+    "aguas-de-sao-pedro": "Aguas de Sao Pedro",
+    "regiao": "Regiao"
+};
+
+function nomeCidade(id) {
+    return CIDADES[id] || "Sao Pedro";
 }
 
 var MESES_FULL = ["Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -236,7 +320,8 @@ function navegar(secao, e) {
         case "calendario": renderCalendario(); break;
         case "atletas": renderAtletas(); break;
         case "galeria": renderGaleria(); break;
-        case "sobre": atualizarStorageInfo(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); break;
+        case "opiniao": renderOpinioes(); break;
+        case "sobre": atualizarStorageInfo(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderNewsletterAdmin(); break;
     }
 
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -339,7 +424,11 @@ function renderInicio() {
 }
 
 function renderNoticiasHome() {
-    var noticias = getData("noticias").sort(function (a, b) { return b.data.localeCompare(a.data); }).slice(0, 3);
+    var noticias = getData("noticias").filter(function (n) { return !n.rascunho; }).sort(function (a, b) {
+        if (a.destaque && !b.destaque) return -1;
+        if (!a.destaque && b.destaque) return 1;
+        return b.data.localeCompare(a.data);
+    }).slice(0, 3);
     var grid = document.getElementById("newsGrid");
     if (!grid) return;
     grid.innerHTML = "";
@@ -365,20 +454,31 @@ function renderNewsCard(n) {
         ? '<div class="news-card-fonte"><a href="' + esc(n.fonte) + '" target="_blank" rel="noopener" onclick="event.stopPropagation();">Ver fonte original &rarr;</a></div>'
         : '';
 
+    var rascunhoLabel = n.rascunho ? ' <span class="news-card-rascunho">RASCUNHO</span>' : '';
+    var destaqueLabel = n.destaque ? ' <span class="news-card-destaque">&#9733; DESTAQUE</span>' : '';
+    var destaqueBtnText = n.destaque ? 'Remover Destaque' : 'Destacar';
+    var cidadeNome = nomeCidade(n.cidade);
+    var cidadeHtml = (n.cidade && n.cidade !== 'sao-pedro')
+        ? ' <span class="news-card-cidade">' + esc(cidadeNome) + '</span>'
+        : '';
+
     var adminHtml = isAdmin()
         ? '<div class="news-card-actions admin-only">' +
                 '<button onclick="event.stopPropagation();editarNoticia(\'' + n.id + '\')">Editar</button>' +
+                '<button onclick="event.stopPropagation();toggleDestaque(\'' + n.id + '\')">' + destaqueBtnText + '</button>' +
                 '<button onclick="event.stopPropagation();deletarNoticia(\'' + n.id + '\')">Excluir</button>' +
             '</div>'
         : '';
 
-    return '<div class="news-card" onclick="abrirNoticia(\'' + n.id + '\')">' +
+    return '<div class="news-card' + (n.destaque ? ' news-card-featured' : '') + '" onclick="abrirNoticia(\'' + n.id + '\')">' +
         midiaHtml +
         '<div class="news-card-body">' +
-            '<span class="news-card-cat ' + esc(n.categoria) + '">' + esc(n.categoria) + '</span>' +
+            '<span class="news-card-cat ' + esc(n.categoria) + '">' + esc(n.categoria) + '</span>' + cidadeHtml + destaqueLabel + rascunhoLabel +
             '<h3 class="news-card-title">' + esc(n.titulo) + '</h3>' +
-            '<p class="news-card-excerpt">' + esc(n.corpo) + '</p>' +
-            '<div class="news-card-date">' + formatarData(n.data) + '</div>' +
+            '<p class="news-card-excerpt">' + esc(stripHtml(n.corpo)) + '</p>' +
+            '<div class="news-card-date">' + formatarData(n.data) +
+                (isAdmin() ? ' &middot; ' + getViews(n.id) + ' views' : '') +
+            '</div>' +
             fonteHtml +
             adminHtml +
         '</div></div>';
@@ -404,10 +504,30 @@ function abrirNoticia(id) {
         midiaHtml = '<img class="news-modal-img" src="' + esc(n.imagem) + '" alt="' + esc(n.titulo) + '">';
     }
 
+    var galeriaHtml = '';
+    if (n.galeria && n.galeria.length > 0) {
+        galeriaHtml = '<div class="news-modal-galeria">';
+        n.galeria.forEach(function (url) {
+            galeriaHtml += '<img src="' + esc(url) + '" alt="Foto" class="news-modal-galeria-img" onclick="event.stopPropagation();abrirLightboxUrl(\'' + esc(url) + '\')">';
+        });
+        galeriaHtml += '</div>';
+    }
+
     var temFonteUrl = n.fonte && /^https?:\/\//i.test(n.fonte.trim());
     var fonteHtml = temFonteUrl
         ? '<div class="news-modal-fonte"><a href="' + esc(n.fonte) + '" target="_blank" rel="noopener">Ver fonte original &rarr;</a></div>'
         : '';
+
+    var resumo = stripHtml(n.corpo).substring(0, 150);
+    var shareText = encodeURIComponent(n.titulo + "\n\n" + resumo + "...\n\nLeia mais no Esporte Sao Pedro:");
+    var shareUrl = encodeURIComponent(window.location.origin + window.location.pathname);
+
+    var shareHtml = '<div class="news-modal-share">' +
+        '<span class="share-label">Compartilhar:</span>' +
+        '<a href="https://wa.me/?text=' + shareText + '%20' + shareUrl + '" target="_blank" rel="noopener" class="share-btn share-whatsapp" title="WhatsApp">WhatsApp</a>' +
+        '<a href="https://www.facebook.com/sharer/sharer.php?u=' + shareUrl + '&quote=' + encodeURIComponent(n.titulo) + '" target="_blank" rel="noopener" class="share-btn share-facebook" title="Facebook">Facebook</a>' +
+        '<button class="share-btn share-copy" onclick="copiarLinkNoticia(\'' + esc(n.titulo) + '\')" title="Copiar texto">Copiar</button>' +
+        '</div>';
 
     var content = document.getElementById("noticiaModalContent");
     content.innerHTML =
@@ -415,10 +535,31 @@ function abrirNoticia(id) {
         '<span class="news-modal-cat news-card-cat ' + catClass + '">' + esc(n.categoria) + '</span>' +
         '<h2 class="news-modal-title">' + esc(n.titulo) + '</h2>' +
         '<div class="news-modal-date">' + formatarData(n.data) + '</div>' +
-        '<div class="news-modal-text">' + esc(n.corpo) + '</div>' +
-        fonteHtml;
+        '<div class="news-modal-text">' + sanitizeHtml(n.corpo) + '</div>' +
+        galeriaHtml +
+        fonteHtml +
+        shareHtml;
 
     document.getElementById("noticiaModal").classList.add("active");
+
+    // Contar visualizacao
+    var views = getData("views") || {};
+    views[id] = (views[id] || 0) + 1;
+    setData("views", views);
+}
+
+function getViews(id) {
+    var views = getData("views") || {};
+    return views[id] || 0;
+}
+
+function copiarLinkNoticia(titulo) {
+    var texto = titulo + "\n\nLeia mais: " + window.location.href;
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(texto).then(function () { alert("Link copiado!"); });
+    } else {
+        prompt("Copie o link:", texto);
+    }
 }
 
 function fecharNoticiaModal() {
@@ -505,9 +646,23 @@ function renderArtilheirosHome() {
 var _filtroNoticia = "todas";
 
 function renderNoticias() {
-    var noticias = getData("noticias").sort(function (a, b) { return b.data.localeCompare(a.data); });
+    var noticias = getData("noticias");
+    if (!isAdmin()) {
+        noticias = noticias.filter(function (n) { return !n.rascunho; });
+    }
+    noticias.sort(function (a, b) {
+        if (a.destaque && !b.destaque) return -1;
+        if (!a.destaque && b.destaque) return 1;
+        return b.data.localeCompare(a.data);
+    });
     if (_filtroNoticia !== "todas") {
         noticias = noticias.filter(function (n) { return n.categoria === _filtroNoticia; });
+    }
+    if (_buscaNoticia) {
+        noticias = noticias.filter(function (n) {
+            var texto = (n.titulo + " " + stripHtml(n.corpo) + " " + n.categoria + " " + nomeCidade(n.cidade)).toLowerCase();
+            return texto.indexOf(_buscaNoticia) !== -1;
+        });
     }
 
     var grid = document.getElementById("newsFullGrid");
@@ -522,8 +677,18 @@ function renderNoticias() {
     noticias.forEach(function (n) { grid.innerHTML += renderNewsCard(n); });
 }
 
+var _buscaNoticia = "";
+
+function buscarNoticias(termo) {
+    _buscaNoticia = termo.toLowerCase().trim();
+    renderNoticias();
+}
+
 function filtrarNoticias(cat, btn) {
     _filtroNoticia = cat;
+    _buscaNoticia = "";
+    var searchInput = document.getElementById("newsSearchInput");
+    if (searchInput) searchInput.value = "";
     document.querySelectorAll(".news-filters .chip, #secao-noticias .chip").forEach(function (c) { c.classList.remove("active"); });
     if (btn) btn.classList.add("active");
     renderNoticias();
@@ -531,12 +696,14 @@ function filtrarNoticias(cat, btn) {
 
 function salvarNoticia() {
     var titulo = document.getElementById("noticiaTitle").value.trim();
-    var corpo = document.getElementById("noticiaBody").value.trim();
+    var corpo = sanitizeHtml(document.getElementById("noticiaBody").innerHTML.trim());
     var cat = document.getElementById("noticiaCategoria").value;
+    var cidade = document.getElementById("noticiaCidade").value;
     var img = document.getElementById("noticiaImg").value.trim();
     var video = document.getElementById("noticiaVideo").value.trim();
     var fonte = document.getElementById("noticiaFonte").value.trim();
     if (!titulo) return alert("Preencha o titulo.");
+    var ehRascunho = document.getElementById("noticiaRascunho").checked;
 
     var noticias = getData("noticias");
     noticias.push({
@@ -544,23 +711,28 @@ function salvarNoticia() {
         titulo: titulo,
         corpo: corpo,
         categoria: cat,
+        cidade: cidade,
         imagem: img,
+        galeria: getGaleriaFotos("noticiaGaleriaItems"),
         video: video,
         fonte: fonte,
+        rascunho: ehRascunho,
         data: new Date().toISOString().split("T")[0]
     });
     setData("noticias", noticias);
 
     document.getElementById("noticiaTitle").value = "";
-    document.getElementById("noticiaBody").value = "";
+    document.getElementById("noticiaBody").innerHTML = "";
     document.getElementById("noticiaImg").value = "";
     document.getElementById("noticiaVideo").value = "";
     document.getElementById("noticiaFonte").value = "";
+    setGaleriaFotos("noticiaGaleriaItems", []);
+    document.getElementById("noticiaRascunho").checked = false;
     document.getElementById("adminNoticia").style.display = "none";
 
     renderNoticias();
     renderTicker();
-    alert("Noticia publicada!");
+    alert(ehRascunho ? "Rascunho salvo!" : "Noticia publicada!");
 }
 
 function editarNoticia(id) {
@@ -568,17 +740,66 @@ function editarNoticia(id) {
     var n = noticias.find(function (x) { return x.id === id; });
     if (!n) return;
 
-    var novoTitulo = prompt("Titulo:", n.titulo);
-    if (novoTitulo === null) return;
-    var novoCorpo = prompt("Texto:", n.corpo);
-    if (novoCorpo === null) return;
+    document.getElementById("editNoticiaId").value = n.id;
+    document.getElementById("editNoticiaTitle").value = n.titulo || "";
+    document.getElementById("editNoticiaBody").innerHTML = n.corpo || "";
+    document.getElementById("editNoticiaCategoria").value = n.categoria || "geral";
+    document.getElementById("editNoticiaImg").value = n.imagem || "";
+    setGaleriaFotos("editNoticiaGaleriaItems", n.galeria || []);
+    document.getElementById("editNoticiaVideo").value = n.video || "";
+    document.getElementById("editNoticiaFonte").value = n.fonte || "";
+    document.getElementById("editNoticiaCidade").value = n.cidade || "sao-pedro";
+    document.getElementById("editNoticiaRascunho").checked = !!n.rascunho;
+    document.getElementById("editNoticiaData").value = n.data || "";
 
-    n.titulo = novoTitulo;
-    n.corpo = novoCorpo;
+    document.getElementById("editarNoticiaModal").classList.add("active");
+
+    // Re-init upload buttons for the edit modal
+    if (typeof CloudUpload !== "undefined" && CloudUpload.init) {
+        setTimeout(function () { CloudUpload.init(); }, 100);
+    }
+}
+
+function salvarEdicaoNoticia() {
+    var id = document.getElementById("editNoticiaId").value;
+    var noticias = getData("noticias");
+    var n = noticias.find(function (x) { return x.id === id; });
+    if (!n) return;
+
+    var titulo = document.getElementById("editNoticiaTitle").value.trim();
+    if (!titulo) return alert("Preencha o titulo.");
+
+    n.titulo = titulo;
+    n.corpo = sanitizeHtml(document.getElementById("editNoticiaBody").innerHTML.trim());
+    n.categoria = document.getElementById("editNoticiaCategoria").value;
+    n.imagem = document.getElementById("editNoticiaImg").value.trim();
+    n.galeria = getGaleriaFotos("editNoticiaGaleriaItems");
+    n.video = document.getElementById("editNoticiaVideo").value.trim();
+    n.fonte = document.getElementById("editNoticiaFonte").value.trim();
+    n.cidade = document.getElementById("editNoticiaCidade").value;
+    n.rascunho = document.getElementById("editNoticiaRascunho").checked;
+    n.data = document.getElementById("editNoticiaData").value || n.data;
+
     setData("noticias", noticias);
+    fecharEditarNoticia();
     renderNoticias();
     renderInicio();
     renderTicker();
+    alert("Noticia atualizada!");
+}
+
+function fecharEditarNoticia() {
+    document.getElementById("editarNoticiaModal").classList.remove("active");
+}
+
+function toggleDestaque(id) {
+    var noticias = getData("noticias");
+    var n = noticias.find(function (x) { return x.id === id; });
+    if (!n) return;
+    n.destaque = !n.destaque;
+    setData("noticias", noticias);
+    renderNoticias();
+    renderInicio();
 }
 
 function deletarNoticia(id) {
@@ -588,6 +809,103 @@ function deletarNoticia(id) {
     renderNoticias();
     renderInicio();
     renderTicker();
+}
+
+// ===== OPINIAO / COLUNAS =====
+function renderOpinioes() {
+    var opinioes = getData("opinioes").sort(function (a, b) { return b.data.localeCompare(a.data); });
+    var grid = document.getElementById("opiniaoGrid");
+    if (!grid) return;
+    grid.innerHTML = "";
+
+    if (opinioes.length === 0) {
+        grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">&#9997;</div><div class="empty-state-text">Nenhuma coluna publicada ainda.</div></div>';
+        return;
+    }
+
+    opinioes.forEach(function (o) {
+        var autorImg = o.autorImg
+            ? '<img src="' + esc(o.autorImg) + '" alt="' + esc(o.autor) + '" class="opiniao-avatar">'
+            : '<div class="opiniao-avatar opiniao-avatar-placeholder">' + esc(o.autor.charAt(0).toUpperCase()) + '</div>';
+
+        var adminBtns = isAdmin()
+            ? '<div class="news-card-actions admin-only">' +
+                '<button onclick="deletarOpiniao(\'' + o.id + '\')">Excluir</button>' +
+              '</div>'
+            : '';
+
+        grid.innerHTML +=
+            '<div class="opiniao-card" onclick="abrirOpiniao(\'' + o.id + '\')">' +
+                '<div class="opiniao-header">' +
+                    autorImg +
+                    '<div class="opiniao-autor-info">' +
+                        '<span class="opiniao-autor-nome">' + esc(o.autor) + '</span>' +
+                        '<span class="opiniao-data">' + formatarData(o.data) + '</span>' +
+                    '</div>' +
+                '</div>' +
+                '<h3 class="opiniao-titulo">' + esc(o.titulo) + '</h3>' +
+                '<p class="opiniao-resumo">' + esc(stripHtml(o.corpo)).substring(0, 200) + '...</p>' +
+                adminBtns +
+            '</div>';
+    });
+}
+
+function salvarOpiniao() {
+    var autor = document.getElementById("opiniaoAutor").value.trim();
+    var autorImg = document.getElementById("opiniaoAutorImg").value.trim();
+    var titulo = document.getElementById("opiniaoTitulo").value.trim();
+    var corpo = sanitizeHtml(document.getElementById("opiniaoCorpo").innerHTML.trim());
+    if (!autor || !titulo) return alert("Preencha autor e titulo.");
+
+    var opinioes = getData("opinioes");
+    opinioes.push({
+        id: gerarId(),
+        autor: autor,
+        autorImg: autorImg,
+        titulo: titulo,
+        corpo: corpo,
+        data: new Date().toISOString().split("T")[0]
+    });
+    setData("opinioes", opinioes);
+
+    document.getElementById("opiniaoAutor").value = "";
+    document.getElementById("opiniaoAutorImg").value = "";
+    document.getElementById("opiniaoTitulo").value = "";
+    document.getElementById("opiniaoCorpo").innerHTML = "";
+    document.getElementById("adminOpiniao").style.display = "none";
+    renderOpinioes();
+    alert("Coluna publicada!");
+}
+
+function deletarOpiniao(id) {
+    if (!confirm("Excluir esta coluna?")) return;
+    var opinioes = getData("opinioes").filter(function (o) { return o.id !== id; });
+    setData("opinioes", opinioes);
+    renderOpinioes();
+}
+
+function abrirOpiniao(id) {
+    var opinioes = getData("opinioes");
+    var o = opinioes.find(function (x) { return x.id === id; });
+    if (!o) return;
+
+    var autorImg = o.autorImg
+        ? '<img src="' + esc(o.autorImg) + '" alt="' + esc(o.autor) + '" class="opiniao-avatar">'
+        : '<div class="opiniao-avatar opiniao-avatar-placeholder">' + esc(o.autor.charAt(0).toUpperCase()) + '</div>';
+
+    var content = document.getElementById("noticiaModalContent");
+    content.innerHTML =
+        '<div class="opiniao-header" style="margin-bottom:16px;">' +
+            autorImg +
+            '<div class="opiniao-autor-info">' +
+                '<span class="opiniao-autor-nome">' + esc(o.autor) + '</span>' +
+                '<span class="opiniao-data">' + formatarData(o.data) + '</span>' +
+            '</div>' +
+        '</div>' +
+        '<h2 class="news-modal-title">' + esc(o.titulo) + '</h2>' +
+        '<div class="news-modal-text">' + sanitizeHtml(o.corpo) + '</div>';
+
+    document.getElementById("noticiaModal").classList.add("active");
 }
 
 // ===== CAMPEONATOS (SISTEMA EDITORIAL COMPLETO) =====
@@ -908,6 +1226,7 @@ var _calAno = new Date().getFullYear();
 function renderCalendario() {
     renderCalendarGrid();
     renderCalendarGames();
+    renderEventos();
 }
 
 function mesCalendario(delta) {
@@ -1036,6 +1355,89 @@ function deletarJogo(id) {
     renderCalendario();
     renderInicio();
     renderTicker();
+}
+
+// ===== EVENTOS ESPORTIVOS =====
+var TIPOS_EVENTO = {
+    "corrida": "Corrida de Rua",
+    "torneio": "Torneio",
+    "premiacao": "Premiacao",
+    "peneira": "Peneira",
+    "inscricao": "Inscricoes",
+    "outro": "Evento"
+};
+
+function renderEventos() {
+    var eventos = getData("eventos").sort(function (a, b) { return a.data.localeCompare(b.data); });
+    var hoje = new Date().toISOString().split("T")[0];
+    var futuros = eventos.filter(function (e) { return e.data >= hoje; });
+
+    var list = document.getElementById("eventsList");
+    if (!list) return;
+    list.innerHTML = "";
+
+    if (futuros.length === 0) {
+        list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">&#127941;</div><div class="empty-state-text">Nenhum evento agendado.</div></div>';
+        return;
+    }
+
+    futuros.forEach(function (ev) {
+        var dt = formatarDataCurta(ev.data);
+        var tipo = TIPOS_EVENTO[ev.tipo] || ev.tipo;
+        var adminBtn = isAdmin()
+            ? '<button class="btn btn-sm" style="margin-left:auto;font-size:0.7rem;" onclick="deletarEvento(\'' + ev.id + '\')">Excluir</button>'
+            : '';
+
+        list.innerHTML +=
+            '<div class="game-card">' +
+                '<div class="game-date-badge"><span class="game-day">' + dt.dia + '</span><span class="game-month">' + dt.mes + '</span></div>' +
+                '<div class="game-info">' +
+                    '<div class="game-teams">' + esc(ev.nome) + '</div>' +
+                    '<div class="game-meta">' + (ev.hora || "") + ' - ' + esc(ev.local || "") + '</div>' +
+                    (ev.descricao ? '<div class="game-meta" style="margin-top:4px;font-style:italic;">' + esc(ev.descricao).substring(0, 100) + '</div>' : '') +
+                '</div>' +
+                '<span class="game-sport-badge" style="font-size:0.7rem;">' + esc(tipo) + '</span>' +
+                adminBtn +
+            '</div>';
+    });
+}
+
+function salvarEvento() {
+    var nome = document.getElementById("eventoNome").value.trim();
+    var descricao = document.getElementById("eventoDescricao").value.trim();
+    var tipo = document.getElementById("eventoTipo").value;
+    var data = document.getElementById("eventoData").value;
+    var hora = document.getElementById("eventoHora").value;
+    var local = document.getElementById("eventoLocal").value.trim();
+    if (!nome || !data) return alert("Preencha nome e data do evento.");
+
+    var eventos = getData("eventos");
+    eventos.push({
+        id: gerarId(),
+        nome: nome,
+        descricao: descricao,
+        tipo: tipo,
+        data: data,
+        hora: hora,
+        local: local
+    });
+    setData("eventos", eventos);
+
+    document.getElementById("eventoNome").value = "";
+    document.getElementById("eventoDescricao").value = "";
+    document.getElementById("eventoData").value = "";
+    document.getElementById("eventoHora").value = "";
+    document.getElementById("eventoLocal").value = "";
+    document.getElementById("adminEvento").style.display = "none";
+    renderCalendario();
+    alert("Evento criado!");
+}
+
+function deletarEvento(id) {
+    if (!confirm("Excluir este evento?")) return;
+    var eventos = getData("eventos").filter(function (e) { return e.id !== id; });
+    setData("eventos", eventos);
+    renderCalendario();
 }
 
 // ===== ATLETAS =====
@@ -1202,6 +1604,62 @@ function fecharLightbox() {
     document.getElementById("lightbox").classList.remove("active");
 }
 
+function abrirLightboxUrl(url) {
+    document.getElementById("lightboxImg").src = url;
+    document.getElementById("lightboxCaption").textContent = "";
+    document.getElementById("lightbox").classList.add("active");
+}
+
+// ===== NEWSLETTER =====
+function inscreverNewsletter() {
+    var email = document.getElementById("newsletterEmail").value.trim();
+    var msg = document.getElementById("newsletterMsg");
+    if (!email || email.indexOf("@") === -1) {
+        msg.textContent = "Digite um e-mail valido.";
+        msg.style.display = "block";
+        msg.style.color = "#ef4444";
+        return;
+    }
+
+    var inscritos = getData("newsletter") || [];
+    if (inscritos.indexOf(email) !== -1) {
+        msg.textContent = "Este e-mail ja esta cadastrado!";
+        msg.style.display = "block";
+        msg.style.color = "#d4a017";
+        return;
+    }
+
+    inscritos.push(email);
+    setData("newsletter", inscritos);
+    document.getElementById("newsletterEmail").value = "";
+    msg.textContent = "Inscricao realizada com sucesso!";
+    msg.style.display = "block";
+    msg.style.color = "#d4a017";
+}
+
+function renderNewsletterAdmin() {
+    var container = document.getElementById("adminNewsletterList");
+    if (!container) return;
+    var inscritos = getData("newsletter") || [];
+    if (inscritos.length === 0) {
+        container.innerHTML = "Nenhum inscrito ainda.";
+        return;
+    }
+    container.innerHTML = "<strong>" + inscritos.length + " inscritos:</strong><br>" + inscritos.join(", ");
+}
+
+function exportarNewsletter() {
+    var inscritos = getData("newsletter") || [];
+    if (inscritos.length === 0) return alert("Nenhum inscrito.");
+    var blob = new Blob([inscritos.join("\n")], { type: "text/plain" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "inscritos-newsletter.txt";
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
 // ===== ADMIN TOGGLE =====
 function toggleAdmin(id) {
     var el = document.getElementById(id);
@@ -1211,7 +1669,7 @@ function toggleAdmin(id) {
 // ===== BACKUP / EXPORT / IMPORT =====
 function exportarDados() {
     var data = {};
-    var keys = ["noticias", "jogos", "atletas", "galeria", "patrocinadores", "campeonatos"];
+    var keys = ["noticias", "jogos", "atletas", "galeria", "patrocinadores", "campeonatos", "opinioes", "eventos"];
     keys.forEach(function (k) { data[k] = getData(k); });
 
     var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });

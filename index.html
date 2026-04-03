@@ -47,6 +47,7 @@
                     <a href="#" class="nav-link" onclick="navegar('calendario', event)">Calendario</a>
                     <a href="#" class="nav-link" onclick="navegar('atletas', event)">Atletas</a>
                     <a href="#" class="nav-link" onclick="navegar('galeria', event)">Galeria</a>
+                    <a href="#" class="nav-link" onclick="navegar('opiniao', event)">Opiniao</a>
                     <a href="#" class="nav-link nav-live" onclick="abrirLive(event)" id="navLive" style="display:none;">&#128308; AO VIVO</a>
                     <a href="#" class="nav-link" onclick="navegar('sobre', event)">Sobre</a>
                 </nav>
@@ -139,6 +140,9 @@
         <div class="container">
             <div class="section-header">
                 <h2 class="section-title">Noticias</h2>
+                <div class="news-search-bar">
+                    <input type="text" id="newsSearchInput" placeholder="Buscar noticias, atletas, eventos..." oninput="buscarNoticias(this.value)">
+                </div>
                 <div class="news-filters">
                     <button class="chip active" onclick="filtrarNoticias('todas', this)">Todas</button>
                     <button class="chip" onclick="filtrarNoticias('futebol', this)">Futebol</button>
@@ -157,7 +161,15 @@
                 <div class="admin-form" id="adminNoticia" style="display:none;">
                     <h3>Nova Noticia</h3>
                     <input type="text" id="noticiaTitle" placeholder="Titulo da noticia">
-                    <textarea id="noticiaBody" placeholder="Texto da noticia..." rows="4"></textarea>
+                    <div class="rich-editor-toolbar">
+                        <button type="button" onclick="richCmd('bold')" title="Negrito"><b>N</b></button>
+                        <button type="button" onclick="richCmd('italic')" title="Italico"><i>I</i></button>
+                        <button type="button" onclick="richCmd('underline')" title="Sublinhado"><u>S</u></button>
+                        <span class="toolbar-sep"></span>
+                        <button type="button" onclick="richCmd('insertUnorderedList')" title="Lista">&#8226; Lista</button>
+                        <button type="button" onclick="richCmd('insertOrderedList')" title="Lista numerada">1. Lista</button>
+                    </div>
+                    <div class="rich-editor" id="noticiaBody" contenteditable="true" data-placeholder="Texto da noticia..."></div>
                     <select id="noticiaCategoria">
                         <option value="futebol">Futebol</option>
                         <option value="volei">Volei</option>
@@ -167,9 +179,28 @@
                         <option value="artes-marciais">Artes Marciais</option>
                         <option value="geral">Geral</option>
                     </select>
-                    <input type="text" id="noticiaImg" placeholder="URL da imagem (opcional)" data-upload-target="noticiaImg">
+                    <select id="noticiaCidade">
+                        <option value="sao-pedro">Sao Pedro</option>
+                        <option value="rio-das-pedras">Rio das Pedras</option>
+                        <option value="charqueada">Charqueada</option>
+                        <option value="piracicaba">Piracicaba</option>
+                        <option value="aguas-de-sao-pedro">Aguas de Sao Pedro</option>
+                        <option value="regiao">Outra cidade da regiao</option>
+                    </select>
+                    <input type="text" id="noticiaImg" placeholder="URL da imagem principal (opcional)" data-upload-target="noticiaImg">
+                    <div class="galeria-upload-area">
+                        <label class="admin-form-label">Fotos extras da materia</label>
+                        <div class="galeria-items" id="noticiaGaleriaItems"></div>
+                        <input type="text" id="noticiaGaleriaInput" placeholder="URL da foto" data-upload-target="noticiaGaleriaInput">
+                        <button type="button" class="btn btn-sm" onclick="adicionarFotoGaleria('noticiaGaleriaInput','noticiaGaleriaItems')">+ Adicionar foto</button>
+                    </div>
                     <input type="text" id="noticiaVideo" placeholder="Link do video YouTube (opcional)">
                     <input type="text" id="noticiaFonte" placeholder="URL da fonte original (ex: link da materia)">
+                    <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;">
+                        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;color:var(--cinza-600);cursor:pointer;">
+                            <input type="checkbox" id="noticiaRascunho"> Salvar como rascunho (nao publica)
+                        </label>
+                    </div>
                     <button class="btn btn-primary" onclick="salvarNoticia()">Publicar</button>
                 </div>
             </div>
@@ -231,6 +262,12 @@
             <div class="calendar-grid" id="calendarGrid"></div>
             <div class="games-list" id="calendarGamesList" style="margin-top:30px;"></div>
 
+            <!-- EVENTOS -->
+            <div class="section-header" style="margin-top:40px;">
+                <h2 class="section-title" style="font-size:1.1rem;">Eventos Esportivos</h2>
+            </div>
+            <div class="events-list" id="eventsList"></div>
+
             <!-- ADMIN: ADICIONAR JOGO -->
             <div class="admin-section admin-only">
                 <button class="btn btn-secondary" onclick="toggleAdmin('adminJogo')">+ Agendar Jogo</button>
@@ -250,6 +287,28 @@
                     <input type="time" id="jogoHora">
                     <input type="text" id="jogoLocal" placeholder="Local">
                     <button class="btn btn-primary" onclick="salvarJogo()">Agendar</button>
+                </div>
+            </div>
+
+            <!-- ADMIN: ADICIONAR EVENTO -->
+            <div class="admin-section admin-only">
+                <button class="btn btn-secondary" onclick="toggleAdmin('adminEvento')">+ Criar Evento</button>
+                <div class="admin-form" id="adminEvento" style="display:none;">
+                    <h3>Novo Evento Esportivo</h3>
+                    <input type="text" id="eventoNome" placeholder="Nome do evento (ex: Corrida Divas Run)">
+                    <textarea id="eventoDescricao" placeholder="Descricao do evento" rows="3"></textarea>
+                    <select id="eventoTipo">
+                        <option value="corrida">Corrida de Rua</option>
+                        <option value="torneio">Torneio</option>
+                        <option value="premiacao">Premiacao</option>
+                        <option value="peneira">Peneira / Selecao</option>
+                        <option value="inscricao">Inscricoes Abertas</option>
+                        <option value="outro">Outro</option>
+                    </select>
+                    <input type="date" id="eventoData">
+                    <input type="time" id="eventoHora">
+                    <input type="text" id="eventoLocal" placeholder="Local">
+                    <button class="btn btn-primary" onclick="salvarEvento()">Criar Evento</button>
                 </div>
             </div>
         </div>
@@ -319,6 +378,37 @@
                     </select>
                     <input type="date" id="fotoData">
                     <button class="btn btn-primary" onclick="salvarFoto()">Adicionar</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECAO: OPINIAO/COLUNAS -->
+    <section class="section secao-page" id="secao-opiniao">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Opiniao</h2>
+                <p class="section-sub">Colunas e analises sobre o esporte local</p>
+            </div>
+            <div class="opiniao-grid" id="opiniaoGrid"></div>
+
+            <!-- ADMIN: ADICIONAR COLUNA -->
+            <div class="admin-section admin-only">
+                <button class="btn btn-secondary" onclick="toggleAdmin('adminOpiniao')">+ Nova Coluna</button>
+                <div class="admin-form" id="adminOpiniao" style="display:none;">
+                    <h3>Nova Coluna de Opiniao</h3>
+                    <input type="text" id="opiniaoAutor" placeholder="Nome do colunista">
+                    <input type="text" id="opiniaoAutorImg" placeholder="URL da foto do colunista (opcional)" data-upload-target="opiniaoAutorImg">
+                    <input type="text" id="opiniaoTitulo" placeholder="Titulo da coluna">
+                    <div class="rich-editor-toolbar">
+                        <button type="button" onclick="richCmd('bold')" title="Negrito"><b>N</b></button>
+                        <button type="button" onclick="richCmd('italic')" title="Italico"><i>I</i></button>
+                        <button type="button" onclick="richCmd('underline')" title="Sublinhado"><u>S</u></button>
+                        <span class="toolbar-sep"></span>
+                        <button type="button" onclick="richCmd('insertUnorderedList')" title="Lista">&#8226; Lista</button>
+                    </div>
+                    <div class="rich-editor" id="opiniaoCorpo" contenteditable="true" data-placeholder="Texto da coluna..."></div>
+                    <button class="btn btn-primary" onclick="salvarOpiniao()">Publicar Coluna</button>
                 </div>
             </div>
         </div>
@@ -413,6 +503,17 @@
                 <div id="adminPatroList" style="margin-top:12px;"></div>
             </div>
 
+            <!-- INSCRITOS NEWSLETTER -->
+            <div class="card-panel admin-only" style="margin-top:40px;">
+                <div class="card-panel-header">
+                    <h3>Inscritos Newsletter</h3>
+                    <span class="badge">ADMIN</span>
+                </div>
+                <p style="color:#8892a4;margin-bottom:12px;">E-mails cadastrados pelos leitores.</p>
+                <div id="adminNewsletterList" style="font-size:0.85rem;color:var(--cinza-600);"></div>
+                <button class="btn btn-sm" style="margin-top:12px;" onclick="exportarNewsletter()">Exportar e-mails</button>
+            </div>
+
             <!-- BACKUP / EXPORT -->
             <div class="card-panel admin-only" style="margin-top:40px;">
                 <div class="card-panel-header">
@@ -429,6 +530,21 @@
                     <button class="btn btn-danger" onclick="limparDados()">Limpar Tudo</button>
                 </div>
                 <p style="color:#64748b;margin-top:12px;font-size:0.8rem;" id="storageInfo"></p>
+            </div>
+        </div>
+    </section>
+
+    <!-- NEWSLETTER -->
+    <section class="newsletter-bar">
+        <div class="container">
+            <div class="newsletter-content">
+                <h3 class="newsletter-title">Receba as noticias do esporte local</h3>
+                <p class="newsletter-desc">Cadastre seu e-mail e fique por dentro de tudo que acontece no esporte de Sao Pedro e regiao.</p>
+                <div class="newsletter-form">
+                    <input type="email" id="newsletterEmail" placeholder="Seu melhor e-mail" class="newsletter-input">
+                    <button class="btn btn-primary" onclick="inscreverNewsletter()">Inscrever</button>
+                </div>
+                <p class="newsletter-msg" id="newsletterMsg" style="display:none;"></p>
             </div>
         </div>
     </section>
@@ -516,6 +632,69 @@
         <div class="modal modal-wide">
             <button class="modal-close" onclick="fecharNoticiaModal()">&times;</button>
             <div class="noticia-modal-content" id="noticiaModalContent"></div>
+        </div>
+    </div>
+
+    <!-- MODAL EDITAR NOTICIA (ADMIN) -->
+    <div class="modal-overlay" id="editarNoticiaModal" onclick="if(event.target===this)fecharEditarNoticia()">
+        <div class="modal modal-wide">
+            <button class="modal-close" onclick="fecharEditarNoticia()">&times;</button>
+            <div class="admin-form" style="border:none;box-shadow:none;padding:0;margin:0;">
+                <h3>Editar Noticia</h3>
+                <input type="hidden" id="editNoticiaId">
+                <label class="admin-form-label">Titulo</label>
+                <input type="text" id="editNoticiaTitle" placeholder="Titulo da noticia">
+                <label class="admin-form-label">Texto da materia</label>
+                <div class="rich-editor-toolbar">
+                    <button type="button" onclick="richCmd('bold')" title="Negrito"><b>N</b></button>
+                    <button type="button" onclick="richCmd('italic')" title="Italico"><i>I</i></button>
+                    <button type="button" onclick="richCmd('underline')" title="Sublinhado"><u>S</u></button>
+                    <span class="toolbar-sep"></span>
+                    <button type="button" onclick="richCmd('insertUnorderedList')" title="Lista">&#8226; Lista</button>
+                    <button type="button" onclick="richCmd('insertOrderedList')" title="Lista numerada">1. Lista</button>
+                </div>
+                <div class="rich-editor" id="editNoticiaBody" contenteditable="true" data-placeholder="Texto da noticia..."></div>
+                <label class="admin-form-label">Categoria</label>
+                <select id="editNoticiaCategoria">
+                    <option value="futebol">Futebol</option>
+                    <option value="volei">Volei</option>
+                    <option value="basquete">Basquete</option>
+                    <option value="corrida">Corrida</option>
+                    <option value="ciclismo">Ciclismo</option>
+                    <option value="artes-marciais">Artes Marciais</option>
+                    <option value="geral">Geral</option>
+                </select>
+                <label class="admin-form-label">Imagem</label>
+                <input type="text" id="editNoticiaImg" placeholder="URL da imagem principal (opcional)" data-upload-target="editNoticiaImg">
+                <label class="admin-form-label">Fotos extras da materia</label>
+                <div class="galeria-items" id="editNoticiaGaleriaItems"></div>
+                <input type="text" id="editNoticiaGaleriaInput" placeholder="URL da foto" data-upload-target="editNoticiaGaleriaInput">
+                <button type="button" class="btn btn-sm" onclick="adicionarFotoGaleria('editNoticiaGaleriaInput','editNoticiaGaleriaItems')">+ Adicionar foto</button>
+                <label class="admin-form-label">Video</label>
+                <input type="text" id="editNoticiaVideo" placeholder="Link do video YouTube (opcional)">
+                <label class="admin-form-label">Fonte original</label>
+                <input type="text" id="editNoticiaFonte" placeholder="URL da fonte (http://...)">
+                <label class="admin-form-label">Cidade</label>
+                <select id="editNoticiaCidade">
+                    <option value="sao-pedro">Sao Pedro</option>
+                    <option value="rio-das-pedras">Rio das Pedras</option>
+                    <option value="charqueada">Charqueada</option>
+                    <option value="piracicaba">Piracicaba</option>
+                    <option value="aguas-de-sao-pedro">Aguas de Sao Pedro</option>
+                    <option value="regiao">Outra cidade da regiao</option>
+                </select>
+                <label class="admin-form-label">Data</label>
+                <input type="date" id="editNoticiaData">
+                <div style="display:flex;align-items:center;gap:6px;margin:8px 0;">
+                    <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;color:var(--cinza-600);cursor:pointer;">
+                        <input type="checkbox" id="editNoticiaRascunho"> Rascunho (nao visivel para leitores)
+                    </label>
+                </div>
+                <div style="display:flex;gap:12px;margin-top:8px;">
+                    <button class="btn btn-primary" onclick="salvarEdicaoNoticia()">Salvar Alteracoes</button>
+                    <button class="btn btn-secondary" onclick="fecharEditarNoticia()">Cancelar</button>
+                </div>
+            </div>
         </div>
     </div>
 
