@@ -321,7 +321,8 @@ function navegar(secao, e) {
         case "atletas": renderAtletas(); break;
         case "galeria": renderGaleria(); break;
         case "opiniao": renderOpinioes(); break;
-        case "sobre": atualizarStorageInfo(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderNewsletterAdmin(); break;
+        case "conquistas": renderConquistas(); break;
+        case "sobre": atualizarStorageInfo(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminTimes(); renderNewsletterAdmin(); break;
     }
 
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -419,8 +420,11 @@ function renderSportsGrid() {
 // ===== PAGINA INICIO =====
 function renderInicio() {
     renderNoticiasHome();
+    renderPlacarAoVivo();
     renderProximosJogos();
     renderArtilheirosHome();
+    renderEnqueteHome();
+    renderResumoSemana();
 }
 
 function renderNoticiasHome() {
@@ -809,6 +813,387 @@ function deletarNoticia(id) {
     renderNoticias();
     renderInicio();
     renderTicker();
+}
+
+// ===== ENQUETES / VOTACOES =====
+function renderEnqueteHome() {
+    var container = document.getElementById("enqueteHome");
+    if (!container) return;
+    var enquetes = getData("enquetes").filter(function (e) { return e.ativa; });
+    if (enquetes.length === 0) { container.innerHTML = ""; return; }
+
+    var e = enquetes[enquetes.length - 1]; // ultima enquete ativa
+    var totalVotos = 0;
+    e.opcoes.forEach(function (o) { totalVotos += (o.votos || 0); });
+    var jaVotou = localStorage.getItem("esp_voto_" + e.id);
+
+    var html = '<div class="section-header"><h2 class="section-title">Enquete</h2></div>';
+    html += '<div class="enquete-card">';
+    html += '<h3 class="enquete-pergunta">' + esc(e.pergunta) + '</h3>';
+
+    e.opcoes.forEach(function (o, i) {
+        var pct = totalVotos > 0 ? Math.round((o.votos || 0) / totalVotos * 100) : 0;
+        if (jaVotou) {
+            var isVoted = (jaVotou == i) ? ' enquete-voted' : '';
+            html += '<div class="enquete-opcao enquete-resultado' + isVoted + '">' +
+                '<div class="enquete-barra" style="width:' + pct + '%"></div>' +
+                '<span class="enquete-texto">' + esc(o.texto) + '</span>' +
+                '<span class="enquete-pct">' + pct + '%</span>' +
+            '</div>';
+        } else {
+            html += '<button class="enquete-opcao enquete-btn" onclick="votarEnquete(\'' + e.id + '\',' + i + ')">' +
+                esc(o.texto) + '</button>';
+        }
+    });
+
+    html += '<div class="enquete-total">' + totalVotos + ' voto' + (totalVotos !== 1 ? 's' : '') + '</div>';
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function votarEnquete(id, opcaoIdx) {
+    var enquetes = getData("enquetes");
+    var e = enquetes.find(function (x) { return x.id === id; });
+    if (!e) return;
+    e.opcoes[opcaoIdx].votos = (e.opcoes[opcaoIdx].votos || 0) + 1;
+    setData("enquetes", enquetes);
+    localStorage.setItem("esp_voto_" + id, opcaoIdx);
+    renderEnqueteHome();
+}
+
+function salvarEnquete() {
+    var pergunta = document.getElementById("enquetePergunta").value.trim();
+    var opcoesRaw = document.getElementById("enqueteOpcoes").value.trim();
+    if (!pergunta || !opcoesRaw) return alert("Preencha pergunta e opcoes.");
+
+    var opcoes = opcoesRaw.split("\n").filter(function (l) { return l.trim(); }).map(function (l) {
+        return { texto: l.trim(), votos: 0 };
+    });
+    if (opcoes.length < 2) return alert("Minimo 2 opcoes.");
+
+    var enquetes = getData("enquetes");
+    enquetes.push({
+        id: gerarId(),
+        pergunta: pergunta,
+        opcoes: opcoes,
+        ativa: true,
+        data: new Date().toISOString().split("T")[0]
+    });
+    setData("enquetes", enquetes);
+
+    document.getElementById("enquetePergunta").value = "";
+    document.getElementById("enqueteOpcoes").value = "";
+    renderAdminEnquetes();
+    renderEnqueteHome();
+    alert("Enquete criada!");
+}
+
+function encerrarEnquete(id) {
+    var enquetes = getData("enquetes");
+    var e = enquetes.find(function (x) { return x.id === id; });
+    if (e) e.ativa = false;
+    setData("enquetes", enquetes);
+    renderAdminEnquetes();
+    renderEnqueteHome();
+}
+
+function deletarEnquete(id) {
+    if (!confirm("Excluir enquete?")) return;
+    var enquetes = getData("enquetes").filter(function (x) { return x.id !== id; });
+    setData("enquetes", enquetes);
+    renderAdminEnquetes();
+    renderEnqueteHome();
+}
+
+function renderAdminEnquetes() {
+    var container = document.getElementById("adminEnqueteList");
+    if (!container) return;
+    var enquetes = getData("enquetes").sort(function (a, b) { return b.data.localeCompare(a.data); });
+    if (enquetes.length === 0) { container.innerHTML = "<p style='color:#8892a4;font-size:0.85rem;'>Nenhuma enquete.</p>"; return; }
+
+    container.innerHTML = "";
+    enquetes.forEach(function (e) {
+        var total = 0;
+        e.opcoes.forEach(function (o) { total += (o.votos || 0); });
+        var status = e.ativa ? '<span style="color:#16a34a;font-weight:700;">Ativa</span>' : '<span style="color:#8892a4;">Encerrada</span>';
+        container.innerHTML +=
+            '<div style="padding:12px;border:1px solid var(--cinza-200);border-radius:8px;margin-bottom:8px;">' +
+                '<strong>' + esc(e.pergunta) + '</strong> - ' + status + ' (' + total + ' votos)<br>' +
+                (e.ativa ? '<button class="btn btn-sm" style="margin-top:6px;" onclick="encerrarEnquete(\'' + e.id + '\')">Encerrar</button> ' : '') +
+                '<button class="btn btn-sm" style="margin-top:6px;" onclick="deletarEnquete(\'' + e.id + '\')">Excluir</button>' +
+            '</div>';
+    });
+}
+
+// ===== PLACAR AO VIVO =====
+function atualizarPlacar() {
+    var timeCasa = document.getElementById("placarTimeCasa").value.trim();
+    var timeFora = document.getElementById("placarTimeFora").value.trim();
+    var golsCasa = parseInt(document.getElementById("placarGolsCasa").value) || 0;
+    var golsFora = parseInt(document.getElementById("placarGolsFora").value) || 0;
+    var minuto = document.getElementById("placarMinuto").value.trim();
+    var esporte = document.getElementById("placarEsporte").value;
+    if (!timeCasa || !timeFora) return alert("Preencha os dois times.");
+
+    setData("placar_vivo", {
+        timeCasa: timeCasa,
+        timeFora: timeFora,
+        golsCasa: golsCasa,
+        golsFora: golsFora,
+        minuto: minuto,
+        esporte: esporte,
+        ativo: true
+    });
+    renderPlacarAoVivo();
+    alert("Placar atualizado!");
+}
+
+function encerrarPlacar() {
+    setData("placar_vivo", { ativo: false });
+    renderPlacarAoVivo();
+}
+
+function renderPlacarAoVivo() {
+    var container = document.getElementById("placarAoVivoHome");
+    if (!container) return;
+    var p = getData("placar_vivo");
+    if (!p || !p.ativo) { container.innerHTML = ""; return; }
+
+    container.innerHTML =
+        '<div class="section-header" style="margin-top:50px;">' +
+            '<h2 class="section-title">Placar ao Vivo</h2>' +
+        '</div>' +
+        '<div class="placar-vivo-card">' +
+            '<div class="placar-badge-live">AO VIVO</div>' +
+            '<div class="placar-times">' +
+                '<div class="placar-time">' +
+                    '<span class="placar-time-nome">' + esc(p.timeCasa) + '</span>' +
+                    '<span class="placar-gols">' + p.golsCasa + '</span>' +
+                '</div>' +
+                '<div class="placar-vs">x</div>' +
+                '<div class="placar-time">' +
+                    '<span class="placar-gols">' + p.golsFora + '</span>' +
+                    '<span class="placar-time-nome">' + esc(p.timeFora) + '</span>' +
+                '</div>' +
+            '</div>' +
+            '<div class="placar-minuto">' + esc(p.minuto || "") + '</div>' +
+        '</div>';
+}
+
+// ===== RESUMO DA SEMANA =====
+function salvarResumo() {
+    var titulo = document.getElementById("resumoTitulo").value.trim();
+    var corpo = sanitizeHtml(document.getElementById("resumoCorpo").innerHTML.trim());
+    if (!titulo) return alert("Preencha o titulo.");
+
+    var resumos = getData("resumos");
+    resumos.push({
+        id: gerarId(),
+        titulo: titulo,
+        corpo: corpo,
+        data: new Date().toISOString().split("T")[0]
+    });
+    setData("resumos", resumos);
+
+    document.getElementById("resumoTitulo").value = "";
+    document.getElementById("resumoCorpo").innerHTML = "";
+    renderResumoSemana();
+    renderAdminResumos();
+    alert("Resumo publicado!");
+}
+
+function deletarResumo(id) {
+    if (!confirm("Excluir resumo?")) return;
+    var resumos = getData("resumos").filter(function (r) { return r.id !== id; });
+    setData("resumos", resumos);
+    renderResumoSemana();
+    renderAdminResumos();
+}
+
+function renderResumoSemana() {
+    var container = document.getElementById("resumoSemanaHome");
+    if (!container) return;
+    var resumos = getData("resumos").sort(function (a, b) { return b.data.localeCompare(a.data); });
+    if (resumos.length === 0) { container.innerHTML = ""; return; }
+
+    var r = resumos[0]; // mais recente
+    container.innerHTML =
+        '<div class="section-header"><h2 class="section-title">Resumo da Semana</h2></div>' +
+        '<div class="resumo-card">' +
+            '<h3 class="resumo-titulo">' + esc(r.titulo) + '</h3>' +
+            '<div class="resumo-data">' + formatarData(r.data) + '</div>' +
+            '<div class="resumo-corpo">' + sanitizeHtml(r.corpo) + '</div>' +
+        '</div>';
+}
+
+function renderAdminResumos() {
+    var container = document.getElementById("adminResumoList");
+    if (!container) return;
+    var resumos = getData("resumos").sort(function (a, b) { return b.data.localeCompare(a.data); });
+    if (resumos.length === 0) { container.innerHTML = ""; return; }
+
+    container.innerHTML = "";
+    resumos.forEach(function (r) {
+        container.innerHTML +=
+            '<div style="padding:8px 12px;border:1px solid var(--cinza-200);border-radius:6px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">' +
+                '<span style="font-size:0.85rem;">' + esc(r.titulo) + ' - ' + formatarData(r.data) + '</span>' +
+                '<button class="btn btn-sm" onclick="deletarResumo(\'' + r.id + '\')">Excluir</button>' +
+            '</div>';
+    });
+}
+
+// ===== CONQUISTAS / QUADRO DE MEDALHAS =====
+function renderConquistas() {
+    var conquistas = getData("conquistas").sort(function (a, b) { return b.data.localeCompare(a.data); });
+    var grid = document.getElementById("conquistasGrid");
+    if (!grid) return;
+    grid.innerHTML = "";
+
+    if (conquistas.length === 0) {
+        grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">&#127942;</div><div class="empty-state-text">Nenhuma conquista registrada ainda.</div></div>';
+        return;
+    }
+
+    conquistas.forEach(function (c) {
+        var medalhaIcon = { ouro: "&#129351;", prata: "&#129352;", bronze: "&#129353;", destaque: "&#11088;" };
+        var medalhaClass = c.medalha || "destaque";
+        var icon = medalhaIcon[medalhaClass] || "&#11088;";
+
+        var adminBtn = isAdmin()
+            ? '<button class="btn btn-sm" style="margin-top:8px;font-size:0.7rem;" onclick="deletarConquista(\'' + c.id + '\')">Excluir</button>'
+            : '';
+
+        grid.innerHTML +=
+            '<div class="conquista-card conquista-' + medalhaClass + '">' +
+                '<div class="conquista-medalha">' + icon + '</div>' +
+                '<div class="conquista-info">' +
+                    '<h3 class="conquista-titulo">' + esc(c.titulo) + '</h3>' +
+                    '<p class="conquista-atleta">' + esc(c.atleta) + '</p>' +
+                    '<p class="conquista-detalhe">' + esc(c.evento || "") + (c.local ? " - " + esc(c.local) : "") + '</p>' +
+                    '<span class="conquista-data">' + formatarData(c.data) + '</span>' +
+                    adminBtn +
+                '</div>' +
+            '</div>';
+    });
+}
+
+function salvarConquista() {
+    var titulo = document.getElementById("conquistaTitulo").value.trim();
+    var atleta = document.getElementById("conquistaAtleta").value.trim();
+    var esporte = document.getElementById("conquistaEsporte").value;
+    var medalha = document.getElementById("conquistaMedalha").value;
+    var evento = document.getElementById("conquistaEvento").value.trim();
+    var local = document.getElementById("conquistaLocal").value.trim();
+    var data = document.getElementById("conquistaData").value;
+    if (!titulo || !atleta) return alert("Preencha titulo e atleta.");
+
+    var conquistas = getData("conquistas");
+    conquistas.push({
+        id: gerarId(),
+        titulo: titulo,
+        atleta: atleta,
+        esporte: esporte,
+        medalha: medalha,
+        evento: evento,
+        local: local,
+        data: data || new Date().toISOString().split("T")[0]
+    });
+    setData("conquistas", conquistas);
+
+    document.getElementById("conquistaTitulo").value = "";
+    document.getElementById("conquistaAtleta").value = "";
+    document.getElementById("conquistaEvento").value = "";
+    document.getElementById("conquistaLocal").value = "";
+    document.getElementById("conquistaData").value = "";
+    document.getElementById("adminConquista").style.display = "none";
+    renderConquistas();
+    alert("Conquista registrada!");
+}
+
+function deletarConquista(id) {
+    if (!confirm("Excluir conquista?")) return;
+    var conquistas = getData("conquistas").filter(function (c) { return c.id !== id; });
+    setData("conquistas", conquistas);
+    renderConquistas();
+}
+
+// ===== TIMES / EQUIPES =====
+function renderTimes() {
+    var container = document.getElementById("timesGrid");
+    if (!container) return;
+    var times = getData("times");
+    if (times.length === 0) { container.innerHTML = ""; return; }
+
+    var html = '<div class="section-header" style="margin-bottom:20px;"><h2 class="section-title" style="font-size:1.1rem;">Times e Equipes</h2></div>';
+    html += '<div class="times-grid">';
+    times.forEach(function (t) {
+        var esporte = ESPORTES.find(function (e) { return e.id === t.esporte; });
+        var icon = esporte ? esporte.icon : "&#9917;";
+        var logo = t.logo
+            ? '<img src="' + esc(t.logo) + '" alt="' + esc(t.nome) + '" class="time-logo">'
+            : '<div class="time-logo time-logo-placeholder">' + icon + '</div>';
+
+        html +=
+            '<div class="time-card">' +
+                logo +
+                '<div class="time-info">' +
+                    '<h3 class="time-nome">' + esc(t.nome) + '</h3>' +
+                    '<span class="time-esporte">' + (esporte ? esporte.nome : esc(t.esporte)) + '</span>' +
+                    (t.descricao ? '<p class="time-desc">' + esc(t.descricao).substring(0, 120) + '</p>' : '') +
+                '</div>' +
+            '</div>';
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function salvarTime() {
+    var nome = document.getElementById("timeNome").value.trim();
+    var esporte = document.getElementById("timeEsporte").value;
+    var logo = document.getElementById("timeLogo").value.trim();
+    var descricao = document.getElementById("timeDescricao").value.trim();
+    if (!nome) return alert("Preencha o nome do time.");
+
+    var times = getData("times");
+    times.push({
+        id: gerarId(),
+        nome: nome,
+        esporte: esporte,
+        logo: logo,
+        descricao: descricao
+    });
+    setData("times", times);
+
+    document.getElementById("timeNome").value = "";
+    document.getElementById("timeLogo").value = "";
+    document.getElementById("timeDescricao").value = "";
+    renderTimes();
+    renderAdminTimes();
+    alert("Time cadastrado!");
+}
+
+function deletarTime(id) {
+    if (!confirm("Excluir time?")) return;
+    var times = getData("times").filter(function (t) { return t.id !== id; });
+    setData("times", times);
+    renderTimes();
+    renderAdminTimes();
+}
+
+function renderAdminTimes() {
+    var container = document.getElementById("adminTimesList");
+    if (!container) return;
+    var times = getData("times");
+    if (times.length === 0) { container.innerHTML = "<p style='color:#8892a4;font-size:0.85rem;'>Nenhum time.</p>"; return; }
+
+    container.innerHTML = "";
+    times.forEach(function (t) {
+        container.innerHTML +=
+            '<div style="padding:8px 12px;border:1px solid var(--cinza-200);border-radius:6px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">' +
+                '<span style="font-size:0.85rem;"><strong>' + esc(t.nome) + '</strong> - ' + esc(t.esporte) + '</span>' +
+                '<button class="btn btn-sm" onclick="deletarTime(\'' + t.id + '\')">Excluir</button>' +
+            '</div>';
+    });
 }
 
 // ===== OPINIAO / COLUNAS =====
@@ -1442,6 +1827,7 @@ function deletarEvento(id) {
 
 // ===== ATLETAS =====
 function renderAtletas() {
+    renderTimes();
     var atletas = getData("atletas");
     var grid = document.getElementById("athletesGrid");
     if (!grid) return;
@@ -1669,7 +2055,7 @@ function toggleAdmin(id) {
 // ===== BACKUP / EXPORT / IMPORT =====
 function exportarDados() {
     var data = {};
-    var keys = ["noticias", "jogos", "atletas", "galeria", "patrocinadores", "campeonatos", "opinioes", "eventos"];
+    var keys = ["noticias", "jogos", "atletas", "galeria", "patrocinadores", "campeonatos", "opinioes", "eventos", "enquetes", "conquistas", "resumos", "times"];
     keys.forEach(function (k) { data[k] = getData(k); });
 
     var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });

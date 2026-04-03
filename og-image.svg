@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#0a1628"/>
+  <rect x="0" y="0" width="1200" height="6" fill="#d4a017"/>
+  <text x="600" y="250" font-size="72" text-anchor="middle" fill="#d4a017" font-weight="bold" font-family="Arial, sans-serif">ESPORTE</text>
+  <text x="600" y="340" font-size="72" text-anchor="middle" fill="#ffffff" font-weight="bold" font-family="Arial, sans-serif">SAO PEDRO</text>
+  <text x="600" y="420" font-size="28" text-anchor="middle" fill="#8892a4" font-family="Arial, sans-serif">Portal Esportivo de Sao Pedro/SP</text>
+  <text x="600" y="520" font-size="22" text-anchor="middle" fill="#64748b" font-family="Arial, sans-serif">Noticias | Campeonatos | Calendario | Atletas | Galeria</text>
+  <rect x="540" y="450" width="120" height="4" rx="2" fill="#d4a017"/>
+</svg>

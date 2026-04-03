@@ -8,7 +8,22 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0a1628">
     <meta name="description" content="Portal esportivo de Sao Pedro/SP. Resultados, tabelas, artilheiros, calendario e noticias do esporte local.">
+    <!-- Open Graph / Social Sharing -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Esporte Sao Pedro - Portal Esportivo">
+    <meta property="og:description" content="Resultados, tabelas, artilheiros, calendario e noticias do esporte de Sao Pedro e regiao.">
+    <meta property="og:url" content="https://marquezbertin.github.io/esporte-sao-pedro/">
+    <meta property="og:site_name" content="Esporte Sao Pedro">
+    <meta property="og:image" content="https://marquezbertin.github.io/esporte-sao-pedro/og-image.svg">
+    <meta property="og:locale" content="pt_BR">
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Esporte Sao Pedro - Portal Esportivo">
+    <meta name="twitter:description" content="Resultados, tabelas, artilheiros, calendario e noticias do esporte de Sao Pedro e regiao.">
+    <meta name="twitter:image" content="https://marquezbertin.github.io/esporte-sao-pedro/og-image.svg">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230a1628'/><text x='50' y='42' font-size='24' text-anchor='middle' fill='%23d4a017' font-weight='bold' font-family='sans-serif'>ESPORTE</text><text x='50' y='68' font-size='18' text-anchor='middle' fill='%23ffffff' font-weight='bold' font-family='sans-serif'>SAO PEDRO</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
@@ -48,6 +63,7 @@
                     <a href="#" class="nav-link" onclick="navegar('atletas', event)">Atletas</a>
                     <a href="#" class="nav-link" onclick="navegar('galeria', event)">Galeria</a>
                     <a href="#" class="nav-link" onclick="navegar('opiniao', event)">Opiniao</a>
+                    <a href="#" class="nav-link" onclick="navegar('conquistas', event)">Conquistas</a>
                     <a href="#" class="nav-link nav-live" onclick="abrirLive(event)" id="navLive" style="display:none;">&#128308; AO VIVO</a>
                     <a href="#" class="nav-link" onclick="navegar('sobre', event)">Sobre</a>
                 </nav>
@@ -126,12 +142,21 @@
             </div>
             <div class="games-list" id="nextGamesList"></div>
 
+            <!-- PLACAR AO VIVO -->
+            <div id="placarAoVivoHome"></div>
+
             <!-- DESTAQUE: ARTILHEIROS -->
             <div class="section-header" style="margin-top:50px;">
                 <h2 class="section-title">Artilheiros</h2>
                 <a href="#" class="section-link" onclick="navegar('campeonatos', event)">Ver tabela completa &rarr;</a>
             </div>
             <div class="scorers-table" id="scorersTable"></div>
+
+            <!-- ENQUETE -->
+            <div id="enqueteHome" style="margin-top:50px;"></div>
+
+            <!-- RESUMO DA SEMANA -->
+            <div id="resumoSemanaHome" style="margin-top:50px;"></div>
         </div>
     </section>
 
@@ -321,6 +346,10 @@
                 <h2 class="section-title">Atletas de Sao Pedro</h2>
                 <p class="section-sub">Conheca os atletas que representam nossa cidade</p>
             </div>
+            <!-- TIMES -->
+            <div id="timesGrid" style="margin-bottom:40px;"></div>
+
+            <!-- ATLETAS -->
             <div class="athletes-grid" id="athletesGrid"></div>
 
             <!-- ADMIN: ADICIONAR ATLETA -->
@@ -414,6 +443,49 @@
         </div>
     </section>
 
+    <!-- SECAO: CONQUISTAS / QUADRO DE MEDALHAS -->
+    <section class="section secao-page" id="secao-conquistas">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Conquistas de Sao Pedro</h2>
+                <p class="section-sub">Historico de medalhas e premiacoes dos atletas da cidade</p>
+            </div>
+            <div class="conquistas-grid" id="conquistasGrid"></div>
+
+            <!-- ADMIN: ADICIONAR CONQUISTA -->
+            <div class="admin-section admin-only">
+                <button class="btn btn-secondary" onclick="toggleAdmin('adminConquista')">+ Registrar Conquista</button>
+                <div class="admin-form" id="adminConquista" style="display:none;">
+                    <h3>Nova Conquista</h3>
+                    <input type="text" id="conquistaTitulo" placeholder="Titulo (ex: 3o lugar Corrida Divas Run)">
+                    <input type="text" id="conquistaAtleta" placeholder="Atleta ou equipe">
+                    <select id="conquistaEsporte">
+                        <option value="futebol">Futebol</option>
+                        <option value="volei">Volei</option>
+                        <option value="basquete">Basquete</option>
+                        <option value="corrida">Corrida</option>
+                        <option value="ciclismo">Ciclismo</option>
+                        <option value="artes-marciais">Artes Marciais</option>
+                    </select>
+                    <select id="conquistaMedalha">
+                        <option value="ouro">Ouro - 1o lugar</option>
+                        <option value="prata">Prata - 2o lugar</option>
+                        <option value="bronze">Bronze - 3o lugar</option>
+                        <option value="destaque">Destaque / Mencao</option>
+                    </select>
+                    <input type="text" id="conquistaEvento" placeholder="Nome do evento/competicao">
+                    <input type="text" id="conquistaLocal" placeholder="Cidade/Local">
+                    <input type="date" id="conquistaData">
+                    <button class="btn btn-primary" onclick="salvarConquista()">Registrar</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECAO: TIMES / EQUIPES (dentro de Atletas como subsecao) -->
+
+    <!-- ADMIN PANELS: ENQUETE, PLACAR AO VIVO, RESUMO SEMANA, TIMES (na secao Sobre) -->
+
     <!-- LIGHTBOX -->
     <div class="lightbox" id="lightbox" onclick="fecharLightbox()">
         <button class="lightbox-close" onclick="fecharLightbox()">&times;</button>
@@ -501,6 +573,91 @@
 
                 <h3 style="margin-top:20px;font-size:0.95rem;">Patrocinadores cadastrados</h3>
                 <div id="adminPatroList" style="margin-top:12px;"></div>
+            </div>
+
+            <!-- ADMIN: ENQUETE -->
+            <div class="card-panel admin-only" style="margin-top:40px;">
+                <div class="card-panel-header">
+                    <h3>Enquetes / Votacoes</h3>
+                    <span class="badge">ADMIN</span>
+                </div>
+                <p style="color:#8892a4;margin-bottom:16px;">Crie enquetes para os leitores votarem. Aparece na pagina inicial.</p>
+                <div class="admin-form" style="display:block;margin-top:0;border-color:var(--cinza-200);">
+                    <input type="text" id="enquetePergunta" placeholder="Pergunta (ex: Quem foi o melhor jogador da rodada?)">
+                    <textarea id="enqueteOpcoes" placeholder="Opcoes (uma por linha)&#10;Ex:&#10;Jogador A&#10;Jogador B&#10;Jogador C" rows="4"></textarea>
+                    <button class="btn btn-primary" onclick="salvarEnquete()">Criar Enquete</button>
+                </div>
+                <h4 style="margin-top:20px;font-size:0.9rem;">Enquetes ativas</h4>
+                <div id="adminEnqueteList" style="margin-top:12px;"></div>
+            </div>
+
+            <!-- ADMIN: PLACAR AO VIVO -->
+            <div class="card-panel admin-only" style="margin-top:40px;">
+                <div class="card-panel-header">
+                    <h3>Placar ao Vivo</h3>
+                    <span class="badge">ADMIN</span>
+                </div>
+                <p style="color:#8892a4;margin-bottom:16px;">Atualize o placar durante jogos. Aparece em destaque na pagina inicial.</p>
+                <div class="admin-form" style="display:block;margin-top:0;border-color:var(--cinza-200);">
+                    <input type="text" id="placarTimeCasa" placeholder="Time da casa">
+                    <input type="number" id="placarGolsCasa" placeholder="Gols casa" min="0" value="0">
+                    <input type="text" id="placarTimeFora" placeholder="Time visitante">
+                    <input type="number" id="placarGolsFora" placeholder="Gols visitante" min="0" value="0">
+                    <input type="text" id="placarMinuto" placeholder="Tempo (ex: 35min 2T, Intervalo, Encerrado)">
+                    <select id="placarEsporte">
+                        <option value="futebol">Futebol</option>
+                        <option value="volei">Volei</option>
+                        <option value="basquete">Basquete</option>
+                    </select>
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                        <button class="btn btn-primary" onclick="atualizarPlacar()">Atualizar Placar</button>
+                        <button class="btn btn-danger" onclick="encerrarPlacar()">Encerrar Placar</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN: RESUMO DA SEMANA -->
+            <div class="card-panel admin-only" style="margin-top:40px;">
+                <div class="card-panel-header">
+                    <h3>Resumo da Semana</h3>
+                    <span class="badge">ADMIN</span>
+                </div>
+                <p style="color:#8892a4;margin-bottom:16px;">Boletim semanal. Aparece na pagina inicial.</p>
+                <div class="admin-form" style="display:block;margin-top:0;border-color:var(--cinza-200);">
+                    <input type="text" id="resumoTitulo" placeholder="Titulo (ex: Resumo - Semana 14/2026)">
+                    <div class="rich-editor-toolbar">
+                        <button type="button" onclick="richCmd('bold')" title="Negrito"><b>N</b></button>
+                        <button type="button" onclick="richCmd('italic')" title="Italico"><i>I</i></button>
+                        <button type="button" onclick="richCmd('insertUnorderedList')" title="Lista">&#8226; Lista</button>
+                    </div>
+                    <div class="rich-editor" id="resumoCorpo" contenteditable="true" data-placeholder="Resultados da semana, destaques, proximos jogos..."></div>
+                    <button class="btn btn-primary" onclick="salvarResumo()">Publicar Resumo</button>
+                </div>
+                <div id="adminResumoList" style="margin-top:16px;"></div>
+            </div>
+
+            <!-- ADMIN: TIMES / EQUIPES -->
+            <div class="card-panel admin-only" style="margin-top:40px;">
+                <div class="card-panel-header">
+                    <h3>Times / Equipes</h3>
+                    <span class="badge">ADMIN</span>
+                </div>
+                <p style="color:#8892a4;margin-bottom:16px;">Cadastre perfis de times. Aparecem na secao Atletas.</p>
+                <div class="admin-form" style="display:block;margin-top:0;border-color:var(--cinza-200);">
+                    <input type="text" id="timeNome" placeholder="Nome do time/equipe">
+                    <select id="timeEsporte">
+                        <option value="futebol">Futebol</option>
+                        <option value="volei">Volei</option>
+                        <option value="basquete">Basquete</option>
+                        <option value="corrida">Corrida</option>
+                        <option value="ciclismo">Ciclismo</option>
+                        <option value="artes-marciais">Artes Marciais</option>
+                    </select>
+                    <input type="text" id="timeLogo" placeholder="URL do escudo/logo (opcional)" data-upload-target="timeLogo">
+                    <textarea id="timeDescricao" placeholder="Descricao / historico do time" rows="3"></textarea>
+                    <button class="btn btn-primary" onclick="salvarTime()">Cadastrar Time</button>
+                </div>
+                <div id="adminTimesList" style="margin-top:16px;"></div>
             </div>
 
             <!-- INSCRITOS NEWSLETTER -->
@@ -708,5 +865,10 @@
     <script src="supabase.js"></script>
     <script src="upload.js"></script>
     <script src="app.js"></script>
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch(function(){});
+    }
+    </script>
 </body>
 </html>
