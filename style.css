@@ -1641,6 +1641,27 @@ img { max-width: 100%; display: block; }
 
 .footer-col a:hover { color: var(--dourado); }
 
+.footer-social-links {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.footer-social-links a {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.08);
+    color: var(--cinza-300);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.footer-social-links a:hover {
+    background: var(--dourado);
+    color: var(--branco);
+}
+
 .footer-about {
     font-size: 0.85rem;
     line-height: 1.7;
