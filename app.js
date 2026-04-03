@@ -322,7 +322,8 @@ function navegar(secao, e) {
         case "galeria": renderGaleria(); break;
         case "opiniao": renderOpinioes(); break;
         case "conquistas": renderConquistas(); break;
-        case "sobre": atualizarStorageInfo(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderTemplatesPauta(); renderAdminPautas(); renderAdminEnquetes(); renderAdminResumos(); renderAdminTimes(); renderNewsletterAdmin(); break;
+        case "redacao": if (!isAdmin()) { navegar("inicio", null); return; } renderTemplatesPauta(); renderAdminPautas(); break;
+        case "sobre": atualizarStorageInfo(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminTimes(); renderNewsletterAdmin(); break;
     }
 
     window.scrollTo({ top: 0, behavior: "smooth" });

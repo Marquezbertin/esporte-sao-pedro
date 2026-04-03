@@ -65,6 +65,7 @@
                     <a href="#" class="nav-link" onclick="navegar('opiniao', event)">Opiniao</a>
                     <a href="#" class="nav-link" onclick="navegar('conquistas', event)">Conquistas</a>
                     <a href="#" class="nav-link nav-live" onclick="abrirLive(event)" id="navLive" style="display:none;">&#128308; AO VIVO</a>
+                    <a href="#" class="nav-link admin-only nav-redacao" onclick="navegar('redacao', event)">Redacao</a>
                     <a href="#" class="nav-link" onclick="navegar('sobre', event)">Sobre</a>
                 </nav>
             </div>
@@ -493,6 +494,85 @@
         <p class="lightbox-caption" id="lightboxCaption"></p>
     </div>
 
+    <!-- SECAO: REDACAO (ADMIN ONLY) -->
+    <section class="section secao-page" id="secao-redacao">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Redacao</h2>
+                <p class="section-sub">Painel editorial — pautas, templates e ferramentas</p>
+            </div>
+
+            <!-- TEMPLATES PRONTOS -->
+            <div class="card-panel" style="margin-bottom:30px;">
+                <div class="card-panel-header">
+                    <h3>Templates de Materia</h3>
+                </div>
+                <p style="color:#8892a4;margin-bottom:16px;">Modelos prontos para coberturas. Clique em "Usar como base" para abrir o formulario de noticia ja preenchido.</p>
+                <div id="pautasTemplateList"></div>
+            </div>
+
+            <!-- NOVA PAUTA -->
+            <div class="card-panel" style="margin-bottom:30px;">
+                <div class="card-panel-header">
+                    <h3>Nova Pauta</h3>
+                </div>
+                <div class="admin-form" style="display:block;margin-top:12px;border-color:var(--cinza-200);">
+                    <input type="text" id="pautaTitulo" placeholder="Titulo da pauta (ex: Resultado CRV Voleibol - Rodada 2)">
+                    <select id="pautaCategoria">
+                        <option value="futebol">Futebol</option>
+                        <option value="volei">Volei</option>
+                        <option value="basquete">Basquete</option>
+                        <option value="corrida">Corrida</option>
+                        <option value="ciclismo">Ciclismo</option>
+                        <option value="artes-marciais">Artes Marciais</option>
+                        <option value="geral">Geral</option>
+                    </select>
+                    <select id="pautaPrioridade">
+                        <option value="alta">Prioridade Alta</option>
+                        <option value="media">Prioridade Media</option>
+                        <option value="baixa">Prioridade Baixa</option>
+                    </select>
+                    <textarea id="pautaNotas" placeholder="Anotacoes, fontes, contatos, dados a coletar..." rows="3"></textarea>
+                    <input type="date" id="pautaPrazo" placeholder="Prazo">
+                    <button class="btn btn-primary" onclick="salvarPauta()">Salvar Pauta</button>
+                </div>
+            </div>
+
+            <!-- MINHAS PAUTAS -->
+            <div class="card-panel" style="margin-bottom:30px;">
+                <div class="card-panel-header">
+                    <h3>Minhas Pautas</h3>
+                </div>
+                <div id="adminPautasList" style="margin-top:12px;"></div>
+            </div>
+
+            <!-- CONTATOS UTEIS -->
+            <div class="card-panel">
+                <div class="card-panel-header">
+                    <h3>Contatos e Fontes</h3>
+                </div>
+                <div style="color:#64748b;font-size:0.85rem;line-height:1.8;margin-top:12px;">
+                    <p><strong>Secretaria de Esporte e Lazer</strong><br>
+                    Secretario: Marcelo Eugenio Vieira<br>
+                    Tel: (19) 3481-9393<br>
+                    Email: esporteselazer@saopedro.sp.gov.br<br>
+                    Endereco: Rua Victorio Longhi, s/n - Vila Estela<br>
+                    Instagram: @esporteselazersaopedrosp</p>
+
+                    <p style="margin-top:12px;"><strong>Locais de jogos</strong><br>
+                    Ginasio Bordadao — Voleibol, Futsal<br>
+                    Secretaria de Esportes — Inscricoes presenciais</p>
+
+                    <p style="margin-top:12px;"><strong>Competicoes ativas</strong><br>
+                    XV Copa Voleibol Adaptado — 7 cidades, ao longo do ano<br>
+                    Circuito Regional de Voleibol (CRV) — Sub-21 e Adulto<br>
+                    Campeonatos Futsal Sub-13/Sub-15 e Society Sub-9/Sub-11<br>
+                    Copa Interior Triathlon/Duathlon/Aquathlon — SP vice-lider (16 trofeus)</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- SECAO: SOBRE -->
     <section class="section secao-page" id="secao-sobre">
         <div class="container">
@@ -573,43 +653,6 @@
 
                 <h3 style="margin-top:20px;font-size:0.95rem;">Patrocinadores cadastrados</h3>
                 <div id="adminPatroList" style="margin-top:12px;"></div>
-            </div>
-
-            <!-- ADMIN: PAUTAS / REDACAO -->
-            <div class="card-panel admin-only" style="margin-top:40px;">
-                <div class="card-panel-header">
-                    <h3>Pautas da Redacao</h3>
-                    <span class="badge">ADMIN</span>
-                </div>
-                <p style="color:#8892a4;margin-bottom:16px;">Sugestoes de materia e templates prontos. Clique em "Usar como base" para criar a noticia direto.</p>
-
-                <div class="admin-form" style="display:block;margin-top:0;border-color:var(--cinza-200);">
-                    <h4 style="font-size:0.85rem;margin-bottom:8px;">Criar nova pauta</h4>
-                    <input type="text" id="pautaTitulo" placeholder="Titulo da pauta (ex: Resultado CRV Voleibol - Rodada 2)">
-                    <select id="pautaCategoria">
-                        <option value="futebol">Futebol</option>
-                        <option value="volei">Volei</option>
-                        <option value="basquete">Basquete</option>
-                        <option value="corrida">Corrida</option>
-                        <option value="ciclismo">Ciclismo</option>
-                        <option value="artes-marciais">Artes Marciais</option>
-                        <option value="geral">Geral</option>
-                    </select>
-                    <select id="pautaPrioridade">
-                        <option value="alta">Prioridade Alta</option>
-                        <option value="media">Prioridade Media</option>
-                        <option value="baixa">Prioridade Baixa</option>
-                    </select>
-                    <textarea id="pautaNotas" placeholder="Anotacoes, fontes, contatos, dados a coletar..." rows="3"></textarea>
-                    <input type="date" id="pautaPrazo" placeholder="Prazo">
-                    <button class="btn btn-primary" onclick="salvarPauta()">Salvar Pauta</button>
-                </div>
-
-                <div id="pautasTemplateList" style="margin-top:20px;"></div>
-                <div style="border-top:1px solid var(--cinza-200);margin-top:20px;padding-top:16px;">
-                    <h4 style="font-size:0.85rem;margin-bottom:12px;">Minhas pautas</h4>
-                    <div id="adminPautasList"></div>
-                </div>
             </div>
 
             <!-- ADMIN: ENQUETE -->
