@@ -817,6 +817,26 @@ function deletarNoticia(id) {
     renderTicker();
 }
 
+// ===== POPUP COBERTURA ESPECIAL =====
+function verificarPopupCobertura() {
+    var agora = new Date();
+    var limite = new Date("2026-04-04T23:59:59");
+    if (agora > limite) return;
+
+    var popup = document.getElementById("popupCobertura");
+    if (popup) popup.classList.add("active");
+}
+
+function fecharPopupCobertura() {
+    var popup = document.getElementById("popupCobertura");
+    if (popup) popup.classList.remove("active");
+}
+
+// Exibir popup ao carregar
+document.addEventListener("DOMContentLoaded", function () {
+    setTimeout(verificarPopupCobertura, 800);
+});
+
 // ===== PAUTAS DA REDACAO =====
 var TEMPLATES_PAUTA = [
     {
