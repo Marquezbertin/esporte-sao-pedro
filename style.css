@@ -592,6 +592,7 @@ img { max-width: 100%; display: block; }
 .news-card-cat.corrida { background: #fce7f3; color: #db2777; }
 .news-card-cat.ciclismo { background: #e0e7ff; color: #4f46e5; }
 .news-card-cat.artes-marciais { background: #fee2e2; color: #dc2626; }
+.news-card-cat.skate-radicais { background: #ede9fe; color: #7c3aed; }
 .news-card-cat.geral { background: var(--cinza-100); color: var(--cinza-600); }
 
 .news-card-featured {

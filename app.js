@@ -134,7 +134,8 @@ var ESPORTES = [
     { id: "basquete", nome: "Basquete", icon: "\uD83C\uDFC0", cor: "#d97706" },
     { id: "corrida", nome: "Corrida", icon: "\uD83C\uDFC3", cor: "#db2777" },
     { id: "ciclismo", nome: "Ciclismo", icon: "\uD83D\uDEB4", cor: "#4f46e5" },
-    { id: "artes-marciais", nome: "Artes Marciais", icon: "\uD83E\uDD4B", cor: "#dc2626" }
+    { id: "artes-marciais", nome: "Artes Marciais", icon: "\uD83E\uDD4B", cor: "#dc2626" },
+    { id: "skate-radicais", nome: "Skate e Radicais", icon: "\uD83D\uDEF9", cor: "#7c3aed" }
 ];
 
 // ===== MODO ADMIN (senha para editor/jornalista) =====
