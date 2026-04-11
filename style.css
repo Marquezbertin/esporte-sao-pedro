@@ -2428,6 +2428,150 @@ body.admin-mode .admin-login-btn { display: none; }
     }
 }
 
+/* ===== VIDEOS GRID ===== */
+.videos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+}
+
+.video-card {
+    background: var(--branco);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.video-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+}
+
+.video-card-embed {
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+}
+
+.video-card-embed iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+.video-card-info {
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.video-card-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--azul-escuro);
+}
+
+.video-card-meta {
+    font-size: 0.75rem;
+    color: var(--cinza-500);
+}
+
+.video-card-actions {
+    display: none;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+}
+
+body.admin-mode .video-card-actions { display: flex; }
+
+.video-card-actions button {
+    background: rgba(220, 38, 38, 0.85);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.8rem;
+}
+
+.video-card-actions button:hover { background: var(--vermelho); }
+
+/* ===== YOUTUBE BANNER ===== */
+.youtube-banner {
+    background: linear-gradient(135deg, #c4302b, #ff0000);
+    padding: 24px 0;
+    margin-top: 50px;
+}
+
+.youtube-banner-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.youtube-banner-text {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    color: #fff;
+}
+
+.youtube-banner-icon {
+    font-size: 2rem;
+    background: rgba(255,255,255,0.15);
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.youtube-banner-text strong {
+    display: block;
+    font-size: 1.1rem;
+    font-family: var(--font-display);
+}
+
+.youtube-banner-sub {
+    display: block;
+    font-size: 0.85rem;
+    opacity: 0.9;
+}
+
+.youtube-banner-btn {
+    background: #fff;
+    color: #c4302b;
+    font-weight: 700;
+    padding: 10px 28px;
+    border-radius: 24px;
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.youtube-banner-btn:hover {
+    background: var(--azul-escuro);
+    color: #fff;
+}
+
+@media (max-width: 600px) {
+    .videos-grid { grid-template-columns: 1fr; }
+    .youtube-banner-inner { justify-content: center; text-align: center; }
+    .youtube-banner-text { flex-direction: column; }
+}
+
 /* ===== SPONSORS BAR ===== */
 .sponsors-bar {
     background: var(--branco);

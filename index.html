@@ -62,6 +62,7 @@
                     <a href="#" class="nav-link" onclick="navegar('calendario', event)">Calendario</a>
                     <a href="#" class="nav-link" onclick="navegar('atletas', event)">Atletas</a>
                     <a href="#" class="nav-link" onclick="navegar('galeria', event)">Galeria</a>
+                    <a href="#" class="nav-link" onclick="navegar('videos', event)">Videos</a>
                     <a href="#" class="nav-link" onclick="navegar('opiniao', event)">Opiniao</a>
                     <a href="#" class="nav-link" onclick="navegar('conquistas', event)">Conquistas</a>
                     <a href="#" class="nav-link nav-live" onclick="abrirLive(event)" id="navLive" style="display:none;">&#128308; AO VIVO</a>
@@ -413,6 +414,46 @@
                     </select>
                     <input type="date" id="fotoData">
                     <button class="btn btn-primary" onclick="salvarFoto()">Adicionar</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECAO: VIDEOS -->
+    <section class="section secao-page" id="secao-videos">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Videos</h2>
+                <p class="section-sub">Canal Esporte Sao Pedro no YouTube</p>
+            </div>
+            <div class="gallery-filters">
+                <button class="chip active" onclick="filtrarVideos('todos', this)">Todos</button>
+                <button class="chip" onclick="filtrarVideos('futebol', this)">Futebol</button>
+                <button class="chip" onclick="filtrarVideos('volei', this)">Volei</button>
+                <button class="chip" onclick="filtrarVideos('basquete', this)">Basquete</button>
+                <button class="chip" onclick="filtrarVideos('corrida', this)">Corrida</button>
+                <button class="chip" onclick="filtrarVideos('eventos', this)">Eventos</button>
+                <button class="chip" onclick="filtrarVideos('geral', this)">Geral</button>
+            </div>
+            <div class="videos-grid" id="videosGrid"></div>
+
+            <!-- ADMIN: ADICIONAR VIDEO -->
+            <div class="admin-section admin-only">
+                <button class="btn btn-secondary" onclick="toggleAdmin('adminVideo')">+ Adicionar Video</button>
+                <div class="admin-form" id="adminVideo" style="display:none;">
+                    <h3>Novo Video</h3>
+                    <input type="text" id="videoUrl" placeholder="Link do YouTube (ex: https://www.youtube.com/watch?v=...)">
+                    <input type="text" id="videoTitulo" placeholder="Titulo do video">
+                    <select id="videoCategoria">
+                        <option value="futebol">Futebol</option>
+                        <option value="volei">Volei</option>
+                        <option value="basquete">Basquete</option>
+                        <option value="corrida">Corrida</option>
+                        <option value="eventos">Eventos</option>
+                        <option value="geral">Geral</option>
+                    </select>
+                    <input type="date" id="videoData">
+                    <button class="btn btn-primary" onclick="salvarVideo()">Adicionar</button>
                 </div>
             </div>
         </div>
@@ -812,6 +853,20 @@
                 </div>
                 <p class="newsletter-msg" id="newsletterMsg" style="display:none;"></p>
             </div>
+        </div>
+    </section>
+
+    <!-- FAIXA YOUTUBE -->
+    <section class="youtube-banner">
+        <div class="container youtube-banner-inner">
+            <div class="youtube-banner-text">
+                <span class="youtube-banner-icon">&#9654;</span>
+                <div>
+                    <strong>Esporte Sao Pedro no YouTube</strong>
+                    <span class="youtube-banner-sub">Inscreva-se e acompanhe os videos do esporte da cidade</span>
+                </div>
+            </div>
+            <a href="https://www.youtube.com/@ESPORTESAOPEDRO" target="_blank" rel="noopener" class="btn youtube-banner-btn">Inscrever-se</a>
         </div>
     </section>
 

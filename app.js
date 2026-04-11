@@ -397,6 +397,7 @@ function navegar(secao, e) {
         case "calendario": renderCalendario(); break;
         case "atletas": renderAtletas(); break;
         case "galeria": renderGaleria(); break;
+        case "videos": renderVideos(); break;
         case "opiniao": renderOpinioes(); break;
         case "conquistas": renderConquistas(); break;
         case "redacao": if (!isAdmin()) { navegar("inicio", null); return; } renderTemplatesPauta(); renderAdminPautas(); break;
@@ -2263,6 +2264,84 @@ function deletarFoto(id) {
     renderGaleria();
 }
 
+// ===== VIDEOS =====
+var _filtroVideo = "todos";
+
+function filtrarVideos(cat, btn) {
+    _filtroVideo = cat;
+    document.querySelectorAll("#secao-videos .chip").forEach(function (c) { c.classList.remove("active"); });
+    if (btn) btn.classList.add("active");
+    renderVideos();
+}
+
+function extrairYouTubeId(url) {
+    var m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/);
+    return m ? m[1] : null;
+}
+
+function renderVideos() {
+    var videos = getData("videos").sort(function (a, b) { return (b.data || "").localeCompare(a.data || ""); });
+    if (_filtroVideo !== "todos") {
+        videos = videos.filter(function (v) { return v.categoria === _filtroVideo; });
+    }
+
+    var grid = document.getElementById("videosGrid");
+    if (!grid) return;
+    grid.innerHTML = "";
+
+    if (videos.length === 0) {
+        grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">&#127909;</div><div class="empty-state-text">Nenhum video cadastrado.' + (isAdmin() ? ' Clique em "+ Adicionar Video" acima.' : '') + '</div></div>';
+        return;
+    }
+
+    videos.forEach(function (v) {
+        var videoId = extrairYouTubeId(v.url);
+        if (!videoId) return;
+        grid.innerHTML +=
+            '<div class="video-card" style="position:relative;">' +
+                '<div class="video-card-embed">' +
+                    '<iframe src="https://www.youtube.com/embed/' + esc(videoId) + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>' +
+                '</div>' +
+                '<div class="video-card-info">' +
+                    '<span class="video-card-title">' + esc(v.titulo || "") + '</span>' +
+                    '<span class="video-card-meta">' + formatarData(v.data) + '</span>' +
+                '</div>' +
+                '<div class="video-card-actions">' +
+                    '<button onclick="deletarVideo(\'' + v.id + '\')" title="Excluir">X</button>' +
+                '</div>' +
+            '</div>';
+    });
+}
+
+function salvarVideo() {
+    var url = document.getElementById("videoUrl").value.trim();
+    var titulo = document.getElementById("videoTitulo").value.trim();
+    var cat = document.getElementById("videoCategoria").value;
+    var data = document.getElementById("videoData").value;
+
+    if (!url) return alert("Cole o link do video do YouTube.");
+    if (!extrairYouTubeId(url)) return alert("Link do YouTube invalido. Use o formato: https://www.youtube.com/watch?v=...");
+
+    var videos = getData("videos");
+    videos.push({ id: gerarId(), url: url, titulo: titulo, categoria: cat, data: data || new Date().toISOString().split("T")[0] });
+    setData("videos", videos);
+
+    document.getElementById("videoUrl").value = "";
+    document.getElementById("videoTitulo").value = "";
+    document.getElementById("videoData").value = "";
+    document.getElementById("adminVideo").style.display = "none";
+
+    renderVideos();
+    alert("Video adicionado!");
+}
+
+function deletarVideo(id) {
+    if (!confirm("Excluir este video?")) return;
+    var videos = getData("videos").filter(function (v) { return v.id !== id; });
+    setData("videos", videos);
+    renderVideos();
+}
+
 // ===== LIGHTBOX =====
 function abrirLightbox(url, caption) {
     var lb = document.getElementById("lightbox");
@@ -2340,7 +2419,7 @@ function toggleAdmin(id) {
 // ===== BACKUP / EXPORT / IMPORT =====
 function exportarDados() {
     var data = {};
-    var keys = ["noticias", "jogos", "atletas", "galeria", "patrocinadores", "campeonatos", "opinioes", "eventos", "enquetes", "conquistas", "resumos", "times"];
+    var keys = ["noticias", "jogos", "atletas", "galeria", "videos", "patrocinadores", "campeonatos", "opinioes", "eventos", "enquetes", "conquistas", "resumos", "times"];
     keys.forEach(function (k) { data[k] = getData(k); });
 
     var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
