@@ -241,14 +241,17 @@ function getSobreTextos() {
 
 // ===== LOGO DO SITE =====
 function carregarSiteLogo() {
-    SupaDB.getItem("site_logo").then(function (url) {
-        if (url) {
-            aplicarSiteLogo(url);
-        }
+    SupaDB.getItem("site_logo").then(function (data) {
+        if (!data) return;
+        // Compatibilidade: aceita string (url) ou objeto {url, size}
+        var url = typeof data === "string" ? data : data.url;
+        var size = (typeof data === "object" && data.size) ? data.size : 48;
+        if (url) aplicarSiteLogo(url, size);
     });
 }
 
-function aplicarSiteLogo(url) {
+function aplicarSiteLogo(url, size) {
+    size = size || 48;
     var els = [
         { img: document.getElementById("siteLogo"), fallback: document.getElementById("siteLogoFallback") },
         { img: document.getElementById("siteLogoFooter"), fallback: document.getElementById("siteLogoFallbackFooter") }
@@ -256,25 +259,37 @@ function aplicarSiteLogo(url) {
     els.forEach(function (pair) {
         if (pair.img && url) {
             pair.img.src = url;
+            pair.img.style.height = size + "px";
             pair.img.style.display = "block";
             if (pair.fallback) pair.fallback.style.display = "none";
         }
     });
-    // Preview no admin
+    // Preview e controles no admin
     var preview = document.getElementById("siteLogoPreviewAdmin");
-    if (preview && url) {
-        preview.src = url;
-        preview.style.display = "block";
-    }
+    if (preview && url) { preview.src = url; preview.style.display = "block"; }
     var input = document.getElementById("siteLogoUrl");
     if (input && url) input.value = url;
+    var slider = document.getElementById("siteLogoSize");
+    if (slider) slider.value = size;
+    var label = document.getElementById("siteLogoSizeLabel");
+    if (label) label.textContent = size;
+}
+
+function previewLogoSize(size) {
+    var label = document.getElementById("siteLogoSizeLabel");
+    if (label) label.textContent = size;
+    var imgs = [document.getElementById("siteLogo"), document.getElementById("siteLogoFooter")];
+    imgs.forEach(function (img) {
+        if (img) img.style.height = size + "px";
+    });
 }
 
 function salvarSiteLogo() {
     var url = document.getElementById("siteLogoUrl").value.trim();
     if (!url) return alert("Envie ou cole a URL de uma imagem primeiro.");
-    SupaDB.setItem("site_logo", url).then(function () {
-        aplicarSiteLogo(url);
+    var size = parseInt(document.getElementById("siteLogoSize").value) || 48;
+    SupaDB.setItem("site_logo", { url: url, size: size }).then(function () {
+        aplicarSiteLogo(url, size);
         alert("Logo salvo com sucesso!");
     });
 }
@@ -293,6 +308,8 @@ function removerSiteLogo() {
         var preview = document.getElementById("siteLogoPreviewAdmin");
         if (preview) { preview.src = ""; preview.style.display = "none"; }
         document.getElementById("siteLogoUrl").value = "";
+        document.getElementById("siteLogoSize").value = 48;
+        document.getElementById("siteLogoSizeLabel").textContent = "48";
         alert("Logo removido.");
     });
 }

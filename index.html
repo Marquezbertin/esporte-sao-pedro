@@ -646,11 +646,15 @@
                 <p style="color:#8892a4;margin-bottom:16px;">Envie o logo do portal. Ele substituira o icone "SP" no cabecalho e rodape.</p>
                 <div class="admin-form" style="display:block;margin-top:0;border-color:var(--cinza-200);">
                     <input type="text" id="siteLogoUrl" placeholder="URL do logo (imagem)" data-upload-target="siteLogoUrl">
+                    <div style="margin-top:12px;">
+                        <label style="font-size:0.85rem;color:#64748b;font-weight:600;">Tamanho do logo: <span id="siteLogoSizeLabel">48</span>px</label>
+                        <input type="range" id="siteLogoSize" min="24" max="120" value="48" step="2" oninput="previewLogoSize(this.value)" style="width:100%;margin-top:4px;">
+                    </div>
                     <div style="display:flex;gap:12px;margin-top:12px;">
                         <button class="btn btn-primary" onclick="salvarSiteLogo()">Salvar Logo</button>
                         <button class="btn btn-danger" onclick="removerSiteLogo()">Remover Logo</button>
                     </div>
-                    <img id="siteLogoPreviewAdmin" src="" alt="" style="display:none;max-height:60px;margin-top:12px;border-radius:8px;">
+                    <img id="siteLogoPreviewAdmin" src="" alt="" style="display:none;max-height:120px;margin-top:12px;border-radius:8px;">
                 </div>
             </div>
 
