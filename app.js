@@ -239,6 +239,64 @@ function getSobreTextos() {
     catch(e) { return null; }
 }
 
+// ===== LOGO DO SITE =====
+function carregarSiteLogo() {
+    SupaDB.getItem("site_logo").then(function (url) {
+        if (url) {
+            aplicarSiteLogo(url);
+        }
+    });
+}
+
+function aplicarSiteLogo(url) {
+    var els = [
+        { img: document.getElementById("siteLogo"), fallback: document.getElementById("siteLogoFallback") },
+        { img: document.getElementById("siteLogoFooter"), fallback: document.getElementById("siteLogoFallbackFooter") }
+    ];
+    els.forEach(function (pair) {
+        if (pair.img && url) {
+            pair.img.src = url;
+            pair.img.style.display = "block";
+            if (pair.fallback) pair.fallback.style.display = "none";
+        }
+    });
+    // Preview no admin
+    var preview = document.getElementById("siteLogoPreviewAdmin");
+    if (preview && url) {
+        preview.src = url;
+        preview.style.display = "block";
+    }
+    var input = document.getElementById("siteLogoUrl");
+    if (input && url) input.value = url;
+}
+
+function salvarSiteLogo() {
+    var url = document.getElementById("siteLogoUrl").value.trim();
+    if (!url) return alert("Envie ou cole a URL de uma imagem primeiro.");
+    SupaDB.setItem("site_logo", url).then(function () {
+        aplicarSiteLogo(url);
+        alert("Logo salvo com sucesso!");
+    });
+}
+
+function removerSiteLogo() {
+    if (!confirm("Remover o logo do site?")) return;
+    SupaDB.removeItem("site_logo").then(function () {
+        var els = [
+            { img: document.getElementById("siteLogo"), fallback: document.getElementById("siteLogoFallback") },
+            { img: document.getElementById("siteLogoFooter"), fallback: document.getElementById("siteLogoFallbackFooter") }
+        ];
+        els.forEach(function (pair) {
+            if (pair.img) { pair.img.src = ""; pair.img.style.display = "none"; }
+            if (pair.fallback) pair.fallback.style.display = "block";
+        });
+        var preview = document.getElementById("siteLogoPreviewAdmin");
+        if (preview) { preview.src = ""; preview.style.display = "none"; }
+        document.getElementById("siteLogoUrl").value = "";
+        alert("Logo removido.");
+    });
+}
+
 function renderSobreEditavel() {
     var saved = getSobreTextos();
     if (saved) {
@@ -279,6 +337,7 @@ document.addEventListener("DOMContentLoaded", function () {
         initScrollTop();
         atualizarLiveNav();
         atualizarLiveStatus();
+        carregarSiteLogo();
         renderSobreEditavel();
         renderPatrocinadoresPublico();
 
