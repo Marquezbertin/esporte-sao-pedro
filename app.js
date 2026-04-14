@@ -625,14 +625,18 @@ function abrirNoticia(id) {
 
     document.getElementById("noticiaModal").classList.add("active");
 
-    // Contar visualizacao
-    var views = getData("views") || {};
-    views[id] = (views[id] || 0) + 1;
-    setData("views", views);
+    // Contar visualizacao - limpa cache para buscar dados frescos do Supabase
+    delete SupaDB.getCache()["views"];
+    SupaDB.getItem("views").then(function (freshViews) {
+        if (!freshViews || Array.isArray(freshViews) || typeof freshViews !== "object") freshViews = {};
+        freshViews[id] = (freshViews[id] || 0) + 1;
+        setData("views", freshViews);
+    });
 }
 
 function getViews(id) {
-    var views = getData("views") || {};
+    var views = getData("views");
+    if (!views || Array.isArray(views) || typeof views !== "object") views = {};
     return views[id] || 0;
 }
 
