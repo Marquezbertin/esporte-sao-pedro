@@ -2543,7 +2543,7 @@ function iniciarLive() {
 }
 
 function encerrarLive() {
-    SupaDB.setItem("live", null);
+    SupaDB.removeItem("live");
     atualizarLiveStatus();
     atualizarLiveNav();
     alert("Live encerrada.");
