@@ -2505,22 +2505,30 @@ function iniciarLive() {
     if (!url) return alert("Cole o link da live.");
 
     var embedUrl = "";
-    // YouTube Live
-    var ytId = extrairYoutubeId(url);
-    if (ytId) {
-        embedUrl = "https://www.youtube.com/embed/" + ytId + "?autoplay=1";
-    }
-    // Twitch
-    var twitchMatch = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
-    if (twitchMatch) {
-        embedUrl = "https://player.twitch.tv/?channel=" + twitchMatch[1] + "&parent=" + location.hostname;
+    var tipo = "embed";
+
+    // Instagram Live: nao permite iframe (X-Frame-Options: DENY), abre em nova aba
+    if (/instagram\.com\//i.test(url)) {
+        tipo = "redirect";
+        embedUrl = url;
+    } else {
+        // YouTube Live
+        var ytId = extrairYoutubeId(url);
+        if (ytId) {
+            embedUrl = "https://www.youtube.com/embed/" + ytId + "?autoplay=1";
+        }
+        // Twitch
+        var twitchMatch = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
+        if (twitchMatch) {
+            embedUrl = "https://player.twitch.tv/?channel=" + twitchMatch[1] + "&parent=" + location.hostname;
+        }
+
+        if (!embedUrl) {
+            embedUrl = url; // URL direta como fallback
+        }
     }
 
-    if (!embedUrl) {
-        embedUrl = url; // URL direta como fallback
-    }
-
-    var live = { url: embedUrl, titulo: titulo || "Transmissao ao Vivo", ativa: true };
+    var live = { url: embedUrl, titulo: titulo || "Transmissao ao Vivo", ativa: true, tipo: tipo };
     SupaDB.setItem("live", live);
 
     document.getElementById("liveUrl").value = "";
@@ -2565,7 +2573,17 @@ function abrirLive(e) {
     if (!live || !live.ativa) return;
 
     var container = document.getElementById("liveContainer");
-    container.innerHTML = '<iframe src="' + esc(live.url) + '" allowfullscreen allow="autoplay" style="width:100%;aspect-ratio:16/9;border:none;border-radius:8px;"></iframe>';
+    if (live.tipo === "redirect") {
+        container.innerHTML =
+            '<div class="empty-state" style="padding:40px 20px;">' +
+                '<div class="empty-state-icon">&#128247;</div>' +
+                '<div class="empty-state-text" style="margin-bottom:8px;font-weight:600;">Transmissao ao vivo no Instagram</div>' +
+                '<p style="color:#64748b;font-size:0.9rem;margin-bottom:20px;">Por limitacao do Instagram, a live nao pode ser exibida dentro do portal. Clique abaixo para assistir direto no Instagram.</p>' +
+                '<a href="' + esc(live.url) + '" target="_blank" rel="noopener" class="btn btn-primary" style="background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045);color:#fff;text-decoration:none;display:inline-block;">Abrir no Instagram</a>' +
+            '</div>';
+    } else {
+        container.innerHTML = '<iframe src="' + esc(live.url) + '" allowfullscreen allow="autoplay" style="width:100%;aspect-ratio:16/9;border:none;border-radius:8px;"></iframe>';
+    }
     document.getElementById("liveTitle").textContent = live.titulo;
     document.getElementById("liveModal").classList.add("active");
 }
