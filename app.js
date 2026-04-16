@@ -2522,6 +2522,10 @@ function iniciarLive() {
         if (twitchMatch) {
             embedUrl = "https://player.twitch.tv/?channel=" + twitchMatch[1] + "&parent=" + location.hostname;
         }
+        // Facebook Live (plugin oficial de video, permite iframe)
+        if (!embedUrl && /(facebook\.com|fb\.watch)\//i.test(url)) {
+            embedUrl = "https://www.facebook.com/plugins/video.php?href=" + encodeURIComponent(url) + "&show_text=0&autoplay=1";
+        }
 
         if (!embedUrl) {
             embedUrl = url; // URL direta como fallback
