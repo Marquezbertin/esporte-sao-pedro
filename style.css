@@ -2356,6 +2356,40 @@ body.admin-mode .admin-login-btn { display: none; }
     animation: pulse-label 1.5s ease-in-out infinite;
 }
 
+.live-fullscreen-btn {
+    position: absolute;
+    top: 12px;
+    right: 52px;
+    background: none;
+    border: none;
+    font-size: 1.3rem;
+    cursor: pointer;
+    color: var(--cinza-600);
+    padding: 0 6px;
+    line-height: 1;
+    z-index: 2;
+}
+.live-fullscreen-btn:hover { color: var(--vermelho); }
+
+.live-container:fullscreen,
+.live-container:-webkit-full-screen {
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0;
+}
+.live-container:fullscreen iframe,
+.live-container:-webkit-full-screen iframe {
+    width: 100vw;
+    height: 100vh;
+    aspect-ratio: unset;
+    border-radius: 0;
+}
+
 /* ===== NEWSLETTER ===== */
 .newsletter-bar {
     background: linear-gradient(135deg, var(--azul-escuro), var(--azul-medio));

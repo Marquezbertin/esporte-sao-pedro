@@ -2597,6 +2597,22 @@ function fecharLiveModal() {
     document.getElementById("liveContainer").innerHTML = "";
 }
 
+function toggleFullscreenLive() {
+    var el = document.getElementById("liveContainer");
+    if (!el) return;
+    var isFs = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+    if (!isFs) {
+        if (el.requestFullscreen) el.requestFullscreen();
+        else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+        else if (el.msRequestFullscreen) el.msRequestFullscreen();
+        else alert("Seu navegador nao suporta tela cheia. Use o botao de tela cheia do proprio player.");
+    } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        else if (document.msExitFullscreen) document.msExitFullscreen();
+    }
+}
+
 // ===== PATROCINADORES =====
 function getPatrocinadores() { return getData("patrocinadores"); }
 
