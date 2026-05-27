@@ -1303,7 +1303,7 @@ img { max-width: 100%; display: block; }
     display: none;
 }
 
-.gallery-item:hover .gallery-item-actions { display: flex; gap: 4px; }
+body.admin-mode .gallery-item:hover .gallery-item-actions { display: flex; gap: 4px; }
 
 .gallery-item-actions button {
     width: 28px;

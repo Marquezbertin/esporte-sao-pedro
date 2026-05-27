@@ -2219,6 +2219,12 @@ function renderGaleria() {
     }
 
     fotos.forEach(function (f) {
+        var adminActions = isAdmin()
+            ? '<div class="gallery-item-actions">' +
+                '<button onclick="event.stopPropagation();deletarFoto(\'' + f.id + '\')" title="Excluir">X</button>' +
+            '</div>'
+            : '';
+
         grid.innerHTML +=
             '<div class="gallery-item" onclick="abrirLightbox(\'' + esc(f.url) + '\', \'' + esc(f.legenda) + '\')">' +
                 '<img src="' + esc(f.url) + '" alt="' + esc(f.legenda) + '" loading="lazy">' +
@@ -2226,9 +2232,7 @@ function renderGaleria() {
                     '<div class="gallery-item-caption">' + esc(f.legenda) + '</div>' +
                     '<div class="gallery-item-date">' + formatarData(f.data) + '</div>' +
                 '</div>' +
-                '<div class="gallery-item-actions">' +
-                    '<button onclick="event.stopPropagation();deletarFoto(\'' + f.id + '\')" title="Excluir">X</button>' +
-                '</div>' +
+                adminActions +
             '</div>';
     });
 }
@@ -2262,6 +2266,10 @@ function salvarFoto() {
 }
 
 function deletarFoto(id) {
+    if (!isAdmin()) {
+        alert("Apenas o admin pode excluir fotos da galeria.");
+        return;
+    }
     if (!confirm("Excluir esta foto?")) return;
     var fotos = getData("galeria").filter(function (f) { return f.id !== id; });
     setData("galeria", fotos);
