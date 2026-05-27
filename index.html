@@ -821,6 +821,36 @@
                 <button class="btn btn-sm" style="margin-top:12px;" onclick="exportarNewsletter()">Exportar e-mails</button>
             </div>
 
+            <!-- ADMIN: DASHBOARD DE USO -->
+            <div class="card-panel admin-only portal-usage-panel" style="margin-top:40px;">
+                <div class="card-panel-header">
+                    <h3>Dashboard de Uso</h3>
+                    <span class="badge">ADMIN</span>
+                </div>
+                <p class="usage-intro">Acompanhe o volume de dados do portal, o cache local e as imagens usadas nas publicacoes. As cotas reais continuam no painel do Supabase e do Cloudinary; aqui voce define limites de controle para decidir quando limpar, otimizar ou migrar.</p>
+                <div id="usageDashboard" class="usage-dashboard">
+                    <div class="usage-loading">Carregando dados de uso...</div>
+                </div>
+                <div class="usage-settings">
+                    <div class="usage-setting">
+                        <label for="usageTextLimitMb">Limite de controle do banco de textos (MB)</label>
+                        <input type="number" id="usageTextLimitMb" min="1" step="1" value="500">
+                    </div>
+                    <div class="usage-setting">
+                        <label for="usageImageLimitGb">Limite de controle das imagens (GB)</label>
+                        <input type="number" id="usageImageLimitGb" min="1" step="1" value="25">
+                    </div>
+                    <div class="usage-setting">
+                        <label for="usageAverageImageMb">Estimativa para imagens antigas sem tamanho (MB)</label>
+                        <input type="number" id="usageAverageImageMb" min="0.1" step="0.1" value="1.5">
+                    </div>
+                    <div class="usage-actions">
+                        <button class="btn btn-primary" onclick="salvarConfiguracaoUsoPortal()">Salvar Limites</button>
+                        <button class="btn btn-secondary" onclick="renderDashboardUsoPortal()">Atualizar</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- BACKUP / EXPORT -->
             <div class="card-panel admin-only" style="margin-top:40px;">
                 <div class="card-panel-header">

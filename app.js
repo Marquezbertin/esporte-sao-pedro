@@ -401,7 +401,7 @@ function navegar(secao, e) {
         case "opiniao": renderOpinioes(); break;
         case "conquistas": renderConquistas(); break;
         case "redacao": if (!isAdmin()) { navegar("inicio", null); return; } renderTemplatesPauta(); renderAdminPautas(); break;
-        case "sobre": atualizarStorageInfo(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminTimes(); renderNewsletterAdmin(); break;
+        case "sobre": atualizarStorageInfo(); renderDashboardUsoPortal(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminTimes(); renderNewsletterAdmin(); break;
     }
 
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -2485,6 +2485,261 @@ function atualizarStorageInfo() {
         var kb = (total / 1024).toFixed(1);
         el.textContent = "Dados armazenados: " + kb + " KB (limite recomendado: 5 MB)";
     }
+}
+
+// ===== DASHBOARD DE USO DO PORTAL (ADMIN) =====
+var USAGE_CONFIG_KEY = "esp_usage_config";
+var USAGE_DEFAULT_CONFIG = {
+    textLimitBytes: 500 * 1024 * 1024,
+    imageLimitBytes: 25 * 1024 * 1024 * 1024,
+    averageImageBytes: Math.round(1.5 * 1024 * 1024)
+};
+var PORTAL_USAGE_KEYS = [
+    "noticias", "jogos", "atletas", "galeria", "videos", "patrocinadores",
+    "campeonatos", "opinioes", "eventos", "enquetes", "conquistas", "resumos",
+    "times", "pautas", "newsletter", "sobre", "site_logo", "live", "views", "placar_vivo"
+];
+
+function bytesPortal(value) {
+    var text = typeof value === "string" ? value : JSON.stringify(value == null ? null : value);
+    if (typeof Blob !== "undefined") return new Blob([text]).size;
+    return text.length * 2;
+}
+
+function formatarBytesPortal(bytes) {
+    bytes = Math.max(0, bytes || 0);
+    var units = ["B", "KB", "MB", "GB"];
+    var size = bytes;
+    var unit = 0;
+    while (size >= 1024 && unit < units.length - 1) {
+        size = size / 1024;
+        unit++;
+    }
+    var decimals = unit === 0 ? 0 : (size >= 10 ? 1 : 2);
+    return size.toFixed(decimals) + " " + units[unit];
+}
+
+function getUsageConfig() {
+    var config = {};
+    try { config = JSON.parse(localStorage.getItem(USAGE_CONFIG_KEY) || "{}") || {}; }
+    catch (e) { config = {}; }
+    return {
+        textLimitBytes: parseInt(config.textLimitBytes, 10) || USAGE_DEFAULT_CONFIG.textLimitBytes,
+        imageLimitBytes: parseInt(config.imageLimitBytes, 10) || USAGE_DEFAULT_CONFIG.imageLimitBytes,
+        averageImageBytes: parseInt(config.averageImageBytes, 10) || USAGE_DEFAULT_CONFIG.averageImageBytes
+    };
+}
+
+function preencherConfiguracaoUsoPortal(config) {
+    var textLimit = document.getElementById("usageTextLimitMb");
+    var imageLimit = document.getElementById("usageImageLimitGb");
+    var averageImage = document.getElementById("usageAverageImageMb");
+    if (textLimit) textLimit.value = Math.round(config.textLimitBytes / 1024 / 1024);
+    if (imageLimit) imageLimit.value = Math.round(config.imageLimitBytes / 1024 / 1024 / 1024);
+    if (averageImage) averageImage.value = (config.averageImageBytes / 1024 / 1024).toFixed(1);
+}
+
+function salvarConfiguracaoUsoPortal() {
+    if (!isAdmin()) return;
+    var textLimitMb = parseFloat(document.getElementById("usageTextLimitMb").value) || 500;
+    var imageLimitGb = parseFloat(document.getElementById("usageImageLimitGb").value) || 25;
+    var averageImageMb = parseFloat(document.getElementById("usageAverageImageMb").value) || 1.5;
+    var config = {
+        textLimitBytes: Math.max(1, textLimitMb) * 1024 * 1024,
+        imageLimitBytes: Math.max(1, imageLimitGb) * 1024 * 1024 * 1024,
+        averageImageBytes: Math.max(0.1, averageImageMb) * 1024 * 1024
+    };
+    try { localStorage.setItem(USAGE_CONFIG_KEY, JSON.stringify(config)); } catch (e) {}
+    renderDashboardUsoPortal();
+    alert("Limites do dashboard salvos.");
+}
+
+function getPortalUsageKeys() {
+    var keys = {};
+    PORTAL_USAGE_KEYS.forEach(function (key) { keys[key] = true; });
+    var cache = SupaDB.getCache();
+    Object.keys(cache).forEach(function (key) { keys[key] = true; });
+    Object.keys(localStorage).forEach(function (key) {
+        if (key.indexOf("esp_") === 0) {
+            var clean = key.replace(/^esp_/, "");
+            if (clean !== "upload_ledger" && clean !== "usage_config" && clean !== "admin" &&
+                clean.indexOf("demo_") !== 0 && clean.indexOf("voto_") !== 0) keys[clean] = true;
+        }
+    });
+    return Object.keys(keys).sort();
+}
+
+function getPortalUsageValue(key) {
+    var cache = SupaDB.getCache();
+    if (cache[key] !== undefined) return cache[key];
+    try {
+        var local = localStorage.getItem("esp_" + key);
+        if (local !== null) return JSON.parse(local);
+    } catch (e) {}
+    return null;
+}
+
+function isImageUrlPortal(value) {
+    if (typeof value !== "string") return false;
+    if (!/^https?:\/\//i.test(value)) return false;
+    return /res\.cloudinary\.com\/[^/]+\/image\/upload/i.test(value) ||
+        /\.(jpg|jpeg|png|gif|webp|svg)(\?|#|$)/i.test(value);
+}
+
+function coletarUrlsImagemPortal(value, urls, depth) {
+    if (depth > 12 || value == null) return;
+    if (typeof value === "string") {
+        if (isImageUrlPortal(value)) urls[value] = true;
+        return;
+    }
+    if (Array.isArray(value)) {
+        value.forEach(function (item) { coletarUrlsImagemPortal(item, urls, depth + 1); });
+        return;
+    }
+    if (typeof value === "object") {
+        Object.keys(value).forEach(function (key) { coletarUrlsImagemPortal(value[key], urls, depth + 1); });
+    }
+}
+
+function getUploadLedgerPortal() {
+    if (typeof CloudUpload !== "undefined" && CloudUpload.getUploadStats) {
+        return CloudUpload.getUploadStats().items || [];
+    }
+    try { return JSON.parse(localStorage.getItem("esp_upload_ledger") || "[]"); }
+    catch (e) { return []; }
+}
+
+function getLocalStorageUsagePortal() {
+    var total = 0;
+    Object.keys(localStorage).forEach(function (key) {
+        total += bytesPortal(key) + bytesPortal(localStorage.getItem(key) || "");
+    });
+    return total;
+}
+
+function pctUsoPortal(usado, limite) {
+    if (!limite) return 0;
+    return Math.min(100, Math.round((usado / limite) * 1000) / 10);
+}
+
+function classeUsoPortal(pct) {
+    if (pct >= 90) return "danger";
+    if (pct >= 75) return "warning";
+    return "ok";
+}
+
+function renderUsageCardPortal(title, usedBytes, limitBytes, meta) {
+    var pct = pctUsoPortal(usedBytes, limitBytes);
+    var restante = Math.max(0, limitBytes - usedBytes);
+    var classe = classeUsoPortal(pct);
+    return '<div class="usage-card ' + classe + '">' +
+        '<div class="usage-card-top">' +
+            '<span class="usage-card-title">' + esc(title) + '</span>' +
+            '<span class="usage-card-pct">' + pct + '%</span>' +
+        '</div>' +
+        '<div class="usage-card-value">' + formatarBytesPortal(usedBytes) + '</div>' +
+        '<div class="usage-card-meta">' + esc(meta || "") + '</div>' +
+        '<div class="usage-meter"><span style="width:' + pct + '%"></span></div>' +
+        '<div class="usage-card-foot">Restante estimado: ' + formatarBytesPortal(restante) + '</div>' +
+    '</div>';
+}
+
+function renderDashboardUsoPortal() {
+    var el = document.getElementById("usageDashboard");
+    if (!el || !isAdmin()) return;
+    var config = getUsageConfig();
+    preencherConfiguracaoUsoPortal(config);
+
+    var keys = getPortalUsageKeys();
+    var totalTextBytes = 0;
+    var rows = [];
+    var imageUrls = {};
+
+    keys.forEach(function (key) {
+        var value = getPortalUsageValue(key);
+        var bytes = bytesPortal(value);
+        var items = Array.isArray(value) ? value.length : (value && typeof value === "object" ? Object.keys(value).length : (value == null ? 0 : 1));
+        totalTextBytes += bytes;
+        rows.push({ key: key, bytes: bytes, items: items });
+        coletarUrlsImagemPortal(value, imageUrls, 0);
+    });
+
+    rows.sort(function (a, b) { return b.bytes - a.bytes; });
+
+    var urls = Object.keys(imageUrls);
+    var ledger = getUploadLedgerPortal();
+    var ledgerMap = {};
+    ledger.forEach(function (item) {
+        if (item && item.url) ledgerMap[item.url] = parseInt(item.size, 10) || 0;
+    });
+
+    var measuredImageBytes = 0;
+    var measuredImageCount = 0;
+    var unknownImageCount = 0;
+    var cloudinaryCount = 0;
+
+    urls.forEach(function (url) {
+        if (/res\.cloudinary\.com/i.test(url)) cloudinaryCount++;
+        if (ledgerMap[url]) {
+            measuredImageBytes += ledgerMap[url];
+            measuredImageCount++;
+        } else {
+            unknownImageCount++;
+        }
+    });
+
+    var estimatedUnknownBytes = unknownImageCount * config.averageImageBytes;
+    var imageTotalBytes = measuredImageBytes + estimatedUnknownBytes;
+    var localStorageBytes = getLocalStorageUsagePortal();
+    var localStorageLimit = 5 * 1024 * 1024;
+    var supaStatus = SupaDB.isReady() ? "Sincronizacao carregada" : "Ainda carregando";
+
+    var html = '<div class="usage-grid">' +
+        renderUsageCardPortal("Banco de textos", totalTextBytes, config.textLimitBytes, keys.length + " colecoes monitoradas | " + supaStatus) +
+        renderUsageCardPortal("Servidor de imagens", imageTotalBytes, config.imageLimitBytes, urls.length + " imagens no portal | " + cloudinaryCount + " Cloudinary") +
+        renderUsageCardPortal("Cache do navegador", localStorageBytes, localStorageLimit, "Uso local neste dispositivo") +
+    '</div>';
+
+    html += '<div class="usage-breakdown">' +
+        '<div class="usage-breakdown-card">' +
+            '<h4>Imagens</h4>' +
+            '<p><strong>' + measuredImageCount + '</strong> com tamanho real salvo (' + formatarBytesPortal(measuredImageBytes) + ')</p>' +
+            '<p><strong>' + unknownImageCount + '</strong> antigas sem tamanho salvo (estimativa: ' + formatarBytesPortal(estimatedUnknownBytes) + ')</p>' +
+            '<p><strong>' + ledger.length + '</strong> uploads registrados a partir deste navegador</p>' +
+        '</div>' +
+        '<div class="usage-breakdown-card">' +
+            '<h4>Maiores colecoes de texto</h4>' +
+            '<div class="usage-table">';
+
+    rows.slice(0, 8).forEach(function (row) {
+        html += '<div class="usage-row">' +
+            '<span>' + esc(row.key) + ' <small>' + row.items + ' item(ns)</small></span>' +
+            '<strong>' + formatarBytesPortal(row.bytes) + '</strong>' +
+        '</div>';
+    });
+
+    html += '</div></div></div>';
+
+    var recommendations = [];
+    var textPct = pctUsoPortal(totalTextBytes, config.textLimitBytes);
+    var imagePct = pctUsoPortal(imageTotalBytes, config.imageLimitBytes);
+    var localPct = pctUsoPortal(localStorageBytes, localStorageLimit);
+
+    if (textPct >= 90) recommendations.push("Banco de textos perto do limite de controle: faca backup e planeje limpeza ou migracao.");
+    else if (textPct >= 75) recommendations.push("Banco de textos em atencao: acompanhe antes de publicar muitas materias longas.");
+    if (imagePct >= 90) recommendations.push("Imagens perto do limite de controle: otimize fotos novas e considere limpar arquivos antigos.");
+    else if (imagePct >= 75) recommendations.push("Imagens em atencao: prefira fotos comprimidas e evite duplicadas.");
+    if (localPct >= 75) recommendations.push("Cache local alto: exporte backup e limpe dados locais se o navegador ficar pesado.");
+    if (unknownImageCount > 0) recommendations.push("Algumas imagens antigas nao tem tamanho real salvo; os proximos uploads passam a ser medidos automaticamente.");
+    if (recommendations.length === 0) recommendations.push("Uso saudavel. Continue publicando normalmente e acompanhe este painel periodicamente.");
+
+    html += '<div class="usage-alerts"><h4>Leitura rapida</h4><ul>';
+    recommendations.forEach(function (text) {
+        html += '<li>' + esc(text) + '</li>';
+    });
+    html += '</ul><p class="usage-note">Observacao: por seguranca, este painel nao usa chaves secretas do Cloudinary ou Supabase. Ele mede o conteudo visivel no portal e compara com os limites de controle configurados acima.</p></div>';
+
+    el.innerHTML = html;
 }
 
 // ===== SCROLL TO TOP =====

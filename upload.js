@@ -6,6 +6,39 @@ var CloudUpload = (function () {
     var CLOUD_NAME = "dndqfumvd";
     var UPLOAD_PRESET = "esporte_sp";
     var UPLOAD_URL = "https://api.cloudinary.com/v1_1/" + CLOUD_NAME + "/image/upload";
+    var LEDGER_KEY = "esp_upload_ledger";
+
+    function getUploadLedger() {
+        try { return JSON.parse(localStorage.getItem(LEDGER_KEY) || "[]"); }
+        catch (e) { return []; }
+    }
+
+    function saveUploadLedger(items) {
+        try { localStorage.setItem(LEDGER_KEY, JSON.stringify(items || [])); }
+        catch (e) {}
+    }
+
+    function recordUpload(file, url, targetInputId) {
+        if (!file || !url) return;
+        var items = getUploadLedger().filter(function (item) { return item.url !== url; });
+        items.push({
+            url: url,
+            size: file.size || 0,
+            name: file.name || "",
+            target: targetInputId || "",
+            uploadedAt: new Date().toISOString(),
+            provider: "cloudinary",
+            cloudName: CLOUD_NAME
+        });
+        saveUploadLedger(items.slice(-500));
+    }
+
+    function getUploadStats() {
+        var items = getUploadLedger();
+        var total = 0;
+        items.forEach(function (item) { total += parseInt(item.size, 10) || 0; });
+        return { items: items, totalBytes: total, count: items.length };
+    }
 
     // Faz upload de um arquivo e retorna a URL publica
     function uploadFile(file, onProgress) {
@@ -91,6 +124,7 @@ var CloudUpload = (function () {
                 // Preencher o campo de URL
                 var targetInput = document.getElementById(targetInputId);
                 if (targetInput) targetInput.value = url;
+                recordUpload(file, url, targetInputId);
 
                 // Preview
                 preview.src = url;
@@ -126,6 +160,7 @@ var CloudUpload = (function () {
     return {
         uploadFile: uploadFile,
         criarBotaoUpload: criarBotaoUpload,
-        init: init
+        init: init,
+        getUploadStats: getUploadStats
     };
 })();
