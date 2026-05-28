@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Esporte Sao Pedro - Portal Esportivo de Sao Pedro/SP</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.min.css">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0a1628">
     <meta name="description" content="Portal esportivo de Sao Pedro/SP. Resultados, tabelas, artilheiros, calendario e noticias do esporte local.">
@@ -27,6 +27,27 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
+    <!-- RSS Feed -->
+    <link rel="alternate" type="application/rss+xml" title="Esporte Sao Pedro - Feed de Noticias" href="https://cyihlqyhefdwypkzvztj.supabase.co/storage/v1/object/public/rss/feed.xml">
+    <!-- Sitemap -->
+    <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml">
+    <!-- Dados Estruturados (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SportsOrganization",
+        "name": "Esporte Sao Pedro",
+        "url": "https://marquezbertin.github.io/esporte-sao-pedro/",
+        "description": "Portal esportivo de Sao Pedro/SP. Resultados, tabelas, artilheiros, calendario e noticias do esporte local.",
+        "sport": ["Futebol", "Voleibol", "Basquete", "Corrida", "Ciclismo", "Artes Marciais", "Skate"],
+        "location": { "@type": "City", "name": "Sao Pedro", "address": { "@type": "PostalAddress", "addressLocality": "Sao Pedro", "addressRegion": "SP" } },
+        "foundingDate": "2025",
+        "sameAs": [
+            "https://www.instagram.com/esportesaopedro2026/",
+            "https://www.youtube.com/@ESPORTESAOPEDRO"
+        ]
+    }
+    </script>
 </head>
 <body>
 
@@ -1143,7 +1164,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase.js"></script>
     <script src="upload.js"></script>
-    <script src="app.js"></script>
+    <script src="app.min.js"></script>
     <script>
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js').catch(function(){});

@@ -37,7 +37,7 @@ function renderGaleriaItems(containerId) {
     fotos.forEach(function (url, i) {
         container.innerHTML +=
             '<div class="galeria-thumb">' +
-                '<img src="' + esc(url) + '" alt="Foto ' + (i + 1) + '">' +
+                '<img src="' + esc(url) + '" alt="Foto ' + (i + 1) + '" loading="lazy">' +
                 '<button type="button" onclick="removerFotoGaleria(\'' + containerId + '\',' + i + ')">&times;</button>' +
             '</div>';
     });
@@ -292,8 +292,75 @@ function confirmarLoginAdmin() {
             if (!adminPermitido) {
                 return SupaDB.signOut().then(function () {
                     throw new Error("Usuario sem permissao de admin.");
-                });
-            }
+    });
+}
+
+// ===== SEO: JSON-LD NewsArticle dinamico =====
+function injetarNewsArticleJSONLD(noticias) {
+    var items = [];
+    var baseUrl = "https://marquezbertin.github.io/esporte-sao-pedro/";
+    noticias.forEach(function (n) {
+        items.push({
+            "@context": "https://schema.org",
+            "@type": "NewsArticle",
+            "headline": n.titulo || "",
+            "datePublished": n.data || "",
+            "description": stripHtml(n.corpo || "").substring(0, 200),
+            "image": n.imagem || baseUrl + "og-image.svg",
+            "author": { "@type": "Organization", "name": "Esporte Sao Pedro" },
+            "publisher": { "@type": "Organization", "name": "Esporte Sao Pedro" },
+            "mainEntityOfPage": { "@type": "WebPage", "@id": baseUrl + "#noticia-" + n.id }
+        });
+    });
+    if (!items.length) return;
+    var el = document.getElementById("jsonld-news");
+    if (!el) {
+        el = document.createElement("script");
+        el.id = "jsonld-news";
+        el.type = "application/ld+json";
+        document.head.appendChild(el);
+    }
+    el.textContent = JSON.stringify(items);
+}
+
+// ===== SEO: RSS Feed =====
+function gerarFeedRSS() {
+    var noticias = getData("noticias");
+    if (!noticias || !noticias.length) return;
+    var publicadas = noticias.filter(function (n) { return !n.rascunho; }).slice(0, 20);
+    var baseUrl = "https://marquezbertin.github.io/esporte-sao-pedro/";
+    var hoje = new Date().toISOString();
+    var xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+    xml += '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">\n';
+    xml += '<channel>\n';
+    xml += '  <title>Esporte Sao Pedro - Feed de Noticias</title>\n';
+    xml += '  <link>' + baseUrl + '</link>\n';
+    xml += '  <description>Portal esportivo de Sao Pedro/SP. Resultados, tabelas, artilheiros, calendario e noticias do esporte local.</description>\n';
+    xml += '  <language>pt-br</language>\n';
+    xml += '  <lastBuildDate>' + hoje + '</lastBuildDate>\n';
+    xml += '  <atom:link href="' + baseUrl + 'feed.xml" rel="self" type="application/rss+xml"/>\n';
+    publicadas.forEach(function (n) {
+        var desc = stripHtml(n.corpo || "").substring(0, 300);
+        xml += '  <item>\n';
+        xml += '    <title>' + esc(n.titulo || "") + '</title>\n';
+        xml += '    <link>' + baseUrl + '#noticia-' + n.id + '</link>\n';
+        xml += '    <guid>' + baseUrl + '#noticia-' + n.id + '</guid>\n';
+        xml += '    <pubDate>' + new Date(n.data).toUTCString() + '</pubDate>\n';
+        xml += '    <description>' + esc(desc) + '</description>\n';
+        xml += '    <category>' + esc(n.categoria || "") + '</category>\n';
+        if (n.imagem) xml += '    <enclosure url="' + esc(n.imagem) + '" type="image/jpeg"/>\n';
+        xml += '  </item>\n';
+    });
+    xml += '</channel>\n';
+    xml += '</rss>';
+
+    // Tentar salvar no Supabase Storage (bucket: rss, file: feed.xml)
+    fetch("https://cyihlqyhefdwypkzvztj.supabase.co/storage/v1/object/public/rss/feed.xml", {
+        method: "PUT",
+        headers: { "Content-Type": "application/xml", "apikey": "sb_publishable_uXyjtoOUiaTJgwd7-U1hZg_8HUxSqA7" },
+        body: xml
+    }).catch(function () {});
+}
             aplicarEstadoAdmin(session, true);
             return session;
         });
@@ -672,6 +739,7 @@ function renderNoticiasHome() {
     noticias.forEach(function (n) {
         grid.innerHTML += renderNewsCard(n);
     });
+    injetarNewsArticleJSONLD(noticias);
 }
 
 function renderNewsCard(n) {
@@ -739,7 +807,7 @@ function abrirNoticia(id) {
     if (n.galeria && n.galeria.length > 0) {
         galeriaHtml = '<div class="news-modal-galeria">';
         n.galeria.forEach(function (url) {
-            galeriaHtml += '<img src="' + esc(url) + '" alt="Foto" class="news-modal-galeria-img" onclick="event.stopPropagation();abrirLightboxUrl(\'' + esc(url) + '\')">';
+            galeriaHtml += '<img src="' + esc(url) + '" alt="Foto" class="news-modal-galeria-img" loading="lazy" onclick="event.stopPropagation();abrirLightboxUrl(\'' + esc(url) + '\')">';
         });
         galeriaHtml += '</div>';
     }
@@ -911,6 +979,7 @@ function renderNoticias() {
     }
 
     noticias.forEach(function (n) { grid.innerHTML += renderNewsCard(n); });
+    injetarNewsArticleJSONLD(noticias);
 }
 
 var _buscaNoticia = "";
@@ -971,6 +1040,7 @@ function salvarNoticia() {
 
     renderNoticias();
     renderTicker();
+    gerarFeedRSS();
     showToastSave(ehRascunho ? "Rascunho salvo!" : "Noticia publicada!");
 }
 
@@ -1028,6 +1098,7 @@ function salvarEdicaoNoticia() {
     renderNoticias();
     renderInicio();
     renderTicker();
+    gerarFeedRSS();
     showToastSave("Noticia atualizada!");
 }
 
@@ -1586,7 +1657,7 @@ function renderTimes() {
         var esporte = ESPORTES.find(function (e) { return e.id === t.esporte; });
         var icon = esporte ? esporte.icon : "&#9917;";
         var logo = t.logo
-            ? '<img src="' + esc(t.logo) + '" alt="' + esc(t.nome) + '" class="time-logo">'
+            ? '<img src="' + esc(t.logo) + '" alt="' + esc(t.nome) + '" class="time-logo" loading="lazy">'
             : '<div class="time-logo time-logo-placeholder">' + icon + '</div>';
 
         html +=
@@ -1668,7 +1739,7 @@ function renderOpinioes() {
 
     opinioes.forEach(function (o) {
         var autorImg = o.autorImg
-            ? '<img src="' + esc(o.autorImg) + '" alt="' + esc(o.autor) + '" class="opiniao-avatar">'
+            ? '<img src="' + esc(o.autorImg) + '" alt="' + esc(o.autor) + '" class="opiniao-avatar" loading="lazy">'
             : '<div class="opiniao-avatar opiniao-avatar-placeholder">' + esc(o.autor.charAt(0).toUpperCase()) + '</div>';
 
         var adminBtns = isAdmin()
@@ -2316,7 +2387,7 @@ function renderAtletas() {
     atletas.forEach(function (a) {
         var esporte = ESPORTES.find(function (e) { return e.id === a.esporte; });
         var imgHtml = a.imagem
-            ? '<img src="' + esc(a.imagem) + '" alt="' + esc(a.nome) + '">'
+            ? '<img src="' + esc(a.imagem) + '" alt="' + esc(a.nome) + '" loading="lazy">'
             : '\uD83C\uDFC3';
 
         grid.innerHTML +=
@@ -3183,7 +3254,7 @@ function renderAdminPatrocinadores() {
     lista.sort(function (a, b) { return (ordem[a.plano] || 9) - (ordem[b.plano] || 9); });
 
     lista.forEach(function (p) {
-        var logoHtml = p.logo ? '<img src="' + esc(p.logo) + '" alt="' + esc(p.nome) + '">' : '<div style="width:50px;height:35px;background:#e2e8f0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:#94a3b8;">LOGO</div>';
+        var logoHtml = p.logo ? '<img src="' + esc(p.logo) + '" alt="' + esc(p.nome) + '" loading="lazy">' : '<div style="width:50px;height:35px;background:#e2e8f0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:#94a3b8;">LOGO</div>';
         var statusClass = p.aprovado ? "aprovado" : "pendente";
         var statusText = p.aprovado ? "Aprovado" : "Pendente";
         var aprovarText = p.aprovado ? "Desaprovar" : "Aprovar";
@@ -3226,7 +3297,7 @@ function renderPatrocinadoresPublico() {
         var href = p.site ? p.site : "#";
         var target = p.site ? ' target="_blank" rel="noopener"' : '';
         var logoHtml = p.logo
-            ? '<img class="sponsor-logo" src="' + esc(p.logo) + '" alt="' + esc(p.nome) + '">'
+            ? '<img class="sponsor-logo" src="' + esc(p.logo) + '" alt="' + esc(p.nome) + '" loading="lazy">'
             : '<span style="font-size:1.5rem;font-weight:800;color:var(--azul-medio);">' + esc(p.nome.substring(0, 3).toUpperCase()) + '</span>';
 
         grid.innerHTML +=

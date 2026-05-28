@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://marquezbertin.github.io/esporte-sao-pedro/sitemap.xml
