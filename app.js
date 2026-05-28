@@ -616,7 +616,7 @@ function navegar(secao, e) {
         case "opiniao": renderOpinioes(); break;
         case "conquistas": renderConquistas(); break;
         case "redacao": if (!isAdmin()) { navegar("inicio", null); return; } renderTemplatesPauta(); renderAdminPautas(); renderEditorialDashboard(); renderAdminNewsList(); renderCalendario(); break;
-        case "sobre": atualizarStorageInfo(); renderDashboardUsoPortal(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminTimes(); renderNewsletterAdmin(); break;
+        case "sobre": atualizarStorageInfo(); renderDashboardUsoPortal(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminTimes(); renderNewsletterAdmin(); renderMonitorPautas(); break;
     }
 
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1331,6 +1331,329 @@ function renderAdminPautas() {
                 '</div>' +
             '</div>';
     });
+}
+
+// ===== MONITOR DE PAUTAS DA INTERNET =====
+var _filtroMonitorPautas = "todas";
+
+function getPautasMonitor() { return getData("monitor_pautas"); }
+
+function detectarFontePauta(url, texto) {
+    url = url || "";
+    texto = texto || "";
+    if (/instagram\.com\//i.test(url)) return "instagram";
+    if (/facebook\.com\//i.test(url) || /fb\.watch\//i.test(url)) return "facebook";
+    if (/youtube\.com\//i.test(url) || /youtu\.be\//i.test(url)) return "youtube";
+    if (/whatsapp/i.test(url) || /wa\.me\//i.test(url)) return "whatsapp";
+    if (url && /^https?:\/\//i.test(url)) return "site";
+    if (texto && texto.length > 10) return "texto";
+    return "outro";
+}
+
+function detectarEsportePauta(texto) {
+    if (!texto) return "";
+    var t = texto.toLowerCase();
+    if (/futebol|futsal|gol|gols|bola|chuteira|campo|estadio|time\b/i.test(t)) return "futebol";
+    if (/volei|voleibol|rede|saque|bloqueio|crv/i.test(t)) return "volei";
+    if (/basquete|basquetebol|cesta|enterrada|quadra/i.test(t)) return "basquete";
+    if (/corrida|atletismo|maratona|meia-maratona|10km|5km|duatlo|triatlo|run/i.test(t)) return "corrida";
+    if (/ciclismo|bike|bicicleta|pedal|speed|mountain/i.test(t)) return "ciclismo";
+    if (/arte marcial|judô|jiu.?jitsu|karatê|boxe|luta|muay.?thai|taekwondo/i.test(t)) return "artes-marciais";
+    if (/skate|radical|manobra|half|pista/i.test(t)) return "skate-radicais";
+    return "";
+}
+
+function extrairInfoPautaAuto() {
+    var texto = document.getElementById("monitorTexto").value.trim();
+    var url = document.getElementById("monitorUrl").value.trim();
+    var infoEl = document.getElementById("monitorAutoInfo");
+    var textEl = document.getElementById("monitorAutoDetectText");
+    var timesInput = document.getElementById("monitorTimes");
+    var localInput = document.getElementById("monitorLocal");
+    var esporteSelect = document.getElementById("monitorEsporte");
+
+    if (!texto && !url) {
+        infoEl.style.display = "none";
+        return;
+    }
+
+    var detectados = [];
+    var fullText = texto + " " + url;
+
+    // Detectar times (padrao "TimeA x TimeB" ou "TimeA vs TimeB")
+    var matchTimes = fullText.match(/([A-ZÁÉÍÓÚÂÊÔÃÕÇa-záéíóúâêôãõç0-9][A-ZÁÉÍÓÚÂÊÔÃÕÇa-záéíóúâêôãõç\s\.]+?)\s*(?:x|vs|VS|X)\s*([A-ZÁÉÍÓÚÂÊÔÃÕÇa-záéíóúâêôãõç0-9][A-ZÁÉÍÓÚÂÊÔÃÕÇa-záéíóúâêôãõç\s\.]+)/);
+    if (matchTimes && !timesInput.value.trim()) {
+        timesInput.value = matchTimes[1].trim() + " x " + matchTimes[2].trim();
+        detectados.push("times: " + timesInput.value);
+    }
+
+    // Detectar cidade
+    var cidadeEncontrada = null;
+    Object.keys(CIDADES).forEach(function (key) {
+        var nome = CIDADES[key];
+        if (fullText.indexOf(nome) !== -1 || fullText.indexOf(nome.toLowerCase()) !== -1) {
+            cidadeEncontrada = nome;
+        }
+    });
+    if (cidadeEncontrada && !localInput.value.trim()) {
+        localInput.value = cidadeEncontrada;
+        detectados.push("local: " + cidadeEncontrada);
+    }
+
+    // Detectar data (padrao "dia X de mes" ou datas como "28/05")
+    var meses = ["janeiro","fevereiro","marco","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+    for (var i = 0; i < meses.length; i++) {
+        var re = new RegExp("(\\d{1,2})\\s*(?:de\\s*)?" + meses[i] + "(?:o)?", "i");
+        var m = fullText.match(re);
+        if (m) {
+            var mesNum = String(i + 1).padStart(2, "0");
+            var diaNum = String(parseInt(m[1])).padStart(2, "0");
+            var dataStr = "2026-" + mesNum + "-" + diaNum;
+            if (!document.getElementById("monitorDataEvento").value) {
+                document.getElementById("monitorDataEvento").value = dataStr;
+                detectados.push("data: " + diaNum + "/" + mesNum);
+            }
+            break;
+        }
+    }
+    // Detectar padrao de data DD/MM ou DD/MM/AAAA
+    if (!document.getElementById("monitorDataEvento").value) {
+        var m2 = fullText.match(/(\d{2})\/(\d{2})(?:\/(\d{4}))?/);
+        if (m2) {
+            var ano2 = m2[3] || "2026";
+            var dataStr2 = ano2 + "-" + m2[2] + "-" + m2[1];
+            document.getElementById("monitorDataEvento").value = dataStr2;
+            detectados.push("data: " + m2[1] + "/" + m2[2] + "/" + ano2);
+        }
+    }
+
+    // Detectar esporte
+    var esporteDetectado = detectarEsportePauta(fullText);
+    if (esporteDetectado && (!esporteSelect.value || esporteSelect.value === "")) {
+        esporteSelect.value = esporteDetectado;
+        var esporteNome = ESPORTES.find(function (e) { return e.id === esporteDetectado; });
+        detectados.push("esporte: " + (esporteNome ? esporteNome.nome : esporteDetectado));
+    }
+
+    // Detectar fonte
+    var fonte = detectarFontePauta(url, texto);
+    if (fonte && url) {
+        var nomesFonte = { instagram: "Instagram", facebook: "Facebook", youtube: "YouTube", whatsapp: "WhatsApp", site: "Site", texto: "Texto livre", outro: "Outro" };
+        detectados.push("fonte: " + (nomesFonte[fonte] || fonte));
+    }
+
+    if (detectados.length > 0) {
+        infoEl.style.display = "block";
+        textEl.textContent = " " + detectados.join(" | ");
+    } else {
+        infoEl.style.display = "none";
+    }
+}
+
+function adicionarPautaMonitor() {
+    if (!requireAdmin()) return;
+    var url = document.getElementById("monitorUrl").value.trim();
+    var texto = document.getElementById("monitorTexto").value.trim();
+    var times = document.getElementById("monitorTimes").value.trim();
+    var local = document.getElementById("monitorLocal").value.trim();
+    var dataEvento = document.getElementById("monitorDataEvento").value;
+    var esporte = document.getElementById("monitorEsporte").value;
+    var prioridade = document.getElementById("monitorPrioridade").value;
+
+    if (!url && !texto) return showToastAviso("Cole um link ou texto para rastrear.");
+
+    // Detectar esporte se nao foi selecionado manualmente
+    if (!esporte) {
+        esporte = detectarEsportePauta(texto + " " + url);
+    }
+
+    // Detectar times se nao foi preenchido manualmente
+    if (!times) {
+        var fullText = texto + " " + url;
+        var matchTimes = fullText.match(/([A-ZÁÉÍÓÚÂÊÔÃÕÇa-záéíóúâêôãõç0-9].*?)\s*(?:x|vs|VS|X)\s*([A-ZÁÉÍÓÚÂÊÔÃÕÇa-záéíóúâêôãõç0-9].*?)(?:\s*[-\n]|$)/);
+        if (matchTimes) times = matchTimes[1].trim() + " x " + matchTimes[2].trim();
+    }
+
+    var fonte = detectarFontePauta(url, texto);
+    var titulo = texto ? texto.substring(0, 80) + (texto.length > 80 ? "..." : "") : (url ? url.substring(0, 80) : "Pauta sem titulo");
+
+    var lista = getPautasMonitor();
+    lista.push({
+        id: gerarId(),
+        fonte: fonte,
+        url: url,
+        texto: texto,
+        titulo: titulo,
+        times: times,
+        local: local,
+        dataEvento: dataEvento,
+        esporte: esporte,
+        prioridade: prioridade,
+        status: "nova",
+        data: new Date().toISOString().split("T")[0]
+    });
+    saveData("monitor_pautas", lista);
+
+    // Limpar form
+    document.getElementById("monitorUrl").value = "";
+    document.getElementById("monitorTexto").value = "";
+    document.getElementById("monitorTimes").value = "";
+    document.getElementById("monitorLocal").value = "";
+    document.getElementById("monitorDataEvento").value = "";
+    document.getElementById("monitorEsporte").value = "";
+    document.getElementById("monitorPrioridade").value = "media";
+    document.getElementById("monitorAutoInfo").style.display = "none";
+
+    renderMonitorPautas();
+    showToastSave("Pauta registrada! Acompanhe no Monitor.");
+}
+
+function alterarStatusPautaMonitor(id, novoStatus) {
+    if (!requireAdmin()) return;
+    var lista = getPautasMonitor();
+    var p = lista.find(function (x) { return x.id === id; });
+    if (!p) return;
+    p.status = novoStatus;
+    setData("monitor_pautas", lista);
+    renderMonitorPautas();
+    var labels = { nova: "Nova", investigando: "Investigando", convertida: "Convertida em noticia", descartada: "Descartada" };
+    showToastSave("Status alterado para: " + (labels[novoStatus] || novoStatus));
+}
+
+function converterPautaMonitorParaNoticia(id) {
+    if (!requireAdmin()) return;
+    var lista = getPautasMonitor();
+    var p = lista.find(function (x) { return x.id === id; });
+    if (!p) return;
+
+    // Preencher form de noticia
+    document.getElementById("noticiaTitle").value = p.titulo || "";
+    var corpo = p.texto || "";
+    if (p.times) corpo = "Times: " + p.times + "\n\n" + corpo;
+    if (p.local) corpo = "Local: " + p.local + "\n" + corpo;
+    if (p.dataEvento) corpo = "Data do evento: " + formatarData(p.dataEvento) + "\n" + corpo;
+    if (p.url) corpo += "\n\nFonte: " + p.url;
+    document.getElementById("noticiaBody").innerHTML = esc(corpo).replace(/\n/g, "<br>");
+    if (p.esporte) document.getElementById("noticiaCategoria").value = p.esporte;
+
+    // Marcar pauta como convertida
+    p.status = "convertida";
+    setData("monitor_pautas", lista);
+
+    // Navegar para noticias e abrir form
+    navegar("noticias", null);
+    var form = document.getElementById("adminNoticia");
+    if (form) form.style.display = "block";
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+    showToastSave("Pauta enviada para o editor de noticias! Finalize a materia.");
+}
+
+async function deletarPautaMonitor(id) {
+    if (!requireAdmin()) return;
+    if (!await showConfirm("Descartar esta pauta monitorada?")) return;
+    var lista = getPautasMonitor().filter(function (x) { return x.id !== id; });
+    setData("monitor_pautas", lista);
+    renderMonitorPautas();
+    showToastSave("Pauta descartada.");
+}
+
+function renderMonitorPautas() {
+    var container = document.getElementById("monitorPautasList");
+    if (!container) return;
+
+    var lista = getPautasMonitor().sort(function (a, b) {
+        var prioOrder = { alta: 0, media: 1, baixa: 2 };
+        var statusOrder = { nova: 0, investigando: 1, convertida: 2, descartada: 3 };
+        // Primeiro por status (novas primeiro), depois por prioridade
+        var sa = statusOrder[a.status] || 9;
+        var sb = statusOrder[b.status] || 9;
+        if (sa !== sb) return sa - sb;
+        return (prioOrder[a.prioridade] || 1) - (prioOrder[b.prioridade] || 1);
+    });
+
+    // Aplicar filtro
+    if (_filtroMonitorPautas !== "todas") {
+        lista = lista.filter(function (p) { return p.status === _filtroMonitorPautas; });
+    }
+
+    if (lista.length === 0) {
+        container.innerHTML = '<div class="empty-state" style="padding:20px;"><div class="empty-state-icon">&#128269;</div><div class="empty-state-text">' +
+            (_filtroMonitorPautas === "todas" ? "Nenhuma pauta monitorada. Cole links ou textos acima para comecar a rastrear." : "Nenhuma pauta com este status.") +
+            '</div></div>';
+        return;
+    }
+
+    container.innerHTML = "";
+    lista.forEach(function (p) {
+        var labels = { nova: "Nova", investigando: "Investigando", convertida: "Convertida", descartada: "Descartada" };
+        var statusLabel = labels[p.status] || p.status;
+
+        var fonteNomes = { instagram: "Instagram", facebook: "Facebook", youtube: "YouTube", whatsapp: "WhatsApp", site: "Site", texto: "Texto", outro: "Outro" };
+        var fonteNome = fonteNomes[p.fonte] || "Outro";
+        var fonteIcone = { instagram: "<>", facebook: "f", youtube: ">", whatsapp: "wa", site: "WWW", texto: "Tx", outro: "?" };
+
+        var corPrioridade = { alta: "prio-alta", media: "prio-media", baixa: "prio-baixa" };
+        var classeCard = "monitor-pauta-card";
+        if (p.status === "convertida") classeCard += " status-convertida";
+        if (p.status === "descartada") classeCard += " status-descartada";
+        if (p.status === "investigando") classeCard += " status-investigando";
+
+        var urlEx = p.url ? '<span>&#128279; <a href="' + esc(p.url) + '" target="_blank" rel="noopener" style="color:var(--azul-medio);text-decoration:underline;">Abrir fonte</a></span>' : "";
+
+        var textoPreview = p.texto ? esc(p.texto.substring(0, 200)) + (p.texto.length > 200 ? "..." : "") : "";
+
+        var infoExtraHtml = "";
+        var extras = [];
+        if (p.esporte) {
+            var esporteNome = ESPORTES.find(function (e) { return e.id === p.esporte; });
+            extras.push(esporteNome ? esporteNome.icon + " " + esporteNome.nome : p.esporte);
+        }
+        if (p.times) extras.push(p.times);
+        if (p.local) extras.push(p.local);
+        if (p.dataEvento) extras.push(formatarData(p.dataEvento));
+        if (extras.length > 0) {
+            infoExtraHtml = '<div class="monitor-pauta-info-detectada">' + extras.join(" &middot; ") + '</div>';
+        }
+
+        var statusActions = "";
+        var btnLabels = { nova: "Investigar", investigando: "Converter em noticia", convertida: "Reabrir", descartada: "Reabrir" };
+        var btnStatus = { nova: "investigando", investigando: "convertida", convertida: "nova", descartada: "nova" };
+        var btnIcon = { nova: "&#128270;", investigando: "&#9997;", convertida: "&#128260;", descartada: "&#128260;" };
+
+        if (p.status !== "convertida") {
+            statusActions += '<button class="btn btn-sm" onclick="alterarStatusPautaMonitor(\'' + p.id + '\',\'' + btnStatus[p.status] + '\')">' + btnIcon[p.status] + " " + btnLabels[p.status] + '</button>';
+        }
+        if (p.status === "nova" || p.status === "investigando") {
+            statusActions += '<button class="btn btn-sm" onclick="converterPautaMonitorParaNoticia(\'' + p.id + '\')">&#128221; Criar noticia</button>';
+        }
+        statusActions += '<button class="btn btn-sm" onclick="deletarPautaMonitor(\'' + p.id + '\')">&#10005;</button>';
+
+        container.innerHTML +=
+            '<div class="' + classeCard + '">' +
+                '<div style="display:flex;flex-direction:column;gap:4px;min-width:46px;">' +
+                    '<span class="monitor-pauta-fonte ' + esc(p.fonte) + '" style="text-align:center;justify-content:center;">' + fonteIcone[p.fonte] || "?" + '</span>' +
+                    '<span class="monitor-pauta-badge ' + (corPrioridade[p.prioridade] || "") + '" style="text-align:center;justify-content:center;font-size:0.55rem;">' + esc(p.prioridade) + '</span>' +
+                '</div>' +
+                '<div class="monitor-pauta-body">' +
+                    '<div class="monitor-pauta-titulo">[' + statusLabel + '] ' + esc(p.titulo) + '</div>' +
+                    '<div class="monitor-pauta-meta">' +
+                        '<span>' + fonteNome + '</span>' +
+                        '<span>' + formatarData(p.data) + '</span>' +
+                        urlEx +
+                    '</div>' +
+                    (textoPreview ? '<div class="monitor-pauta-texto">' + textoPreview + '</div>' : "") +
+                    infoExtraHtml +
+                    '<div class="monitor-pauta-actions">' + statusActions + '</div>' +
+                '</div>' +
+            '</div>';
+    });
+}
+
+function filtrarMonitorPautas(filtro, btn) {
+    _filtroMonitorPautas = filtro;
+    document.querySelectorAll("[onclick*='filtrarMonitorPautas']").forEach(function (c) { c.classList.remove("active"); });
+    if (btn) btn.classList.add("active");
+    renderMonitorPautas();
 }
 
 // ===== ENQUETES / VOTACOES =====
@@ -2804,7 +3127,7 @@ var USAGE_DEFAULT_CONFIG = {
 var PORTAL_USAGE_KEYS = [
     "noticias", "jogos", "atletas", "galeria", "videos", "patrocinadores",
     "campeonatos", "opinioes", "eventos", "enquetes", "conquistas", "resumos",
-    "times", "pautas", "newsletter", "sobre", "site_logo", "live", "views", "placar_vivo"
+    "times", "pautas", "monitor_pautas", "newsletter", "sobre", "site_logo", "live", "views", "placar_vivo"
 ];
 
 function bytesPortal(value) {
