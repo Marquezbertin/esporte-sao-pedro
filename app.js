@@ -114,6 +114,96 @@ function nomeCidade(id) {
 var MESES_FULL = ["Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 var DIAS_SEMANA = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 
+// ===== HELPERS DE UX (Toast, Modal, Loading) =====
+var _modalDeferred = null;
+
+function showToast(msg, type) {
+    type = type || "info";
+    var container = document.getElementById("toastContainer");
+    if (!container) return;
+    var toast = document.createElement("div");
+    toast.className = "toast " + type;
+    var span = document.createElement("span");
+    span.textContent = msg;
+    toast.appendChild(span);
+    container.appendChild(toast);
+    setTimeout(function () {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 3000);
+}
+
+function showToastSave(msg) { showToast(msg, "success"); }
+function showToastErro(msg) { showToast(msg, "error"); }
+function showToastAviso(msg) { showToast(msg, "warning"); }
+
+function showConfirm(msg) {
+    return new Promise(function (resolve) {
+        _modalDeferred = { resolve: resolve, type: "confirm" };
+        document.getElementById("confirmModalIcon").textContent = "\u26D4";
+        document.getElementById("confirmModalTitle").textContent = "Confirmar";
+        document.getElementById("confirmModalMessage").textContent = msg;
+        document.getElementById("confirmModalForm").style.display = "none";
+        document.getElementById("confirmModalForm").innerHTML = "";
+        document.getElementById("confirmModalActions").style.display = "flex";
+        document.getElementById("confirmModalConfirmBtn").textContent = "Confirmar";
+        document.getElementById("confirmModalConfirmBtn").className = "btn btn-primary";
+        document.getElementById("confirmModalCancelBtn").style.display = "";
+        document.getElementById("confirmModal").classList.add("active");
+        setTimeout(function () { document.getElementById("confirmModalConfirmBtn").focus(); }, 100);
+    });
+}
+
+function showPrompt(label, value) {
+    return new Promise(function (resolve) {
+        _modalDeferred = { resolve: resolve, type: "prompt" };
+        document.getElementById("confirmModalIcon").textContent = "\u270E";
+        document.getElementById("confirmModalTitle").textContent = "Editar";
+        document.getElementById("confirmModalMessage").textContent = "";
+        document.getElementById("confirmModalForm").style.display = "block";
+        document.getElementById("confirmModalForm").innerHTML =
+            '<div class="modal-form-group">' +
+                '<label class="modal-form-label">' + esc(label) + '</label>' +
+                '<input type="text" id="promptInput" class="modal-form-input" value="' + esc(value || "") + '">' +
+            '</div>';
+        document.getElementById("confirmModalActions").style.display = "flex";
+        document.getElementById("confirmModalConfirmBtn").textContent = "Salvar";
+        document.getElementById("confirmModalConfirmBtn").className = "btn btn-primary";
+        document.getElementById("confirmModalCancelBtn").style.display = "";
+        document.getElementById("confirmModal").classList.add("active");
+        setTimeout(function () { document.getElementById("promptInput").focus(); }, 150);
+    });
+}
+
+function modalConfirm() {
+    document.getElementById("confirmModal").classList.remove("active");
+    if (!_modalDeferred) return;
+    var d = _modalDeferred;
+    _modalDeferred = null;
+    if (d.type === "prompt") {
+        var input = document.getElementById("promptInput");
+        d.resolve(input ? input.value.trim() : null);
+    } else {
+        d.resolve(true);
+    }
+}
+
+function modalCancel() {
+    document.getElementById("confirmModal").classList.remove("active");
+    if (!_modalDeferred) return;
+    var d = _modalDeferred;
+    _modalDeferred = null;
+    d.resolve(d.type === "prompt" ? null : false);
+}
+
+function showLoading(msg) {
+    document.getElementById("loadingText").textContent = msg || "Salvando...";
+    document.getElementById("loadingOverlay").style.display = "flex";
+}
+
+function hideLoading() {
+    document.getElementById("loadingOverlay").style.display = "none";
+}
+
 // ===== STORAGE (Supabase na nuvem + localStorage como cache) =====
 function getData(key) {
     // Primeiro tenta do cache do Supabase (carregado no init)
@@ -125,8 +215,16 @@ function getData(key) {
 }
 
 function setData(key, data) {
-    // Salvar na nuvem (Supabase) + localStorage como cache
     SupaDB.setItem(key, data);
+}
+
+async function saveData(key, data) {
+    showLoading("Salvando...");
+    try {
+        await SupaDB.setItem(key, data);
+    } finally {
+        hideLoading();
+    }
 }
 
 // ===== ESPORTES =====
@@ -147,7 +245,7 @@ function isAdmin() { return _isAdmin; }
 
 function requireAdmin() {
     if (!isAdmin() || !SupaDB.isAuthenticated()) {
-        alert("Acesso restrito ao admin. Entre novamente para continuar.");
+        showToastErro("Acesso restrito ao admin. Entre novamente para continuar.");
         loginAdmin();
         return false;
     }
@@ -284,6 +382,17 @@ function getSobreTextos() {
     catch(e) { return null; }
 }
 
+async function salvarSobre() {
+    if (!requireAdmin()) return;
+    var t1 = document.getElementById("sobreTexto1");
+    var t2 = document.getElementById("sobreTexto2");
+    if (!t1 || !t2) return;
+    showLoading("Salvando...");
+    await SupaDB.setItem("sobre", { texto1: t1.innerHTML, texto2: t2.innerHTML });
+    hideLoading();
+    showToastSave("Textos da pagina Sobre salvos com sucesso!");
+}
+
 // ===== LOGO DO SITE =====
 function carregarSiteLogo() {
     SupaDB.getItem("site_logo").then(function (data) {
@@ -329,81 +438,39 @@ function previewLogoSize(size) {
     });
 }
 
-function salvarSiteLogo() {
+async function salvarSiteLogo() {
     if (!requireAdmin()) return;
     var url = document.getElementById("siteLogoUrl").value.trim();
-    if (!url) return alert("Envie ou cole a URL de uma imagem primeiro.");
+    if (!url) return showToastAviso("Envie ou cole a URL de uma imagem primeiro.");
     var size = parseInt(document.getElementById("siteLogoSize").value) || 48;
-    SupaDB.setItem("site_logo", { url: url, size: size }).then(function () {
-        aplicarSiteLogo(url, size);
-        alert("Logo salvo com sucesso!");
+    showLoading("Salvando...");
+    await SupaDB.setItem("site_logo", { url: url, size: size });
+    hideLoading();
+    aplicarSiteLogo(url, size);
+    showToastSave("Logo salvo com sucesso!");
     });
 }
 
-function removerSiteLogo() {
+async function removerSiteLogo() {
     if (!requireAdmin()) return;
-    if (!confirm("Remover o logo do site?")) return;
-    SupaDB.removeItem("site_logo").then(function () {
-        var els = [
-            { img: document.getElementById("siteLogo"), fallback: document.getElementById("siteLogoFallback") },
-            { img: document.getElementById("siteLogoFooter"), fallback: document.getElementById("siteLogoFallbackFooter") }
-        ];
-        els.forEach(function (pair) {
-            if (pair.img) { pair.img.src = ""; pair.img.style.display = "none"; }
-            if (pair.fallback) pair.fallback.style.display = "block";
-        });
-        var preview = document.getElementById("siteLogoPreviewAdmin");
-        if (preview) { preview.src = ""; preview.style.display = "none"; }
-        document.getElementById("siteLogoUrl").value = "";
-        document.getElementById("siteLogoSize").value = 48;
-        document.getElementById("siteLogoSizeLabel").textContent = "48";
-        alert("Logo removido.");
+    if (!await showConfirm("Remover o logo do site?")) return;
+    showLoading("Removendo...");
+    await SupaDB.removeItem("site_logo");
+    hideLoading();
+    var els = [
+        { img: document.getElementById("siteLogo"), fallback: document.getElementById("siteLogoFallback") },
+        { img: document.getElementById("siteLogoFooter"), fallback: document.getElementById("siteLogoFallbackFooter") }
+    ];
+    els.forEach(function (pair) {
+        if (pair.img) { pair.img.src = ""; pair.img.style.display = "none"; }
+        if (pair.fallback) pair.fallback.style.display = "block";
     });
-}
-
-function renderSobreEditavel() {
-    var saved = getSobreTextos();
-    if (saved) {
-        var t1 = document.getElementById("sobreTexto1");
-        var t2 = document.getElementById("sobreTexto2");
-        if (t1 && saved.texto1) t1.innerHTML = saved.texto1;
-        if (t2 && saved.texto2) t2.innerHTML = saved.texto2;
-    }
-    // Ativar edicao inline se admin
-    if (isAdmin()) {
-        var campos = document.querySelectorAll(".sobre-editavel");
-        campos.forEach(function (el) {
-            el.setAttribute("contenteditable", "true");
-            el.classList.add("editavel-ativo");
-        });
-    }
-}
-
-function salvarSobre() {
-    if (!requireAdmin()) return;
-    var t1 = document.getElementById("sobreTexto1").innerHTML;
-    var t2 = document.getElementById("sobreTexto2").innerHTML;
-    SupaDB.setItem("sobre", { texto1: t1, texto2: t2 });
-    alert("Textos da pagina Sobre salvos com sucesso!");
-}
-
-// ===== INICIALIZACAO =====
-document.addEventListener("DOMContentLoaded", function () {
-    limparDadosDemo();
-
-    // Carregar sessao admin e dados do Supabase antes de renderizar
-    checkAdminSession().then(function () {
-        return SupaDB.loadAll();
-    }).then(function () {
-        atualizarData();
-        renderTicker();
-        renderSportsGrid();
-        renderInicio();
-        renderHeroStats();
-        initScrollTop();
-        atualizarLiveNav();
-        atualizarLiveStatus();
-        carregarSiteLogo();
+    var preview = document.getElementById("siteLogoPreviewAdmin");
+    if (preview) { preview.src = ""; preview.style.display = "none"; }
+    document.getElementById("siteLogoUrl").value = "";
+    document.getElementById("siteLogoSize").value = 48;
+    document.getElementById("siteLogoSizeLabel").textContent = "48";
+    carregarSiteLogo();
         renderSobreEditavel();
         renderPatrocinadoresPublico();
 
@@ -692,7 +759,7 @@ function getViews(id) {
 function copiarLinkNoticia(titulo) {
     var texto = titulo + "\n\nLeia mais: " + window.location.href;
     if (navigator.clipboard) {
-        navigator.clipboard.writeText(texto).then(function () { alert("Link copiado!"); });
+        navigator.clipboard.writeText(texto).then(function () { showToastSave("Link copiado!"); });
     } else {
         prompt("Copie o link:", texto);
     }
@@ -839,8 +906,7 @@ function salvarNoticia() {
     var img = document.getElementById("noticiaImg").value.trim();
     var video = document.getElementById("noticiaVideo").value.trim();
     var fonte = document.getElementById("noticiaFonte").value.trim();
-    if (!titulo) return alert("Preencha o titulo.");
-    var ehRascunho = document.getElementById("noticiaRascunho").checked;
+    if (!titulo) return showToastAviso("Preencha o titulo.");
 
     var noticias = getData("noticias");
     noticias.push({
@@ -856,7 +922,7 @@ function salvarNoticia() {
         rascunho: ehRascunho,
         data: new Date().toISOString().split("T")[0]
     });
-    setData("noticias", noticias);
+    saveData("noticias", noticias);
 
     document.getElementById("noticiaTitle").value = "";
     document.getElementById("noticiaBody").innerHTML = "";
@@ -869,7 +935,7 @@ function salvarNoticia() {
 
     renderNoticias();
     renderTicker();
-    alert(ehRascunho ? "Rascunho salvo!" : "Noticia publicada!");
+    showToastSave(ehRascunho ? "Rascunho salvo!" : "Noticia publicada!");
 }
 
 function editarNoticia(id) {
@@ -906,7 +972,7 @@ function salvarEdicaoNoticia() {
     if (!n) return;
 
     var titulo = document.getElementById("editNoticiaTitle").value.trim();
-    if (!titulo) return alert("Preencha o titulo.");
+    if (!titulo) return showToastAviso("Preencha o titulo.");
 
     n.titulo = titulo;
     n.corpo = sanitizeHtml(document.getElementById("editNoticiaBody").innerHTML.trim());
@@ -919,12 +985,12 @@ function salvarEdicaoNoticia() {
     n.rascunho = document.getElementById("editNoticiaRascunho").checked;
     n.data = document.getElementById("editNoticiaData").value || n.data;
 
-    setData("noticias", noticias);
+    saveData("noticias", noticias);
     fecharEditarNoticia();
     renderNoticias();
     renderInicio();
     renderTicker();
-    alert("Noticia atualizada!");
+    showToastSave("Noticia atualizada!");
 }
 
 function fecharEditarNoticia() {
@@ -937,16 +1003,16 @@ function toggleDestaque(id) {
     var n = noticias.find(function (x) { return x.id === id; });
     if (!n) return;
     n.destaque = !n.destaque;
-    setData("noticias", noticias);
+    saveData("noticias", noticias);
     renderNoticias();
     renderInicio();
 }
 
-function deletarNoticia(id) {
+async function deletarNoticia(id) {
     if (!requireAdmin()) return;
-    if (!confirm("Excluir esta noticia?")) return;
+    if (!await showConfirm("Excluir esta noticia?")) return;
     var noticias = getData("noticias").filter(function (n) { return n.id !== id; });
-    setData("noticias", noticias);
+    saveData("noticias", noticias);
     renderNoticias();
     renderInicio();
     renderTicker();
@@ -1043,7 +1109,7 @@ function copiarTemplate(idx) {
     if (!t) return;
     var texto = t.titulo + "\n\n" + t.template;
     if (navigator.clipboard) {
-        navigator.clipboard.writeText(texto).then(function () { alert("Template copiado!"); });
+        navigator.clipboard.writeText(texto).then(function () { showToastSave("Template copiado!"); });
     } else {
         prompt("Copie:", texto);
     }
@@ -1056,7 +1122,7 @@ function salvarPauta() {
     var prioridade = document.getElementById("pautaPrioridade").value;
     var notas = document.getElementById("pautaNotas").value.trim();
     var prazo = document.getElementById("pautaPrazo").value;
-    if (!titulo) return alert("Preencha o titulo da pauta.");
+    if (!titulo) return showToastAviso("Preencha o titulo da pauta.");
 
     var pautas = getData("pautas");
     pautas.push({
@@ -1069,13 +1135,14 @@ function salvarPauta() {
         status: "pendente",
         data: new Date().toISOString().split("T")[0]
     });
-    setData("pautas", pautas);
-
+    saveData("pautas", pautas);
     document.getElementById("pautaTitulo").value = "";
-    document.getElementById("pautaNotas").value = "";
-    document.getElementById("pautaPrazo").value = "";
-    renderAdminPautas();
-    alert("Pauta salva!");
+    document.getElementById("pautaData").value = "";
+    document.getElementById("pautaDescricao").innerHTML = "";
+    document.getElementById("pautaTemplate").value = "";
+    document.getElementById("adminPauta").style.display = "none";
+    renderPautas();
+    showToastSave("Pauta salva!");
 }
 
 function marcarPautaFeita(id) {
@@ -1087,9 +1154,9 @@ function marcarPautaFeita(id) {
     renderAdminPautas();
 }
 
-function deletarPauta(id) {
+async function deletarPauta(id) {
     if (!requireAdmin()) return;
-    if (!confirm("Excluir pauta?")) return;
+    if (!await showConfirm("Excluir pauta?")) return;
     var pautas = getData("pautas").filter(function (x) { return x.id !== id; });
     setData("pautas", pautas);
     renderAdminPautas();
@@ -1197,12 +1264,12 @@ function salvarEnquete() {
     if (!requireAdmin()) return;
     var pergunta = document.getElementById("enquetePergunta").value.trim();
     var opcoesRaw = document.getElementById("enqueteOpcoes").value.trim();
-    if (!pergunta || !opcoesRaw) return alert("Preencha pergunta e opcoes.");
+    if (!pergunta || !opcoesRaw) return showToastAviso("Preencha pergunta e opcoes.");
 
     var opcoes = opcoesRaw.split("\n").filter(function (l) { return l.trim(); }).map(function (l) {
         return { texto: l.trim(), votos: 0 };
     });
-    if (opcoes.length < 2) return alert("Minimo 2 opcoes.");
+    if (opcoes.length < 2) return showToastAviso("Minimo 2 opcoes.");
 
     var enquetes = getData("enquetes");
     enquetes.push({
@@ -1218,7 +1285,7 @@ function salvarEnquete() {
     document.getElementById("enqueteOpcoes").value = "";
     renderAdminEnquetes();
     renderEnqueteHome();
-    alert("Enquete criada!");
+    showToastSave("Enquete criada!");
 }
 
 function encerrarEnquete(id) {
@@ -1231,9 +1298,9 @@ function encerrarEnquete(id) {
     renderEnqueteHome();
 }
 
-function deletarEnquete(id) {
+async function deletarEnquete(id) {
     if (!requireAdmin()) return;
-    if (!confirm("Excluir enquete?")) return;
+    if (!await showConfirm("Excluir enquete?")) return;
     var enquetes = getData("enquetes").filter(function (x) { return x.id !== id; });
     setData("enquetes", enquetes);
     renderAdminEnquetes();
@@ -1269,7 +1336,7 @@ function atualizarPlacar() {
     var golsFora = parseInt(document.getElementById("placarGolsFora").value) || 0;
     var minuto = document.getElementById("placarMinuto").value.trim();
     var esporte = document.getElementById("placarEsporte").value;
-    if (!timeCasa || !timeFora) return alert("Preencha os dois times.");
+    if (!timeCasa || !timeFora) return showToastAviso("Preencha os dois times.");
 
     setData("placar_vivo", {
         timeCasa: timeCasa,
@@ -1281,7 +1348,7 @@ function atualizarPlacar() {
         ativo: true
     });
     renderPlacarAoVivo();
-    alert("Placar atualizado!");
+    showToastSave("Placar atualizado!");
 }
 
 function encerrarPlacar() {
@@ -1322,7 +1389,7 @@ function salvarResumo() {
     if (!requireAdmin()) return;
     var titulo = document.getElementById("resumoTitulo").value.trim();
     var corpo = sanitizeHtml(document.getElementById("resumoCorpo").innerHTML.trim());
-    if (!titulo) return alert("Preencha o titulo.");
+    if (!titulo) return showToastAviso("Preencha o titulo.");
 
     var resumos = getData("resumos");
     resumos.push({
@@ -1331,18 +1398,18 @@ function salvarResumo() {
         corpo: corpo,
         data: new Date().toISOString().split("T")[0]
     });
-    setData("resumos", resumos);
+    saveData("resumos", resumos);
 
     document.getElementById("resumoTitulo").value = "";
     document.getElementById("resumoCorpo").innerHTML = "";
     renderResumoSemana();
     renderAdminResumos();
-    alert("Resumo publicado!");
+    showToastSave("Resumo publicado!");
 }
 
-function deletarResumo(id) {
+async function deletarResumo(id) {
     if (!requireAdmin()) return;
-    if (!confirm("Excluir resumo?")) return;
+    if (!await showConfirm("Excluir resumo?")) return;
     var resumos = getData("resumos").filter(function (r) { return r.id !== id; });
     setData("resumos", resumos);
     renderResumoSemana();
@@ -1425,7 +1492,7 @@ function salvarConquista() {
     var evento = document.getElementById("conquistaEvento").value.trim();
     var local = document.getElementById("conquistaLocal").value.trim();
     var data = document.getElementById("conquistaData").value;
-    if (!titulo || !atleta) return alert("Preencha titulo e atleta.");
+    if (!titulo || !atleta) return showToastAviso("Preencha titulo e atleta.");
 
     var conquistas = getData("conquistas");
     conquistas.push({
@@ -1438,7 +1505,7 @@ function salvarConquista() {
         local: local,
         data: data || new Date().toISOString().split("T")[0]
     });
-    setData("conquistas", conquistas);
+    saveData("conquistas", conquistas);
 
     document.getElementById("conquistaTitulo").value = "";
     document.getElementById("conquistaAtleta").value = "";
@@ -1447,12 +1514,12 @@ function salvarConquista() {
     document.getElementById("conquistaData").value = "";
     document.getElementById("adminConquista").style.display = "none";
     renderConquistas();
-    alert("Conquista registrada!");
+    showToastSave("Conquista registrada!");
 }
 
-function deletarConquista(id) {
+async function deletarConquista(id) {
     if (!requireAdmin()) return;
-    if (!confirm("Excluir conquista?")) return;
+    if (!await showConfirm("Excluir conquista?")) return;
     var conquistas = getData("conquistas").filter(function (c) { return c.id !== id; });
     setData("conquistas", conquistas);
     renderConquistas();
@@ -1494,7 +1561,7 @@ function salvarTime() {
     var esporte = document.getElementById("timeEsporte").value;
     var logo = document.getElementById("timeLogo").value.trim();
     var descricao = document.getElementById("timeDescricao").value.trim();
-    if (!nome) return alert("Preencha o nome do time.");
+    if (!nome) return showToastAviso("Preencha o nome do time.");
 
     var times = getData("times");
     times.push({
@@ -1504,19 +1571,19 @@ function salvarTime() {
         logo: logo,
         descricao: descricao
     });
-    setData("times", times);
+    saveData("times", times);
 
     document.getElementById("timeNome").value = "";
     document.getElementById("timeLogo").value = "";
     document.getElementById("timeDescricao").value = "";
     renderTimes();
     renderAdminTimes();
-    alert("Time cadastrado!");
+    showToastSave("Time cadastrado!");
 }
 
-function deletarTime(id) {
+async function deletarTime(id) {
     if (!requireAdmin()) return;
-    if (!confirm("Excluir time?")) return;
+    if (!await showConfirm("Excluir time?")) return;
     var times = getData("times").filter(function (t) { return t.id !== id; });
     setData("times", times);
     renderTimes();
@@ -1584,7 +1651,7 @@ function salvarOpiniao() {
     var autorImg = document.getElementById("opiniaoAutorImg").value.trim();
     var titulo = document.getElementById("opiniaoTitulo").value.trim();
     var corpo = sanitizeHtml(document.getElementById("opiniaoCorpo").innerHTML.trim());
-    if (!autor || !titulo) return alert("Preencha autor e titulo.");
+    if (!autor || !titulo) return showToastAviso("Preencha autor e titulo.");
 
     var opinioes = getData("opinioes");
     opinioes.push({
@@ -1603,12 +1670,12 @@ function salvarOpiniao() {
     document.getElementById("opiniaoCorpo").innerHTML = "";
     document.getElementById("adminOpiniao").style.display = "none";
     renderOpinioes();
-    alert("Coluna publicada!");
+    showToastSave("Coluna publicada!");
 }
 
-function deletarOpiniao(id) {
+async function deletarOpiniao(id) {
     if (!requireAdmin()) return;
-    if (!confirm("Excluir esta coluna?")) return;
+    if (!await showConfirm("Excluir esta coluna?")) return;
     var opinioes = getData("opinioes").filter(function (o) { return o.id !== id; });
     setData("opinioes", opinioes);
     renderOpinioes();
@@ -1648,22 +1715,22 @@ function criarCampeonato() {
     var nome = document.getElementById("campNome").value.trim();
     var esporte = document.getElementById("campEsporte").value;
     var ano = document.getElementById("campAno").value.trim() || "2026";
-    if (!nome) return alert("Preencha o nome do campeonato.");
+    if (!nome) return showToastAviso("Preencha o nome do campeonato.");
 
     var lista = getCampeonatos();
     lista.push({ id: gerarId(), nome: nome, esporte: esporte, ano: ano, times: [], artilheiros: [], resultados: [] });
-    setData("campeonatos", lista);
+    saveData("campeonatos", lista);
 
     document.getElementById("campNome").value = "";
     document.getElementById("adminCampeonato").style.display = "none";
     renderCampeonatos();
-    alert("Campeonato criado!");
+    showToastSave("Campeonato criado!");
 }
 
-function deletarCampeonato(id) {
+async function deletarCampeonato(id) {
     if (!requireAdmin()) return;
-    if (!confirm("Excluir este campeonato e TODOS os seus dados?")) return;
-    if (!confirm("Tem certeza? Isso apaga times, resultados e artilheiros.")) return;
+    if (!await showConfirm("Excluir este campeonato e TODOS os seus dados?")) return;
+    if (!await showConfirm("Tem certeza? Isso apaga times, resultados e artilheiros.")) return;
     var lista = getCampeonatos().filter(function (c) { return c.id !== id; });
     setData("campeonatos", lista);
     _campAtivo = null;
@@ -1720,7 +1787,7 @@ function salvarCampAtivo(camp) {
     for (var i = 0; i < lista.length; i++) {
         if (lista[i].id === camp.id) { lista[i] = camp; break; }
     }
-    setData("campeonatos", lista);
+    saveData("campeonatos", lista);
 }
 
 function renderCampeonatoAtivo() {
@@ -1850,7 +1917,7 @@ function renderCampeonatoAtivo() {
 function adicionarTime() {
     if (!requireAdmin()) return;
     var nome = document.getElementById("novoTimeNome").value.trim();
-    if (!nome) return alert("Preencha o nome do time.");
+    if (!nome) return showToastAviso("Preencha o nome do time.");
     var camp = getCampAtivo();
     if (!camp) return;
     if (!camp.times) camp.times = [];
@@ -1860,28 +1927,28 @@ function adicionarTime() {
     renderHeroStats();
 }
 
-function editarTimeClassificacao(timeId) {
+async function editarTimeClassificacao(timeId) {
     if (!requireAdmin()) return;
     var camp = getCampAtivo();
     if (!camp) return;
     var t = camp.times.find(function (x) { return x.id === timeId; });
     if (!t) return;
-    var p = prompt("Pontos (" + t.nome + "):", t.p); if (p === null) return;
-    var j = prompt("Jogos:", t.j); if (j === null) return;
-    var v = prompt("Vitorias:", t.v); if (v === null) return;
-    var e = prompt("Empates:", t.e); if (e === null) return;
-    var d = prompt("Derrotas:", t.d); if (d === null) return;
-    var gp = prompt("Gols Pro:", t.gp); if (gp === null) return;
-    var gc = prompt("Gols Contra:", t.gc); if (gc === null) return;
+    var p = await showPrompt("Pontos (" + t.nome + "):", t.p); if (p === null) return;
+    var j = await showPrompt("Jogos:", t.j); if (j === null) return;
+    var v = await showPrompt("Vitorias:", t.v); if (v === null) return;
+    var e = await showPrompt("Empates:", t.e); if (e === null) return;
+    var d = await showPrompt("Derrotas:", t.d); if (d === null) return;
+    var gp = await showPrompt("Gols Pro:", t.gp); if (gp === null) return;
+    var gc = await showPrompt("Gols Contra:", t.gc); if (gc === null) return;
     t.p = parseInt(p) || 0; t.j = parseInt(j) || 0; t.v = parseInt(v) || 0;
     t.e = parseInt(e) || 0; t.d = parseInt(d) || 0; t.gp = parseInt(gp) || 0; t.gc = parseInt(gc) || 0;
     salvarCampAtivo(camp);
     renderCampeonatoAtivo();
 }
 
-function removerTime(timeId) {
+async function removerTime(timeId) {
     if (!requireAdmin()) return;
-    if (!confirm("Remover este time?")) return;
+    if (!await showConfirm("Remover este time?")) return;
     var camp = getCampAtivo();
     if (!camp) return;
     camp.times = camp.times.filter(function (t) { return t.id !== timeId; });
@@ -1896,7 +1963,7 @@ function adicionarArtilheiro() {
     var nome = document.getElementById("novoArtNome").value.trim();
     var time = document.getElementById("novoArtTime").value.trim();
     var gols = parseInt(document.getElementById("novoArtGols").value) || 0;
-    if (!nome) return alert("Preencha o nome do jogador.");
+    if (!nome) return showToastAviso("Preencha o nome do jogador.");
     var camp = getCampAtivo();
     if (!camp) return;
     if (!camp.artilheiros) camp.artilheiros = [];
@@ -1905,22 +1972,22 @@ function adicionarArtilheiro() {
     renderCampeonatoAtivo();
 }
 
-function editarArtilheiro(artId) {
+async function editarArtilheiro(artId) {
     if (!requireAdmin()) return;
     var camp = getCampAtivo();
     if (!camp) return;
     var a = camp.artilheiros.find(function (x) { return x.id === artId; });
     if (!a) return;
-    var gols = prompt("Gols de " + a.nome + ":", a.gols);
+    var gols = await showPrompt("Gols de " + a.nome + ":", a.gols);
     if (gols === null) return;
     a.gols = parseInt(gols) || 0;
     salvarCampAtivo(camp);
     renderCampeonatoAtivo();
 }
 
-function removerArtilheiro(artId) {
+async function removerArtilheiro(artId) {
     if (!requireAdmin()) return;
-    if (!confirm("Remover este artilheiro?")) return;
+    if (!await showConfirm("Remover este artilheiro?")) return;
     var camp = getCampAtivo();
     if (!camp) return;
     camp.artilheiros = camp.artilheiros.filter(function (a) { return a.id !== artId; });
@@ -1937,8 +2004,8 @@ function salvarResultado() {
     var timeFora = document.getElementById("resTimeFora").value.trim();
     var data = document.getElementById("resData").value;
     var local = document.getElementById("resLocal").value.trim();
-    if (!timeCasa || !timeFora) return alert("Preencha os dois times.");
-    if (!data) return alert("Preencha a data.");
+    if (!timeCasa || !timeFora) return showToastAviso("Preencha os dois times.");
+    if (!data) return showToastAviso("Preencha a data.");
     var camp = getCampAtivo();
     if (!camp) return;
     if (!camp.resultados) camp.resultados = [];
@@ -1946,12 +2013,12 @@ function salvarResultado() {
     salvarCampAtivo(camp);
     renderCampeonatoAtivo();
     renderHeroStats();
-    alert("Resultado salvo!");
+    showToastSave("Resultado salvo!");
 }
 
-function deletarResultado(resId) {
+async function deletarResultado(resId) {
     if (!requireAdmin()) return;
-    if (!confirm("Excluir este resultado?")) return;
+    if (!await showConfirm("Excluir este resultado?")) return;
     var camp = getCampAtivo();
     if (!camp) return;
     camp.resultados = camp.resultados.filter(function (r) { return r.id !== resId; });
@@ -2070,8 +2137,8 @@ function salvarJogo() {
     var hora = document.getElementById("jogoHora").value;
     var local = document.getElementById("jogoLocal").value.trim();
 
-    if (!timeCasa) return alert("Preencha o time/evento.");
-    if (!data) return alert("Preencha a data.");
+    if (!timeCasa) return showToastAviso("Preencha o time/evento.");
+    if (!data) return showToastAviso("Preencha a data.");
 
     var jogos = getData("jogos");
     jogos.push({ id: gerarId(), esporte: esporte, timeCasa: timeCasa, timeFora: timeFora, data: data, hora: hora, local: local });
@@ -2087,12 +2154,12 @@ function salvarJogo() {
     renderCalendario();
     renderTicker();
     renderInicio();
-    alert("Jogo agendado!");
+    showToastSave("Jogo agendado!");
 }
 
-function deletarJogo(id) {
+async function deletarJogo(id) {
     if (!requireAdmin()) return;
-    if (!confirm("Excluir este jogo?")) return;
+    if (!await showConfirm("Excluir este jogo?")) return;
     var jogos = getData("jogos").filter(function (j) { return j.id !== id; });
     setData("jogos", jogos);
     renderCalendario();
@@ -2153,7 +2220,7 @@ function salvarEvento() {
     var data = document.getElementById("eventoData").value;
     var hora = document.getElementById("eventoHora").value;
     var local = document.getElementById("eventoLocal").value.trim();
-    if (!nome || !data) return alert("Preencha nome e data do evento.");
+    if (!nome || !data) return showToastAviso("Preencha nome e data do evento.");
 
     var eventos = getData("eventos");
     eventos.push({
@@ -2174,12 +2241,12 @@ function salvarEvento() {
     document.getElementById("eventoLocal").value = "";
     document.getElementById("adminEvento").style.display = "none";
     renderCalendario();
-    alert("Evento criado!");
+    showToastSave("Evento criado!");
 }
 
-function deletarEvento(id) {
+async function deletarEvento(id) {
     if (!requireAdmin()) return;
-    if (!confirm("Excluir este evento?")) return;
+    if (!await showConfirm("Excluir este evento?")) return;
     var eventos = getData("eventos").filter(function (e) { return e.id !== id; });
     setData("eventos", eventos);
     renderCalendario();
@@ -2231,7 +2298,7 @@ function salvarAtleta() {
     var img = document.getElementById("atletaImg").value.trim();
     var bio = document.getElementById("atletaBio").value.trim();
 
-    if (!nome) return alert("Preencha o nome.");
+    if (!nome) return showToastAviso("Preencha o nome.");
 
     var atletas = getData("atletas");
     atletas.push({ id: gerarId(), nome: nome, esporte: esporte, time: time, posicao: posicao, imagem: img, bio: bio });
@@ -2245,18 +2312,18 @@ function salvarAtleta() {
     document.getElementById("adminAtleta").style.display = "none";
 
     renderAtletas();
-    alert("Atleta salvo!");
+    showToastSave("Atleta salvo!");
 }
 
-function editarAtleta(id) {
+async function editarAtleta(id) {
     if (!requireAdmin()) return;
     var atletas = getData("atletas");
     var a = atletas.find(function (x) { return x.id === id; });
     if (!a) return;
 
-    var novoNome = prompt("Nome:", a.nome);
+    var novoNome = await showPrompt("Nome:", a.nome);
     if (novoNome === null) return;
-    var novaBio = prompt("Bio:", a.bio);
+    var novaBio = await showPrompt("Bio:", a.bio);
     if (novaBio === null) return;
 
     a.nome = novoNome;
@@ -2265,9 +2332,9 @@ function editarAtleta(id) {
     renderAtletas();
 }
 
-function deletarAtleta(id) {
+async function deletarAtleta(id) {
     if (!requireAdmin()) return;
-    if (!confirm("Excluir este atleta?")) return;
+    if (!await showConfirm("Excluir este atleta?")) return;
     var atletas = getData("atletas").filter(function (a) { return a.id !== id; });
     setData("atletas", atletas);
     renderAtletas();
@@ -2324,7 +2391,7 @@ function salvarFoto() {
     var cat = document.getElementById("fotoCategoria").value;
     var data = document.getElementById("fotoData").value;
 
-    if (!url) return alert("Preencha a URL da imagem.");
+    if (!url) return showToastAviso("Preencha a URL da imagem.");
 
     var fotos = getData("galeria");
     fotos.push({ id: gerarId(), url: url, legenda: legenda, categoria: cat, data: data || new Date().toISOString().split("T")[0] });
@@ -2336,12 +2403,12 @@ function salvarFoto() {
     document.getElementById("adminFoto").style.display = "none";
 
     renderGaleria();
-    alert("Foto adicionada!");
+    showToastSave("Foto adicionada!");
 }
 
-function deletarFoto(id) {
+async function deletarFoto(id) {
     if (!requireAdmin()) return;
-    if (!confirm("Excluir esta foto?")) return;
+    if (!await showConfirm("Excluir esta foto?")) return;
     var fotos = getData("galeria").filter(function (f) { return f.id !== id; });
     setData("galeria", fotos);
     renderGaleria();
@@ -2403,8 +2470,8 @@ function salvarVideo() {
     var cat = document.getElementById("videoCategoria").value;
     var data = document.getElementById("videoData").value;
 
-    if (!url) return alert("Cole o link do video do YouTube.");
-    if (!extrairYouTubeId(url)) return alert("Link do YouTube invalido. Use o formato: https://www.youtube.com/watch?v=...");
+    if (!url) return showToastAviso("Cole o link do video do YouTube.");
+    if (!extrairYouTubeId(url)) return showToastAviso("Link do YouTube invalido. Use o formato: https://www.youtube.com/watch?v=...");
 
     var videos = getData("videos");
     videos.push({ id: gerarId(), url: url, titulo: titulo, categoria: cat, data: data || new Date().toISOString().split("T")[0] });
@@ -2416,12 +2483,12 @@ function salvarVideo() {
     document.getElementById("adminVideo").style.display = "none";
 
     renderVideos();
-    alert("Video adicionado!");
+    showToastSave("Video adicionado!");
 }
 
-function deletarVideo(id) {
+async function deletarVideo(id) {
     if (!requireAdmin()) return;
-    if (!confirm("Excluir este video?")) return;
+    if (!await showConfirm("Excluir este video?")) return;
     var videos = getData("videos").filter(function (v) { return v.id !== id; });
     setData("videos", videos);
     renderVideos();
@@ -2486,7 +2553,7 @@ function renderNewsletterAdmin() {
 function exportarNewsletter() {
     if (!requireAdmin()) return;
     var inscritos = getData("newsletter") || [];
-    if (inscritos.length === 0) return alert("Nenhum inscrito.");
+    if (inscritos.length === 0) return showToastAviso("Nenhum inscrito.");
     var blob = new Blob([inscritos.join("\n")], { type: "text/plain" });
     var url = URL.createObjectURL(blob);
     var a = document.createElement("a");
@@ -2552,11 +2619,11 @@ function normalizarBackupImportado(data) {
     };
 }
 
-function importarDados(event) {
+async function importarDados(event) {
     if (!requireAdmin()) return;
     var file = event.target.files[0];
     if (!file) return;
-    if (!confirm("Antes de importar, sera baixado um backup de emergencia do estado atual. Continuar?")) return;
+    if (!await showConfirm("Antes de importar, sera baixado um backup de emergencia do estado atual. Continuar?")) return;
     baixarBackupEmergenciaPortal("antes-de-importar");
 
     var reader = new FileReader();
@@ -2573,24 +2640,24 @@ function importarDados(event) {
             if (backup.local && backup.local.usageConfig) {
                 localStorage.setItem(USAGE_CONFIG_KEY, JSON.stringify(backup.local.usageConfig));
             }
-            alert("Dados importados com sucesso! Recarregando...");
+            showToastSave("Dados importados com sucesso! Recarregando...");
             location.reload();
         } catch (err) {
-            alert("Erro ao importar: " + err.message);
+            showToastErro("Erro ao importar: " + err.message);
         }
     };
     reader.readAsText(file);
 }
 
-function limparDados() {
+async function limparDados() {
     if (!requireAdmin()) return;
-    if (!confirm("ATENCAO: Isso vai apagar TODOS os dados do portal. Deseja continuar?")) return;
-    if (!confirm("Tem certeza? Um backup de emergencia sera baixado antes da limpeza.")) return;
+    if (!await showConfirm("ATENCAO: Isso vai apagar TODOS os dados do portal. Deseja continuar?")) return;
+    if (!await showConfirm("Tem certeza? Um backup de emergencia sera baixado antes da limpeza.")) return;
     baixarBackupEmergenciaPortal("antes-de-limpar-dados");
 
     var keys = Object.keys(localStorage).filter(function (k) { return k.indexOf("esp_") === 0; });
     keys.forEach(function (k) { localStorage.removeItem(k); });
-    alert("Dados limpos. Recarregando...");
+    showToastSave("Dados limpos. Recarregando...");
     location.reload();
 }
 
@@ -2672,7 +2739,7 @@ function salvarConfiguracaoUsoPortal() {
     };
     try { localStorage.setItem(USAGE_CONFIG_KEY, JSON.stringify(config)); } catch (e) {}
     renderDashboardUsoPortal();
-    alert("Limites do dashboard salvos.");
+    showToastSave("Limites do dashboard salvos.");
 }
 
 function getPortalUsageKeys() {
@@ -2887,7 +2954,7 @@ function iniciarLive() {
     if (!requireAdmin()) return;
     var url = document.getElementById("liveUrl").value.trim();
     var titulo = document.getElementById("liveTitulo").value.trim();
-    if (!url) return alert("Cole o link da live.");
+    if (!url) return showToastAviso("Cole o link da live.");
 
     var embedUrl = "";
     var tipo = "embed";
@@ -2924,7 +2991,7 @@ function iniciarLive() {
     document.getElementById("liveTitulo").value = "";
     atualizarLiveStatus();
     atualizarLiveNav();
-    alert("Live iniciada! O botao AO VIVO aparecera no menu.");
+    showToastSave("Live iniciada! O botao AO VIVO aparecera no menu.");
 }
 
 function encerrarLive() {
@@ -2932,7 +2999,7 @@ function encerrarLive() {
     SupaDB.removeItem("live");
     atualizarLiveStatus();
     atualizarLiveNav();
-    alert("Live encerrada.");
+    showToastSave("Live encerrada.");
 }
 
 function atualizarLiveStatus() {
@@ -2991,7 +3058,7 @@ function toggleFullscreenLive() {
         if (el.requestFullscreen) el.requestFullscreen();
         else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
         else if (el.msRequestFullscreen) el.msRequestFullscreen();
-        else alert("Seu navegador nao suporta tela cheia. Use o botao de tela cheia do proprio player.");
+        else showToastAviso("Seu navegador nao suporta tela cheia. Use o botao de tela cheia do proprio player.");
     } else {
         if (document.exitFullscreen) document.exitFullscreen();
         else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
@@ -3008,7 +3075,7 @@ function salvarPatrocinador() {
     var logo = document.getElementById("patroLogo").value.trim();
     var site = document.getElementById("patroSite").value.trim();
     var plano = document.getElementById("patroPlano").value;
-    if (!nome) return alert("Preencha o nome do patrocinador.");
+    if (!nome) return showToastAviso("Preencha o nome do patrocinador.");
 
     var lista = getPatrocinadores();
     lista.push({
@@ -3028,7 +3095,7 @@ function salvarPatrocinador() {
 
     renderAdminPatrocinadores();
     renderPatrocinadoresPublico();
-    alert("Patrocinador cadastrado! Aprove para que apareca no site.");
+    showToastSave("Patrocinador cadastrado! Aprove para que apareca no site.");
 }
 
 function aprovarPatrocinador(id) {
@@ -3043,9 +3110,9 @@ function aprovarPatrocinador(id) {
     }
 }
 
-function deletarPatrocinador(id) {
+async function deletarPatrocinador(id) {
     if (!requireAdmin()) return;
-    if (!confirm("Excluir este patrocinador?")) return;
+    if (!await showConfirm("Excluir este patrocinador?")) return;
     var lista = getPatrocinadores().filter(function (p) { return p.id !== id; });
     setData("patrocinadores", lista);
     renderAdminPatrocinadores();

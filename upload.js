@@ -151,6 +151,9 @@ var CloudUpload = (function () {
     function init() {
         var campos = document.querySelectorAll("[data-upload-target]");
         campos.forEach(function (campo) {
+            // Evitar duplicacao de botoes em multiplas chamadas de init()
+            var next = campo.nextElementSibling;
+            if (next && next.classList.contains("upload-wrapper")) return;
             var targetId = campo.getAttribute("data-upload-target");
             var wrapper = criarBotaoUpload(targetId);
             campo.parentNode.insertBefore(wrapper, campo.nextSibling);
