@@ -8,11 +8,11 @@
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-    --azul-escuro: #0a1628;
-    --azul-medio: #1a3a6b;
-    --azul-claro: #2a5298;
-    --azul-light: #e8eef8;
-    --azul-bg: #f0f4fa;
+    --azul-escuro: #0f2b5c;
+    --azul-medio: #1a3f7a;
+    --azul-claro: #2d5fa0;
+    --azul-light: #e4ecf7;
+    --azul-bg: #edf2f9;
     --vermelho: #c41e3a;
     --vermelho-hover: #a01830;
     --vermelho-light: #fdeef0;
@@ -48,8 +48,7 @@ html { scroll-behavior: smooth; }
 body {
     font-family: var(--font-main);
     background: var(--azul-bg);
-    color: var(--cinza-800);
-    line-height: 1.6;
+    color: var(--cinza-700);
     -webkit-font-smoothing: antialiased;
 }
 
@@ -94,8 +93,9 @@ img { max-width: 100%; display: block; }
 .header-social a:hover { color: var(--dourado); }
 
 .header-main {
+    border-bottom: 2px solid var(--dourado);
+    box-shadow: inset 0 -2px 0 var(--vermelho);
     padding: 12px 0;
-    border-bottom: 3px solid var(--vermelho);
 }
 
 .header-main-inner {
@@ -164,7 +164,7 @@ img { max-width: 100%; display: block; }
     padding: 8px 14px;
     font-size: 0.85rem;
     font-weight: 600;
-    color: var(--cinza-600);
+    color: var(--cinza-700);
     border-radius: var(--radius-sm);
     transition: all var(--transition);
     position: relative;
@@ -288,6 +288,13 @@ img { max-width: 100%; display: block; }
     height: 400px;
     background: radial-gradient(circle, rgba(196,30,58,0.15) 0%, transparent 70%);
     border-radius: 50%;
+}
+
+.hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(10,22,40,0.05);
+    z-index: 1;
 }
 
 .hero-content {
@@ -453,6 +460,8 @@ img { max-width: 100%; display: block; }
     gap: 12px;
 }
 
+#secao-esportes-cards { display: none; }
+
 .section-title {
     font-family: var(--font-display);
     font-size: 1.8rem;
@@ -554,6 +563,7 @@ img { max-width: 100%; display: block; }
     box-shadow: var(--shadow-sm);
     transition: all 0.3s ease;
     border: 1px solid var(--cinza-100);
+    border-left: 3px solid var(--azul-medio);
     cursor: pointer;
 }
 
@@ -2008,6 +2018,17 @@ body.admin-mode .gallery-item:hover .gallery-item-actions { display: flex; gap: 
     color: var(--cinza-400);
     padding: 50px 0 0;
     margin-top: 50px;
+    position: relative;
+}
+
+.main-footer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--azul-claro) 0%, var(--vermelho) 40%, var(--dourado) 70%, var(--branco) 100%);
 }
 
 .footer-grid {

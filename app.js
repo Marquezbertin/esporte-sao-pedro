@@ -564,7 +564,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }).then(function () {
         atualizarData();
         renderTicker();
-        renderSportsGrid();
+        //renderSportsGrid(); // seção removida — sem dados de resultados ainda
         renderInicio();
         renderHeroStats();
         initScrollTop();
