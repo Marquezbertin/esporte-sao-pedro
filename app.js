@@ -448,7 +448,6 @@ async function salvarSiteLogo() {
     hideLoading();
     aplicarSiteLogo(url, size);
     showToastSave("Logo salvo com sucesso!");
-    });
 }
 
 async function removerSiteLogo() {
@@ -471,10 +470,43 @@ async function removerSiteLogo() {
     document.getElementById("siteLogoSize").value = 48;
     document.getElementById("siteLogoSizeLabel").textContent = "48";
     carregarSiteLogo();
+}
+
+function renderSobreEditavel() {
+    var saved = getSobreTextos();
+    if (saved) {
+        var t1 = document.getElementById("sobreTexto1");
+        var t2 = document.getElementById("sobreTexto2");
+        if (t1 && saved.texto1) t1.innerHTML = saved.texto1;
+        if (t2 && saved.texto2) t2.innerHTML = saved.texto2;
+    }
+    if (isAdmin()) {
+        var campos = document.querySelectorAll(".sobre-editavel");
+        campos.forEach(function (el) {
+            el.setAttribute("contenteditable", "true");
+            el.classList.add("editavel-ativo");
+        });
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    limparDadosDemo();
+
+    checkAdminSession().then(function () {
+        return SupaDB.loadAll();
+    }).then(function () {
+        atualizarData();
+        renderTicker();
+        renderSportsGrid();
+        renderInicio();
+        renderHeroStats();
+        initScrollTop();
+        atualizarLiveNav();
+        atualizarLiveStatus();
+        carregarSiteLogo();
         renderSobreEditavel();
         renderPatrocinadoresPublico();
 
-        // Esconder loading
         var loadEl = document.getElementById("supaLoading");
         if (loadEl) loadEl.style.display = "none";
     });
