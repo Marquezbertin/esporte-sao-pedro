@@ -3392,3 +3392,172 @@ body.admin-mode .video-card-actions { display: flex; }
     background: var(--azul-medio);
     color: var(--branco);
 }
+
+/* ===== DASHBOARD EDITORIAL ===== */
+.editorial-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+}
+.editorial-stat {
+    background: var(--branco);
+    border: 1px solid var(--cinza-200);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    text-align: center;
+}
+.editorial-stat-value {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--azul-escuro);
+    line-height: 1.2;
+}
+.editorial-stat-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--cinza-500);
+    margin-top: 4px;
+}
+.editorial-stat.highlight {
+    border-color: var(--dourado);
+    background: #fffef5;
+}
+
+/* ===== ADMIN NEWS LIST ===== */
+.admin-news-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--cinza-100);
+    font-size: 0.84rem;
+}
+.admin-news-item:last-child { border-bottom: none; }
+.admin-news-item:hover { background: var(--cinza-50); }
+.admin-news-thumb {
+    width: 48px;
+    height: 36px;
+    object-fit: cover;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+.admin-news-info { flex: 1; min-width: 0; }
+.admin-news-title {
+    font-weight: 600;
+    color: var(--cinza-800);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.admin-news-meta {
+    font-size: 0.72rem;
+    color: var(--cinza-400);
+    margin-top: 2px;
+}
+.admin-news-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.admin-news-badge.rascunho { background: #fef3c7; color: #d97706; }
+.admin-news-badge.agendada { background: #dbeafe; color: #2563eb; }
+.admin-news-badge.publicada { background: #dcfce7; color: #16a34a; }
+.admin-news-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.admin-news-actions button {
+    background: none;
+    border: 1px solid var(--cinza-200);
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 0.72rem;
+    color: var(--cinza-600);
+}
+.admin-news-actions button:hover { background: var(--cinza-100); }
+
+/* ===== CALENDARIO EDITORIAL ===== */
+.cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+.cal-header {
+    text-align: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--cinza-500);
+    padding: 6px 0;
+}
+.cal-day {
+    background: var(--cinza-50);
+    border-radius: 4px;
+    min-height: 70px;
+    padding: 4px;
+    font-size: 0.72rem;
+    position: relative;
+}
+.cal-day-num {
+    font-weight: 700;
+    color: var(--cinza-400);
+    margin-bottom: 2px;
+}
+.cal-day.today { background: #fffef5; border: 1px solid var(--dourado); }
+.cal-day.other-month { opacity: 0.35; }
+.cal-day-event {
+    background: var(--azul-medio);
+    color: var(--branco);
+    border-radius: 3px;
+    padding: 1px 4px;
+    font-size: 0.6rem;
+    margin-bottom: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+}
+.cal-day-event.draft { background: #d97706; }
+.cal-day-event.scheduled { background: #2563eb; }
+
+/* ===== PREVIEW MODAL ===== */
+.preview-card {
+    background: var(--branco);
+    border: 1px solid var(--cinza-200);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+.preview-card-img {
+    width: 100%;
+    max-height: 300px;
+    object-fit: cover;
+}
+.preview-card-body {
+    padding: 20px;
+}
+.preview-card-cat {
+    display: inline-block;
+    background: var(--dourado);
+    color: var(--azul-escuro);
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+.preview-card-title {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--azul-escuro);
+    line-height: 1.3;
+    margin-bottom: 12px;
+}
+.preview-card-text {
+    font-size: 0.88rem;
+    color: var(--cinza-600);
+    line-height: 1.7;
+}

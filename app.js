@@ -548,7 +548,7 @@ function navegar(secao, e) {
         case "videos": renderVideos(); break;
         case "opiniao": renderOpinioes(); break;
         case "conquistas": renderConquistas(); break;
-        case "redacao": if (!isAdmin()) { navegar("inicio", null); return; } renderTemplatesPauta(); renderAdminPautas(); break;
+        case "redacao": if (!isAdmin()) { navegar("inicio", null); return; } renderTemplatesPauta(); renderAdminPautas(); renderEditorialDashboard(); renderAdminNewsList(); renderCalendario(); break;
         case "sobre": atualizarStorageInfo(); renderDashboardUsoPortal(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminTimes(); renderNewsletterAdmin(); break;
     }
 
@@ -882,8 +882,9 @@ var _filtroNoticia = "todas";
 
 function renderNoticias() {
     var noticias = getData("noticias");
+    var hoje = new Date().toISOString().split("T")[0];
     if (!isAdmin()) {
-        noticias = noticias.filter(function (n) { return !n.rascunho; });
+        noticias = noticias.filter(function (n) { return !n.rascunho && (!n.dataAgendada || n.dataAgendada <= hoje); });
     }
     noticias.sort(function (a, b) {
         if (a.destaque && !b.destaque) return -1;
@@ -940,6 +941,8 @@ function salvarNoticia() {
     var fonte = document.getElementById("noticiaFonte").value.trim();
     if (!titulo) return showToastAviso("Preencha o titulo.");
 
+    var dataAgendada = document.getElementById("noticiaDataAgendada").value || "";
+
     var noticias = getData("noticias");
     noticias.push({
         id: gerarId(),
@@ -952,6 +955,7 @@ function salvarNoticia() {
         video: video,
         fonte: fonte,
         rascunho: ehRascunho,
+        dataAgendada: dataAgendada,
         data: new Date().toISOString().split("T")[0]
     });
     saveData("noticias", noticias);
@@ -986,6 +990,7 @@ function editarNoticia(id) {
     document.getElementById("editNoticiaFonte").value = n.fonte || "";
     document.getElementById("editNoticiaCidade").value = n.cidade || "sao-pedro";
     document.getElementById("editNoticiaRascunho").checked = !!n.rascunho;
+    document.getElementById("editNoticiaDataAgendada").value = n.dataAgendada || "";
     document.getElementById("editNoticiaData").value = n.data || "";
 
     document.getElementById("editarNoticiaModal").classList.add("active");
@@ -1015,6 +1020,7 @@ function salvarEdicaoNoticia() {
     n.fonte = document.getElementById("editNoticiaFonte").value.trim();
     n.cidade = document.getElementById("editNoticiaCidade").value;
     n.rascunho = document.getElementById("editNoticiaRascunho").checked;
+    n.dataAgendada = document.getElementById("editNoticiaDataAgendada").value || "";
     n.data = document.getElementById("editNoticiaData").value || n.data;
 
     saveData("noticias", noticias);
@@ -1164,7 +1170,7 @@ function salvarPauta() {
         prioridade: prioridade,
         notas: notas,
         prazo: prazo,
-        status: "pendente",
+        status: "nova",
         data: new Date().toISOString().split("T")[0]
     });
     saveData("pautas", pautas);
@@ -1177,11 +1183,13 @@ function salvarPauta() {
     showToastSave("Pauta salva!");
 }
 
-function marcarPautaFeita(id) {
+function avancarStatusPauta(id) {
     if (!requireAdmin()) return;
     var pautas = getData("pautas");
     var p = pautas.find(function (x) { return x.id === id; });
-    if (p) p.status = (p.status === "pendente") ? "feita" : "pendente";
+    if (!p) return;
+    var ordem = { nova: "em-producao", "em-producao": "concluida", concluida: "nova" };
+    p.status = ordem[p.status] || "nova";
     setData("pautas", pautas);
     renderAdminPautas();
 }
@@ -1213,7 +1221,10 @@ function renderAdminPautas() {
     if (!container) return;
     var pautas = getData("pautas").sort(function (a, b) {
         var prioOrder = { alta: 0, media: 1, baixa: 2 };
-        if (a.status !== b.status) return a.status === "pendente" ? -1 : 1;
+        var statusOrder = { nova: 0, "em-producao": 1, concluida: 2 };
+        var sa = statusOrder[a.status] || 9;
+        var sb = statusOrder[b.status] || 9;
+        if (sa !== sb) return sa - sb;
         return (prioOrder[a.prioridade] || 1) - (prioOrder[b.prioridade] || 1);
     });
 
@@ -1225,20 +1236,25 @@ function renderAdminPautas() {
     container.innerHTML = "";
     pautas.forEach(function (p) {
         var prioColor = { alta: "#ef4444", media: "#d97706", baixa: "#16a34a" };
-        var isDone = p.status === "feita";
+        var isDone = p.status === "concluida";
         var prazoTxt = p.prazo ? " | Prazo: " + formatarData(p.prazo) : "";
+        var statusLabel = { nova: "Nova", "em-producao": "Em Producao", concluida: "Concluida" };
+        var statusClass = { nova: "rascunho", "em-producao": "agendada", concluida: "publicada" };
 
         container.innerHTML +=
             '<div class="pauta-item' + (isDone ? ' pauta-feita' : '') + '">' +
                 '<div class="pauta-item-header">' +
                     '<span class="pauta-prio" style="background:' + (prioColor[p.prioridade] || "#999") + ';">' + esc(p.prioridade) + '</span>' +
+                    '<span class="admin-news-badge ' + (statusClass[p.status] || "") + '">' + (statusLabel[p.status] || p.status) + '</span>' +
                     '<span class="news-card-cat ' + p.categoria + '" style="font-size:0.6rem;">' + esc(p.categoria) + '</span>' +
                     '<strong style="font-size:0.85rem;' + (isDone ? 'text-decoration:line-through;color:#9ca3af;' : '') + '">' + esc(p.titulo) + '</strong>' +
                 '</div>' +
                 (p.notas ? '<p style="font-size:0.8rem;color:#64748b;margin:4px 0;white-space:pre-line;">' + esc(p.notas).substring(0, 150) + '</p>' : '') +
                 '<div style="font-size:0.7rem;color:#9ca3af;">' + formatarData(p.data) + prazoTxt + '</div>' +
                 '<div style="display:flex;gap:6px;margin-top:6px;">' +
-                    '<button class="btn btn-sm" onclick="marcarPautaFeita(\'' + p.id + '\')">' + (isDone ? 'Reabrir' : 'Concluir') + '</button>' +
+                    '<button class="btn btn-sm" onclick="avancarStatusPauta(\'' + p.id + '\')">' +
+                        (p.status === "nova" ? "Iniciar" : p.status === "em-producao" ? "Concluir" : "Reabrir") +
+                    '</button>' +
                     '<button class="btn btn-sm" onclick="usarPautaComoNoticia(\'' + p.id + '\')">Criar noticia</button>' +
                     '<button class="btn btn-sm" onclick="deletarPauta(\'' + p.id + '\')">Excluir</button>' +
                 '</div>' +
@@ -3218,5 +3234,218 @@ function renderPatrocinadoresPublico() {
                 logoHtml +
                 '<span class="sponsor-name">' + esc(p.nome) + '</span>' +
             '</a>';
+    });
+}
+
+// ===== DASHBOARD EDITORIAL =====
+function renderEditorialDashboard() {
+    var el = document.getElementById("editorialDashboard");
+    if (!el) return;
+    var noticias = getData("noticias");
+    var pautas = getData("pautas");
+    var hoje = new Date().toISOString().split("T")[0];
+    var publicadas = noticias.filter(function (n) { return !n.rascunho && (!n.dataAgendada || n.dataAgendada <= hoje); }).length;
+    var rascunhos = noticias.filter(function (n) { return n.rascunho; }).length;
+    var agendadas = noticias.filter(function (n) { return n.dataAgendada && n.dataAgendada > hoje; }).length;
+    var pautasAbertas = pautas.filter(function (p) { return p.status !== "concluida"; }).length;
+    el.innerHTML =
+        '<div class="editorial-stats">' +
+            '<div class="editorial-stat highlight"><div class="editorial-stat-value">' + publicadas + '</div><div class="editorial-stat-label">Publicadas</div></div>' +
+            '<div class="editorial-stat"><div class="editorial-stat-value">' + rascunhos + '</div><div class="editorial-stat-label">Rascunhos</div></div>' +
+            '<div class="editorial-stat"><div class="editorial-stat-value">' + agendadas + '</div><div class="editorial-stat-label">Agendadas</div></div>' +
+            '<div class="editorial-stat"><div class="editorial-stat-value">' + pautasAbertas + '</div><div class="editorial-stat-label">Pautas Abertas</div></div>' +
+        '</div>';
+}
+
+// ===== ADMIN NEWS LIST =====
+var _filtroAdminNews = "todas";
+var _buscaAdminNews = "";
+
+function filtrarAdminNews(cat) {
+    _filtroAdminNews = cat;
+    renderAdminNewsList();
+}
+
+function buscarAdminNews() {
+    var input = document.getElementById("adminNewsSearch");
+    _buscaAdminNews = input ? input.value.trim().toLowerCase() : "";
+    renderAdminNewsList();
+}
+
+function renderAdminNewsList() {
+    var container = document.getElementById("adminNewsList");
+    if (!container) return;
+    var noticias = getData("noticias").slice().sort(function (a, b) { return b.data.localeCompare(a.data); });
+    var hoje = new Date().toISOString().split("T")[0];
+
+    if (_filtroAdminNews !== "todas") {
+        noticias = noticias.filter(function (n) { return n.categoria === _filtroAdminNews; });
+    }
+    if (_buscaAdminNews) {
+        noticias = noticias.filter(function (n) {
+            return (n.titulo || "").toLowerCase().indexOf(_buscaAdminNews) !== -1 ||
+                   (n.corpo || "").toLowerCase().indexOf(_buscaAdminNews) !== -1;
+        });
+    }
+    if (!noticias.length) {
+        container.innerHTML = "<p style='color:#8892a4;font-size:0.85rem;'>Nenhuma noticia encontrada.</p>";
+        return;
+    }
+    container.innerHTML = "";
+    noticias.forEach(function (n) {
+        var status = n.rascunho ? "rascunho" : (n.dataAgendada && n.dataAgendada > hoje ? "agendada" : "publicada");
+        var statusLabel = n.rascunho ? "Rascunho" : (n.dataAgendada && n.dataAgendada > hoje ? "Agendada" : "Publicada");
+        var thumb = n.imagem ? '<img class="admin-news-thumb" src="' + esc(n.imagem) + '" alt="">' : '<div class="admin-news-thumb" style="background:var(--cinza-100);border-radius:4px;"></div>';
+        container.innerHTML +=
+            '<div class="admin-news-item">' +
+                thumb +
+                '<div class="admin-news-info">' +
+                    '<div class="admin-news-title">' + esc(n.titulo || "(sem titulo)") + '</div>' +
+                    '<div class="admin-news-meta">' + formatarData(n.data) + ' &middot; <span class="admin-news-badge ' + status + '">' + statusLabel + '</span></div>' +
+                '</div>' +
+                '<div class="admin-news-actions">' +
+                    '<button onclick="editarNoticia(\'' + n.id + '\')" title="Editar">Editar</button>' +
+                    '<button onclick="abrirPreview(\'' + n.id + '\')" title="Pre-visualizar">Preview</button>' +
+                '</div>' +
+            '</div>';
+    });
+}
+
+// ===== CALENDARIO EDITORIAL =====
+var _calEditorialDate = new Date();
+
+function navegarCalendario(delta) {
+    _calEditorialDate.setMonth(_calEditorialDate.getMonth() + delta);
+    renderCalendario();
+}
+
+function renderCalendario() {
+    var container = document.getElementById("calendarioGrid");
+    if (!container) return;
+    var ano = _calEditorialDate.getFullYear();
+    var mes = _calEditorialDate.getMonth();
+    var hoje = new Date().toISOString().split("T")[0];
+    var primeiro = new Date(ano, mes, 1);
+    var ultimo = new Date(ano, mes + 1, 0);
+    var inicioSemana = primeiro.getDay();
+    var diasNoMes = ultimo.getDate();
+    var nomeMeses = ["Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+    // Gather scheduled content
+    var noticias = getData("noticias");
+    var eventos = {};
+    noticias.forEach(function (n) {
+        var d = n.dataAgendada || n.data;
+        if (!d) return;
+        var key = d;
+        if (!eventos[key]) eventos[key] = [];
+        var tipo = n.rascunho ? "rascunho" : (n.dataAgendada ? "agendada" : "publicada");
+        eventos[key].push({ titulo: n.titulo, tipo: tipo, id: n.id });
+    });
+
+    var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
+        '<button class="btn btn-sm" onclick="navegarCalendario(-1)">&larr; ' + nomeMeses[mes === 0 ? 11 : mes - 1].substring(0, 3) + '</button>' +
+        '<strong style="font-size:1rem;">' + nomeMeses[mes] + ' ' + ano + '</strong>' +
+        '<button class="btn btn-sm" onclick="navegarCalendario(1)">' + nomeMeses[(mes + 1) % 12].substring(0, 3) + ' &rarr;</button>' +
+    '</div>';
+
+    html += '<div class="cal-grid">';
+    ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"].forEach(function (d) {
+        html += '<div class="cal-header">' + d + '</div>';
+    });
+    for (var i = 0; i < inicioSemana; i++) {
+        html += '<div class="cal-day other-month"></div>';
+    }
+    for (var dia = 1; dia <= diasNoMes; dia++) {
+        var dateStr = ano + "-" + String(mes + 1).padStart(2, "0") + "-" + String(dia).padStart(2, "0");
+        var classes = "cal-day";
+        if (dateStr === hoje) classes += " today";
+        html += '<div class="' + classes + '">';
+        html += '<div class="cal-day-num">' + dia + '</div>';
+        if (eventos[dateStr]) {
+            eventos[dateStr].forEach(function (ev) {
+                html += '<div class="cal-day-event ' + ev.tipo + '" onclick="abrirPreview(\'' + ev.id + '\')" title="' + esc(ev.titulo) + '">' + esc(ev.titulo.substring(0, 18)) + '</div>';
+            });
+        }
+        html += '</div>';
+    }
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// ===== PREVIEW MODAL =====
+var _previewNoticiaId = null;
+
+function abrirPreview(id) {
+    var noticias = getData("noticias");
+    var n = noticias.find(function (x) { return x.id === id; });
+    if (!n) return showToastAviso("Noticia nao encontrada.");
+    _previewNoticiaId = id;
+
+    var html = '<div class="preview-card">';
+    if (n.imagem) html += '<img class="preview-card-img" src="' + esc(n.imagem) + '" alt="">';
+    html += '<div class="preview-card-body">';
+    html += '<span class="preview-card-cat">' + esc(n.categoria) + '</span>';
+    html += '<div class="preview-card-title">' + esc(n.titulo) + '</div>';
+    html += '<div class="preview-card-text">' + n.corpo + '</div>';
+    html += '<div style="margin-top:12px;font-size:0.78rem;color:var(--cinza-400);">' + formatarData(n.data) + (n.cidade ? " &middot; " + esc(n.cidade.replace("-", " ").replace(/\b\w/g, function (l) { return l.toUpperCase(); })) : "") + '</div>';
+    html += '</div></div>';
+
+    document.getElementById("previewContent").innerHTML = html;
+    document.getElementById("previewModal").classList.add("active");
+}
+
+function fecharPreview() {
+    document.getElementById("previewModal").classList.remove("active");
+    _previewNoticiaId = null;
+}
+
+function exportarCardNoticia() {
+    var id = _previewNoticiaId;
+    if (!id) return showToastAviso("Nenhuma noticia em pre-visualizacao.");
+    var noticias = getData("noticias");
+    var n = noticias.find(function (x) { return x.id === id; });
+    if (!n) return showToastAviso("Noticia nao encontrada.");
+
+    // Load html2canvas on demand
+    if (typeof html2canvas === "undefined") {
+        showToastAviso("Carregando biblioteca de exportacao...");
+        var script = document.createElement("script");
+        script.src = "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
+        script.onload = function () { _doExportCard(n); };
+        document.head.appendChild(script);
+    } else {
+        _doExportCard(n);
+    }
+}
+
+function _doExportCard(n) {
+    var div = document.createElement("div");
+    div.style.cssText = "width:600px;padding:24px;background:#fff;font-family:Arial,sans-serif;";
+    var inner = '<div style="border:1px solid #e0e0e0;border-radius:12px;overflow:hidden;">';
+    if (n.imagem) inner += '<img src="' + esc(n.imagem) + '" style="width:100%;max-height:300px;object-fit:cover;display:block;">';
+    inner += '<div style="padding:20px;">';
+    inner += '<span style="display:inline-block;background:#d4a747;color:#0a1f2e;padding:2px 10px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;margin-bottom:8px;">' + esc(n.categoria) + '</span>';
+    inner += '<h2 style="margin:0 0 12px 0;font-size:22px;color:#0a1f2e;">' + esc(n.titulo) + '</h2>';
+    inner += '<div style="font-size:14px;color:#555;line-height:1.7;">' + n.corpo + '</div>';
+    inner += '<div style="margin-top:12px;font-size:12px;color:#999;">' + formatarData(n.data) + '</div>';
+    inner += '<div style="margin-top:16px;padding-top:12px;border-top:1px solid #eee;font-size:11px;color:#aaa;text-align:center;">Esporte Sao Pedro &mdash; esportesaopedro.com</div>';
+    inner += '</div></div>';
+    div.innerHTML = inner;
+    document.body.appendChild(div);
+
+    showLoading();
+    html2canvas(div, { scale: 2, useCORS: true, allowTaint: false }).then(function (canvas) {
+        var link = document.createElement("a");
+        link.download = "card-" + n.id + ".png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+        document.body.removeChild(div);
+        hideLoading();
+        showToastSave("Card exportado!");
+    }).catch(function () {
+        document.body.removeChild(div);
+        hideLoading();
+        showToastErro("Erro ao exportar. Tente novamente.");
     });
 }

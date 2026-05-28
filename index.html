@@ -229,6 +229,9 @@
                         <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;color:var(--cinza-600);cursor:pointer;">
                             <input type="checkbox" id="noticiaRascunho"> Salvar como rascunho (nao publica)
                         </label>
+                        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;color:var(--cinza-600);cursor:pointer;">
+                            Agendar para: <input type="date" id="noticiaDataAgendada" style="margin-left:4px;padding:2px 6px;border:1px solid var(--cinza-200);border-radius:4px;font-size:0.8rem;">
+                        </label>
                     </div>
                     <button class="btn btn-primary" onclick="salvarNoticia()">Publicar</button>
                 </div>
@@ -617,6 +620,44 @@
                     Campeonatos Futsal Sub-13/Sub-15 e Society Sub-9/Sub-11<br>
                     Copa Interior Triathlon/Duathlon/Aquathlon — SP vice-lider (16 trofeus)</p>
                 </div>
+            </div>
+
+            <!-- FERRAMENTAS EDITORIAIS -->
+            <div class="card-panel" style="margin-top:30px;">
+                <div class="card-panel-header">
+                    <h3>Ferramentas Editoriais</h3>
+                </div>
+                <div id="editorialDashboard" style="margin-top:12px;"></div>
+                <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--cinza-200);">
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+                        <input type="text" id="adminNewsSearch" placeholder="Buscar noticias..." onkeyup="buscarAdminNews()" style="flex:1;min-width:180px;padding:8px 12px;border:1px solid var(--cinza-200);border-radius:6px;font-size:0.85rem;">
+                        <select id="adminNewsFilterCat" onchange="filtrarAdminNews(this.value)" style="padding:8px 12px;border:1px solid var(--cinza-200);border-radius:6px;font-size:0.85rem;">
+                            <option value="todas">Todas categorias</option>
+                            <option value="futebol">Futebol</option>
+                            <option value="volei">Volei</option>
+                            <option value="basquete">Basquete</option>
+                            <option value="corrida">Corrida</option>
+                            <option value="ciclismo">Ciclismo</option>
+                            <option value="artes-marciais">Artes Marciais</option>
+                            <option value="skate-radicais">Skate e Radicais</option>
+                            <option value="geral">Geral</option>
+                        </select>
+                    </div>
+                    <div id="adminNewsList" style="max-height:400px;overflow-y:auto;"></div>
+                </div>
+            </div>
+
+            <!-- CALENDARIO EDITORIAL -->
+            <div class="card-panel" style="margin-top:30px;">
+                <div class="card-panel-header">
+                    <h3>Calendario Editorial</h3>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <button class="btn btn-secondary" onclick="navegarCalendario(-1)" style="padding:4px 10px;font-size:0.8rem;">&larr;</button>
+                        <span id="calendarioMesAno" style="font-weight:700;font-size:0.9rem;"></span>
+                        <button class="btn btn-secondary" onclick="navegarCalendario(1)" style="padding:4px 10px;font-size:0.8rem;">&rarr;</button>
+                    </div>
+                </div>
+                <div id="calendarioGrid" style="margin-top:12px;"></div>
             </div>
         </div>
     </section>
@@ -1043,9 +1084,12 @@
                 </select>
                 <label class="admin-form-label">Data</label>
                 <input type="date" id="editNoticiaData">
-                <div style="display:flex;align-items:center;gap:6px;margin:8px 0;">
+                <div style="display:flex;align-items:center;gap:12px;margin:8px 0;flex-wrap:wrap;">
                     <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;color:var(--cinza-600);cursor:pointer;">
                         <input type="checkbox" id="editNoticiaRascunho"> Rascunho (nao visivel para leitores)
+                    </label>
+                    <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;color:var(--cinza-600);cursor:pointer;">
+                        Agendar para: <input type="date" id="editNoticiaDataAgendada" style="margin-left:4px;padding:2px 6px;border:1px solid var(--cinza-200);border-radius:4px;font-size:0.8rem;">
                     </label>
                 </div>
                 <div style="display:flex;gap:12px;margin-top:8px;">
@@ -1076,6 +1120,19 @@
             <div style="display:flex;gap:12px;" id="confirmModalActions">
                 <button class="btn btn-secondary" onclick="modalCancel()" style="flex:1;" id="confirmModalCancelBtn">Cancelar</button>
                 <button class="btn btn-primary" onclick="modalConfirm()" style="flex:1;" id="confirmModalConfirmBtn">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PRE-VISUALIZACAO -->
+    <div class="modal-overlay" id="previewModal" onclick="if(event.target===this)fecharPreview()">
+        <div class="modal" style="max-width:700px;">
+            <button class="modal-close" onclick="fecharPreview()">&times;</button>
+            <h2 class="modal-title">Pre-visualizacao</h2>
+            <div id="previewContent" style="margin-top:16px;"></div>
+            <div style="display:flex;gap:12px;margin-top:20px;">
+                <button class="btn btn-secondary" onclick="fecharPreview()" style="flex:1;">Fechar</button>
+                <button class="btn btn-primary" onclick="exportarCardNoticia()" style="flex:1;">Exportar Card</button>
             </div>
         </div>
     </div>
