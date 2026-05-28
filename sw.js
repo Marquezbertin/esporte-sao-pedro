@@ -1,10 +1,12 @@
 // Service Worker - Esporte Sao Pedro
-var CACHE_NAME = 'esporte-sp-v1';
+var CACHE_NAME = 'esporte-sp-v2';
 var urlsToCache = [
     './',
     './index.html',
     './style.css',
     './app.js',
+    './supabase.js',
+    './upload.js',
     './manifest.json',
     './og-image.svg'
 ];
@@ -31,9 +33,11 @@ self.addEventListener('activate', function (e) {
 });
 
 self.addEventListener('fetch', function (e) {
+    if (e.request.method !== 'GET') return;
     e.respondWith(
         fetch(e.request).then(function (response) {
-            if (response && response.status === 200) {
+            var sameOrigin = new URL(e.request.url).origin === self.location.origin;
+            if (sameOrigin && response && response.status === 200) {
                 var clone = response.clone();
                 caches.open(CACHE_NAME).then(function (cache) {
                     cache.put(e.request, clone);

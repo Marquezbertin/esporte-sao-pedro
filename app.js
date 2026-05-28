@@ -11,6 +11,7 @@ function esc(str) {
 var _galeriaFotos = {};
 
 function adicionarFotoGaleria(inputId, containerId) {
+    if (!requireAdmin()) return;
     var input = document.getElementById(inputId);
     var url = input.value.trim();
     if (!url) return;
@@ -22,6 +23,7 @@ function adicionarFotoGaleria(inputId, containerId) {
 }
 
 function removerFotoGaleria(containerId, index) {
+    if (!requireAdmin()) return;
     if (!_galeriaFotos[containerId]) return;
     _galeriaFotos[containerId].splice(index, 1);
     renderGaleriaItems(containerId);
@@ -138,34 +140,76 @@ var ESPORTES = [
     { id: "skate-radicais", nome: "Skate e Radicais", icon: "\uD83D\uDEF9", cor: "#7c3aed" }
 ];
 
-// ===== MODO ADMIN (senha para editor/jornalista) =====
-var ADMIN_SENHA = "sp2026";
+// ===== MODO ADMIN (Supabase Auth gratuito) =====
 var _isAdmin = false;
 
 function isAdmin() { return _isAdmin; }
 
+function requireAdmin() {
+    if (!isAdmin() || !SupaDB.isAuthenticated()) {
+        alert("Acesso restrito ao admin. Entre novamente para continuar.");
+        loginAdmin();
+        return false;
+    }
+    return true;
+}
+
+function aplicarEstadoAdmin(session, adminPermitido) {
+    _isAdmin = !!(session && session.access_token && adminPermitido);
+    document.body.classList.toggle("admin-mode", _isAdmin);
+    if (_isAdmin) {
+        setTimeout(function () { CloudUpload.init(); }, 300);
+    }
+}
+
+window.onSupaAuthChange = function (session) {
+    SupaDB.isAdminUser().then(function (adminPermitido) {
+        aplicarEstadoAdmin(session, adminPermitido);
+        renderPaginaAtual();
+        atualizarLiveNav();
+    });
+};
+
 function loginAdmin() {
     document.getElementById("adminModal").classList.add("active");
+    document.getElementById("adminEmailInput").value = "";
     document.getElementById("adminSenhaInput").value = "";
     document.getElementById("adminError").style.display = "none";
-    setTimeout(function () { document.getElementById("adminSenhaInput").focus(); }, 100);
+    setTimeout(function () { document.getElementById("adminEmailInput").focus(); }, 100);
 }
 
 function confirmarLoginAdmin() {
+    var email = document.getElementById("adminEmailInput").value.trim();
     var senha = document.getElementById("adminSenhaInput").value;
-    if (senha === ADMIN_SENHA) {
-        _isAdmin = true;
-        sessionStorage.setItem("esp_admin", "1");
-        document.body.classList.add("admin-mode");
+    var erro = document.getElementById("adminError");
+    if (!email || !senha) {
+        erro.textContent = "Digite e-mail e senha.";
+        erro.style.display = "block";
+        return;
+    }
+
+    erro.style.display = "none";
+    SupaDB.signIn(email, senha).then(function (session) {
+        return SupaDB.isAdminUser().then(function (adminPermitido) {
+            if (!adminPermitido) {
+                return SupaDB.signOut().then(function () {
+                    throw new Error("Usuario sem permissao de admin.");
+                });
+            }
+            aplicarEstadoAdmin(session, true);
+            return session;
+        });
+    }).then(function () {
         fecharModalAdmin();
         renderPaginaAtual();
         atualizarLiveNav();
         CloudUpload.init();
-    } else {
-        document.getElementById("adminError").style.display = "block";
+    }).catch(function () {
+        erro.textContent = "Login nao autorizado. Confira e-mail, senha e permissao de admin.";
+        erro.style.display = "block";
         document.getElementById("adminSenhaInput").value = "";
         document.getElementById("adminSenhaInput").focus();
-    }
+    });
 }
 
 function fecharModalAdmin() {
@@ -173,19 +217,20 @@ function fecharModalAdmin() {
 }
 
 function logoutAdmin() {
-    _isAdmin = false;
-    sessionStorage.removeItem("esp_admin");
-    document.body.classList.remove("admin-mode");
-    renderPaginaAtual();
-    atualizarLiveNav();
+    SupaDB.signOut().then(function () {
+        aplicarEstadoAdmin(null, false);
+        renderPaginaAtual();
+        atualizarLiveNav();
+    });
 }
 
 function checkAdminSession() {
-    if (sessionStorage.getItem("esp_admin") === "1") {
-        _isAdmin = true;
-        document.body.classList.add("admin-mode");
-        setTimeout(function () { CloudUpload.init(); }, 500);
-    }
+    return SupaDB.initAuth().then(function (session) {
+        return SupaDB.isAdminUser().then(function (adminPermitido) {
+            aplicarEstadoAdmin(session, adminPermitido);
+            return session;
+        });
+    });
 }
 
 function renderPaginaAtual() {
@@ -285,6 +330,7 @@ function previewLogoSize(size) {
 }
 
 function salvarSiteLogo() {
+    if (!requireAdmin()) return;
     var url = document.getElementById("siteLogoUrl").value.trim();
     if (!url) return alert("Envie ou cole a URL de uma imagem primeiro.");
     var size = parseInt(document.getElementById("siteLogoSize").value) || 48;
@@ -295,6 +341,7 @@ function salvarSiteLogo() {
 }
 
 function removerSiteLogo() {
+    if (!requireAdmin()) return;
     if (!confirm("Remover o logo do site?")) return;
     SupaDB.removeItem("site_logo").then(function () {
         var els = [
@@ -333,6 +380,7 @@ function renderSobreEditavel() {
 }
 
 function salvarSobre() {
+    if (!requireAdmin()) return;
     var t1 = document.getElementById("sobreTexto1").innerHTML;
     var t2 = document.getElementById("sobreTexto2").innerHTML;
     SupaDB.setItem("sobre", { texto1: t1, texto2: t2 });
@@ -342,10 +390,11 @@ function salvarSobre() {
 // ===== INICIALIZACAO =====
 document.addEventListener("DOMContentLoaded", function () {
     limparDadosDemo();
-    checkAdminSession();
 
-    // Carregar dados do Supabase e depois renderizar
-    SupaDB.loadAll().then(function () {
+    // Carregar sessao admin e dados do Supabase antes de renderizar
+    checkAdminSession().then(function () {
+        return SupaDB.loadAll();
+    }).then(function () {
         atualizarData();
         renderTicker();
         renderSportsGrid();
@@ -782,6 +831,7 @@ function filtrarNoticias(cat, btn) {
 }
 
 function salvarNoticia() {
+    if (!requireAdmin()) return;
     var titulo = document.getElementById("noticiaTitle").value.trim();
     var corpo = sanitizeHtml(document.getElementById("noticiaBody").innerHTML.trim());
     var cat = document.getElementById("noticiaCategoria").value;
@@ -823,6 +873,7 @@ function salvarNoticia() {
 }
 
 function editarNoticia(id) {
+    if (!requireAdmin()) return;
     var noticias = getData("noticias");
     var n = noticias.find(function (x) { return x.id === id; });
     if (!n) return;
@@ -848,6 +899,7 @@ function editarNoticia(id) {
 }
 
 function salvarEdicaoNoticia() {
+    if (!requireAdmin()) return;
     var id = document.getElementById("editNoticiaId").value;
     var noticias = getData("noticias");
     var n = noticias.find(function (x) { return x.id === id; });
@@ -880,6 +932,7 @@ function fecharEditarNoticia() {
 }
 
 function toggleDestaque(id) {
+    if (!requireAdmin()) return;
     var noticias = getData("noticias");
     var n = noticias.find(function (x) { return x.id === id; });
     if (!n) return;
@@ -890,6 +943,7 @@ function toggleDestaque(id) {
 }
 
 function deletarNoticia(id) {
+    if (!requireAdmin()) return;
     if (!confirm("Excluir esta noticia?")) return;
     var noticias = getData("noticias").filter(function (n) { return n.id !== id; });
     setData("noticias", noticias);
@@ -987,6 +1041,7 @@ function renderTemplatesPauta() {
 }
 
 function usarTemplate(idx) {
+    if (!requireAdmin()) return;
     var t = TEMPLATES_PAUTA[idx];
     if (!t) return;
     // Preencher o form de nova noticia
@@ -1001,6 +1056,7 @@ function usarTemplate(idx) {
 }
 
 function copiarTemplate(idx) {
+    if (!requireAdmin()) return;
     var t = TEMPLATES_PAUTA[idx];
     if (!t) return;
     var texto = t.titulo + "\n\n" + t.template;
@@ -1012,6 +1068,7 @@ function copiarTemplate(idx) {
 }
 
 function salvarPauta() {
+    if (!requireAdmin()) return;
     var titulo = document.getElementById("pautaTitulo").value.trim();
     var categoria = document.getElementById("pautaCategoria").value;
     var prioridade = document.getElementById("pautaPrioridade").value;
@@ -1040,6 +1097,7 @@ function salvarPauta() {
 }
 
 function marcarPautaFeita(id) {
+    if (!requireAdmin()) return;
     var pautas = getData("pautas");
     var p = pautas.find(function (x) { return x.id === id; });
     if (p) p.status = (p.status === "pendente") ? "feita" : "pendente";
@@ -1048,6 +1106,7 @@ function marcarPautaFeita(id) {
 }
 
 function deletarPauta(id) {
+    if (!requireAdmin()) return;
     if (!confirm("Excluir pauta?")) return;
     var pautas = getData("pautas").filter(function (x) { return x.id !== id; });
     setData("pautas", pautas);
@@ -1055,6 +1114,7 @@ function deletarPauta(id) {
 }
 
 function usarPautaComoNoticia(id) {
+    if (!requireAdmin()) return;
     var pautas = getData("pautas");
     var p = pautas.find(function (x) { return x.id === id; });
     if (!p) return;
@@ -1152,6 +1212,7 @@ function votarEnquete(id, opcaoIdx) {
 }
 
 function salvarEnquete() {
+    if (!requireAdmin()) return;
     var pergunta = document.getElementById("enquetePergunta").value.trim();
     var opcoesRaw = document.getElementById("enqueteOpcoes").value.trim();
     if (!pergunta || !opcoesRaw) return alert("Preencha pergunta e opcoes.");
@@ -1179,6 +1240,7 @@ function salvarEnquete() {
 }
 
 function encerrarEnquete(id) {
+    if (!requireAdmin()) return;
     var enquetes = getData("enquetes");
     var e = enquetes.find(function (x) { return x.id === id; });
     if (e) e.ativa = false;
@@ -1188,6 +1250,7 @@ function encerrarEnquete(id) {
 }
 
 function deletarEnquete(id) {
+    if (!requireAdmin()) return;
     if (!confirm("Excluir enquete?")) return;
     var enquetes = getData("enquetes").filter(function (x) { return x.id !== id; });
     setData("enquetes", enquetes);
@@ -1217,6 +1280,7 @@ function renderAdminEnquetes() {
 
 // ===== PLACAR AO VIVO =====
 function atualizarPlacar() {
+    if (!requireAdmin()) return;
     var timeCasa = document.getElementById("placarTimeCasa").value.trim();
     var timeFora = document.getElementById("placarTimeFora").value.trim();
     var golsCasa = parseInt(document.getElementById("placarGolsCasa").value) || 0;
@@ -1239,6 +1303,7 @@ function atualizarPlacar() {
 }
 
 function encerrarPlacar() {
+    if (!requireAdmin()) return;
     setData("placar_vivo", { ativo: false });
     renderPlacarAoVivo();
 }
@@ -1272,6 +1337,7 @@ function renderPlacarAoVivo() {
 
 // ===== RESUMO DA SEMANA =====
 function salvarResumo() {
+    if (!requireAdmin()) return;
     var titulo = document.getElementById("resumoTitulo").value.trim();
     var corpo = sanitizeHtml(document.getElementById("resumoCorpo").innerHTML.trim());
     if (!titulo) return alert("Preencha o titulo.");
@@ -1293,6 +1359,7 @@ function salvarResumo() {
 }
 
 function deletarResumo(id) {
+    if (!requireAdmin()) return;
     if (!confirm("Excluir resumo?")) return;
     var resumos = getData("resumos").filter(function (r) { return r.id !== id; });
     setData("resumos", resumos);
@@ -1368,6 +1435,7 @@ function renderConquistas() {
 }
 
 function salvarConquista() {
+    if (!requireAdmin()) return;
     var titulo = document.getElementById("conquistaTitulo").value.trim();
     var atleta = document.getElementById("conquistaAtleta").value.trim();
     var esporte = document.getElementById("conquistaEsporte").value;
@@ -1401,6 +1469,7 @@ function salvarConquista() {
 }
 
 function deletarConquista(id) {
+    if (!requireAdmin()) return;
     if (!confirm("Excluir conquista?")) return;
     var conquistas = getData("conquistas").filter(function (c) { return c.id !== id; });
     setData("conquistas", conquistas);
@@ -1438,6 +1507,7 @@ function renderTimes() {
 }
 
 function salvarTime() {
+    if (!requireAdmin()) return;
     var nome = document.getElementById("timeNome").value.trim();
     var esporte = document.getElementById("timeEsporte").value;
     var logo = document.getElementById("timeLogo").value.trim();
@@ -1463,6 +1533,7 @@ function salvarTime() {
 }
 
 function deletarTime(id) {
+    if (!requireAdmin()) return;
     if (!confirm("Excluir time?")) return;
     var times = getData("times").filter(function (t) { return t.id !== id; });
     setData("times", times);
@@ -1526,6 +1597,7 @@ function renderOpinioes() {
 }
 
 function salvarOpiniao() {
+    if (!requireAdmin()) return;
     var autor = document.getElementById("opiniaoAutor").value.trim();
     var autorImg = document.getElementById("opiniaoAutorImg").value.trim();
     var titulo = document.getElementById("opiniaoTitulo").value.trim();
@@ -1553,6 +1625,7 @@ function salvarOpiniao() {
 }
 
 function deletarOpiniao(id) {
+    if (!requireAdmin()) return;
     if (!confirm("Excluir esta coluna?")) return;
     var opinioes = getData("opinioes").filter(function (o) { return o.id !== id; });
     setData("opinioes", opinioes);
@@ -1589,6 +1662,7 @@ var _campAtivo = null; // id do campeonato selecionado
 function getCampeonatos() { return getData("campeonatos"); }
 
 function criarCampeonato() {
+    if (!requireAdmin()) return;
     var nome = document.getElementById("campNome").value.trim();
     var esporte = document.getElementById("campEsporte").value;
     var ano = document.getElementById("campAno").value.trim() || "2026";
@@ -1605,6 +1679,7 @@ function criarCampeonato() {
 }
 
 function deletarCampeonato(id) {
+    if (!requireAdmin()) return;
     if (!confirm("Excluir este campeonato e TODOS os seus dados?")) return;
     if (!confirm("Tem certeza? Isso apaga times, resultados e artilheiros.")) return;
     var lista = getCampeonatos().filter(function (c) { return c.id !== id; });
@@ -1658,6 +1733,7 @@ function getCampAtivo() {
 }
 
 function salvarCampAtivo(camp) {
+    if (!requireAdmin()) return;
     var lista = getCampeonatos();
     for (var i = 0; i < lista.length; i++) {
         if (lista[i].id === camp.id) { lista[i] = camp; break; }
@@ -1790,6 +1866,7 @@ function renderCampeonatoAtivo() {
 
 // --- TIMES ---
 function adicionarTime() {
+    if (!requireAdmin()) return;
     var nome = document.getElementById("novoTimeNome").value.trim();
     if (!nome) return alert("Preencha o nome do time.");
     var camp = getCampAtivo();
@@ -1802,6 +1879,7 @@ function adicionarTime() {
 }
 
 function editarTimeClassificacao(timeId) {
+    if (!requireAdmin()) return;
     var camp = getCampAtivo();
     if (!camp) return;
     var t = camp.times.find(function (x) { return x.id === timeId; });
@@ -1820,6 +1898,7 @@ function editarTimeClassificacao(timeId) {
 }
 
 function removerTime(timeId) {
+    if (!requireAdmin()) return;
     if (!confirm("Remover este time?")) return;
     var camp = getCampAtivo();
     if (!camp) return;
@@ -1831,6 +1910,7 @@ function removerTime(timeId) {
 
 // --- ARTILHEIROS ---
 function adicionarArtilheiro() {
+    if (!requireAdmin()) return;
     var nome = document.getElementById("novoArtNome").value.trim();
     var time = document.getElementById("novoArtTime").value.trim();
     var gols = parseInt(document.getElementById("novoArtGols").value) || 0;
@@ -1844,6 +1924,7 @@ function adicionarArtilheiro() {
 }
 
 function editarArtilheiro(artId) {
+    if (!requireAdmin()) return;
     var camp = getCampAtivo();
     if (!camp) return;
     var a = camp.artilheiros.find(function (x) { return x.id === artId; });
@@ -1856,6 +1937,7 @@ function editarArtilheiro(artId) {
 }
 
 function removerArtilheiro(artId) {
+    if (!requireAdmin()) return;
     if (!confirm("Remover este artilheiro?")) return;
     var camp = getCampAtivo();
     if (!camp) return;
@@ -1866,6 +1948,7 @@ function removerArtilheiro(artId) {
 
 // --- RESULTADOS ---
 function salvarResultado() {
+    if (!requireAdmin()) return;
     var timeCasa = document.getElementById("resTimeCasa").value.trim();
     var placarCasa = parseInt(document.getElementById("resPlacarCasa").value) || 0;
     var placarFora = parseInt(document.getElementById("resPlacarFora").value) || 0;
@@ -1885,6 +1968,7 @@ function salvarResultado() {
 }
 
 function deletarResultado(resId) {
+    if (!requireAdmin()) return;
     if (!confirm("Excluir este resultado?")) return;
     var camp = getCampAtivo();
     if (!camp) return;
@@ -1996,6 +2080,7 @@ function renderCalendarGames() {
 }
 
 function salvarJogo() {
+    if (!requireAdmin()) return;
     var esporte = document.getElementById("jogoEsporte").value;
     var timeCasa = document.getElementById("jogoTimeCasa").value.trim();
     var timeFora = document.getElementById("jogoTimeFora").value.trim();
@@ -2024,6 +2109,7 @@ function salvarJogo() {
 }
 
 function deletarJogo(id) {
+    if (!requireAdmin()) return;
     if (!confirm("Excluir este jogo?")) return;
     var jogos = getData("jogos").filter(function (j) { return j.id !== id; });
     setData("jogos", jogos);
@@ -2078,6 +2164,7 @@ function renderEventos() {
 }
 
 function salvarEvento() {
+    if (!requireAdmin()) return;
     var nome = document.getElementById("eventoNome").value.trim();
     var descricao = document.getElementById("eventoDescricao").value.trim();
     var tipo = document.getElementById("eventoTipo").value;
@@ -2109,6 +2196,7 @@ function salvarEvento() {
 }
 
 function deletarEvento(id) {
+    if (!requireAdmin()) return;
     if (!confirm("Excluir este evento?")) return;
     var eventos = getData("eventos").filter(function (e) { return e.id !== id; });
     setData("eventos", eventos);
@@ -2153,6 +2241,7 @@ function renderAtletas() {
 }
 
 function salvarAtleta() {
+    if (!requireAdmin()) return;
     var nome = document.getElementById("atletaNome").value.trim();
     var esporte = document.getElementById("atletaEsporte").value;
     var time = document.getElementById("atletaTime").value.trim();
@@ -2178,6 +2267,7 @@ function salvarAtleta() {
 }
 
 function editarAtleta(id) {
+    if (!requireAdmin()) return;
     var atletas = getData("atletas");
     var a = atletas.find(function (x) { return x.id === id; });
     if (!a) return;
@@ -2194,6 +2284,7 @@ function editarAtleta(id) {
 }
 
 function deletarAtleta(id) {
+    if (!requireAdmin()) return;
     if (!confirm("Excluir este atleta?")) return;
     var atletas = getData("atletas").filter(function (a) { return a.id !== id; });
     setData("atletas", atletas);
@@ -2245,6 +2336,7 @@ function filtrarGaleria(cat, btn) {
 }
 
 function salvarFoto() {
+    if (!requireAdmin()) return;
     var url = document.getElementById("fotoUrl").value.trim();
     var legenda = document.getElementById("fotoLegenda").value.trim();
     var cat = document.getElementById("fotoCategoria").value;
@@ -2266,10 +2358,7 @@ function salvarFoto() {
 }
 
 function deletarFoto(id) {
-    if (!isAdmin()) {
-        alert("Apenas o admin pode excluir fotos da galeria.");
-        return;
-    }
+    if (!requireAdmin()) return;
     if (!confirm("Excluir esta foto?")) return;
     var fotos = getData("galeria").filter(function (f) { return f.id !== id; });
     setData("galeria", fotos);
@@ -2326,6 +2415,7 @@ function renderVideos() {
 }
 
 function salvarVideo() {
+    if (!requireAdmin()) return;
     var url = document.getElementById("videoUrl").value.trim();
     var titulo = document.getElementById("videoTitulo").value.trim();
     var cat = document.getElementById("videoCategoria").value;
@@ -2348,6 +2438,7 @@ function salvarVideo() {
 }
 
 function deletarVideo(id) {
+    if (!requireAdmin()) return;
     if (!confirm("Excluir este video?")) return;
     var videos = getData("videos").filter(function (v) { return v.id !== id; });
     setData("videos", videos);
@@ -2411,6 +2502,7 @@ function renderNewsletterAdmin() {
 }
 
 function exportarNewsletter() {
+    if (!requireAdmin()) return;
     var inscritos = getData("newsletter") || [];
     if (inscritos.length === 0) return alert("Nenhum inscrito.");
     var blob = new Blob([inscritos.join("\n")], { type: "text/plain" });
@@ -2424,36 +2516,81 @@ function exportarNewsletter() {
 
 // ===== ADMIN TOGGLE =====
 function toggleAdmin(id) {
+    if (!requireAdmin()) return;
     var el = document.getElementById(id);
     if (el) el.style.display = el.style.display === "none" ? "block" : "none";
 }
 
 // ===== BACKUP / EXPORT / IMPORT =====
-function exportarDados() {
-    var data = {};
-    var keys = ["noticias", "jogos", "atletas", "galeria", "videos", "patrocinadores", "campeonatos", "opinioes", "eventos", "enquetes", "conquistas", "resumos", "times"];
-    keys.forEach(function (k) { data[k] = getData(k); });
-
+function baixarJsonPortal(nome, data) {
     var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     var url = URL.createObjectURL(blob);
     var a = document.createElement("a");
     a.href = url;
-    a.download = "esporte-sao-pedro-backup-" + new Date().toISOString().split("T")[0] + ".json";
+    a.download = nome;
     a.click();
     URL.revokeObjectURL(url);
 }
 
+function coletarBackupPortal() {
+    var data = {};
+    var keys = getPortalUsageKeys();
+    keys.forEach(function (k) { data[k] = getData(k); });
+    return {
+        schema: "esporte-sao-pedro-backup-v2",
+        exportedAt: new Date().toISOString(),
+        app: "Esporte Sao Pedro",
+        data: data,
+        local: {
+            uploadLedger: (typeof CloudUpload !== "undefined" && CloudUpload.getUploadStats) ? CloudUpload.getUploadStats().items : [],
+            usageConfig: getUsageConfig()
+        }
+    };
+}
+
+function exportarDados() {
+    if (!requireAdmin()) return;
+    baixarJsonPortal("esporte-sao-pedro-backup-" + new Date().toISOString().split("T")[0] + ".json", coletarBackupPortal());
+}
+
+function baixarBackupEmergenciaPortal(motivo) {
+    var backup = coletarBackupPortal();
+    backup.reason = motivo || "backup-emergencia";
+    baixarJsonPortal("esporte-sao-pedro-backup-emergencia-" + new Date().toISOString().split("T")[0] + ".json", backup);
+}
+
+function normalizarBackupImportado(data) {
+    if (data && data.schema === "esporte-sao-pedro-backup-v2" && data.data) return data;
+    return {
+        schema: "esporte-sao-pedro-backup-v1-legacy",
+        exportedAt: null,
+        app: "Esporte Sao Pedro",
+        data: data || {},
+        local: {}
+    };
+}
+
 function importarDados(event) {
+    if (!requireAdmin()) return;
     var file = event.target.files[0];
     if (!file) return;
+    if (!confirm("Antes de importar, sera baixado um backup de emergencia do estado atual. Continuar?")) return;
+    baixarBackupEmergenciaPortal("antes-de-importar");
 
     var reader = new FileReader();
     reader.onload = function (e) {
         try {
-            var data = JSON.parse(e.target.result);
-            Object.keys(data).forEach(function (k) {
-                setData(k, data[k]);
+            var backup = normalizarBackupImportado(JSON.parse(e.target.result));
+            if (!backup.data || typeof backup.data !== "object") throw new Error("Arquivo de backup invalido.");
+            Object.keys(backup.data).forEach(function (k) {
+                setData(k, backup.data[k]);
             });
+            if (backup.local && backup.local.uploadLedger) {
+                localStorage.setItem("esp_upload_ledger", JSON.stringify(backup.local.uploadLedger));
+            }
+            if (backup.local && backup.local.usageConfig) {
+                localStorage.setItem(USAGE_CONFIG_KEY, JSON.stringify(backup.local.usageConfig));
+            }
             alert("Dados importados com sucesso! Recarregando...");
             location.reload();
         } catch (err) {
@@ -2464,8 +2601,10 @@ function importarDados(event) {
 }
 
 function limparDados() {
+    if (!requireAdmin()) return;
     if (!confirm("ATENCAO: Isso vai apagar TODOS os dados do portal. Deseja continuar?")) return;
-    if (!confirm("Tem certeza? Esta acao nao pode ser desfeita.")) return;
+    if (!confirm("Tem certeza? Um backup de emergencia sera baixado antes da limpeza.")) return;
+    baixarBackupEmergenciaPortal("antes-de-limpar-dados");
 
     var keys = Object.keys(localStorage).filter(function (k) { return k.indexOf("esp_") === 0; });
     keys.forEach(function (k) { localStorage.removeItem(k); });
@@ -2763,6 +2902,7 @@ function getLive() {
 }
 
 function iniciarLive() {
+    if (!requireAdmin()) return;
     var url = document.getElementById("liveUrl").value.trim();
     var titulo = document.getElementById("liveTitulo").value.trim();
     if (!url) return alert("Cole o link da live.");
@@ -2806,6 +2946,7 @@ function iniciarLive() {
 }
 
 function encerrarLive() {
+    if (!requireAdmin()) return;
     SupaDB.removeItem("live");
     atualizarLiveStatus();
     atualizarLiveNav();
@@ -2880,6 +3021,7 @@ function toggleFullscreenLive() {
 function getPatrocinadores() { return getData("patrocinadores"); }
 
 function salvarPatrocinador() {
+    if (!requireAdmin()) return;
     var nome = document.getElementById("patroNome").value.trim();
     var logo = document.getElementById("patroLogo").value.trim();
     var site = document.getElementById("patroSite").value.trim();
@@ -2908,6 +3050,7 @@ function salvarPatrocinador() {
 }
 
 function aprovarPatrocinador(id) {
+    if (!requireAdmin()) return;
     var lista = getPatrocinadores();
     var p = lista.find(function (x) { return x.id === id; });
     if (p) {
@@ -2919,6 +3062,7 @@ function aprovarPatrocinador(id) {
 }
 
 function deletarPatrocinador(id) {
+    if (!requireAdmin()) return;
     if (!confirm("Excluir este patrocinador?")) return;
     var lista = getPatrocinadores().filter(function (p) { return p.id !== id; });
     setData("patrocinadores", lista);

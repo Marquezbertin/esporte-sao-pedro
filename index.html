@@ -960,10 +960,11 @@
             <button class="modal-close" onclick="fecharModalAdmin()">&times;</button>
             <div class="modal-icon">&#9881;</div>
             <h2 class="modal-title">Area do Editor</h2>
-            <p class="modal-desc">Acesso restrito para publicar conteudo no portal.</p>
-            <input type="password" id="adminSenhaInput" placeholder="Digite a senha" class="modal-input" onkeydown="if(event.key==='Enter')confirmarLoginAdmin()">
+            <p class="modal-desc">Acesso restrito via Supabase Auth para publicar conteudo no portal.</p>
+            <input type="email" id="adminEmailInput" placeholder="E-mail do admin" class="modal-input" autocomplete="username" onkeydown="if(event.key==='Enter')confirmarLoginAdmin()">
+            <input type="password" id="adminSenhaInput" placeholder="Senha" class="modal-input" autocomplete="current-password" onkeydown="if(event.key==='Enter')confirmarLoginAdmin()">
             <button class="btn btn-primary" onclick="confirmarLoginAdmin()" style="width:100%;">Entrar</button>
-            <p class="modal-error" id="adminError" style="display:none;">Senha incorreta. Tente novamente.</p>
+            <p class="modal-error" id="adminError" style="display:none;">Login nao autorizado. Tente novamente.</p>
         </div>
     </div>
 
@@ -1095,6 +1096,7 @@
     <!-- SCROLL TO TOP -->
     <button class="scroll-top" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Voltar ao topo">&#9650;</button>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase.js"></script>
     <script src="upload.js"></script>
     <script src="app.js"></script>
