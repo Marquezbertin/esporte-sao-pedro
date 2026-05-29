@@ -1699,49 +1699,66 @@ async function gerarRascunhoComIA(id) {
     var p = lista.find(function (x) { return x.id === id; });
     if (!p) return showToastAviso("Pauta nao encontrada.");
 
-    // Construir prompt
-    var prompt = "Voce e um jornalista esportivo do portal Esporte Sao Pedro, que cobre esportes amadores e profissionais na cidade de Sao Pedro, Brasil.\n";
-    prompt += "Com base nas informacoes abaixo, escreva uma noticia esportiva completa em portugues brasileiro.\n\n";
-    prompt += "--- INFORMACOES DA PAUTA ---\n";
-    if (p.titulo) prompt += "Titulo/Assunto: " + p.titulo + "\n";
-    if (p.times) prompt += "Times/Equipes: " + p.times + "\n";
-    if (p.local) prompt += "Local: " + p.local + "\n";
-    if (p.dataEvento) prompt += "Data do evento: " + p.dataEvento + "\n";
-    if (p.esporte) {
-        var esporteNome = ESPORTES.find(function (e) { return e.id === p.esporte; });
-        prompt += "Esporte: " + (esporteNome ? esporteNome.nome : p.esporte) + "\n";
-    }
-    if (p.fonte) prompt += "Fonte original: " + p.fonte + "\n";
-    if (p.url) prompt += "Link de referencia: " + p.url + "\n";
-    if (p.texto) prompt += "\nTexto/referencia do autor:\n" + p.texto + "\n";
-    prompt += "\n--- INSTRUCOES ---\n";
-    prompt += "Escreva uma noticia jornalistica com:\n";
-    prompt += "1. Um titulo chamativo (comece com TITULO: na primeira linha)\n";
-    prompt += "2. Lead respondendo: quem, o que, quando, onde, por que\n";
-    prompt += "3. Desenvolvimento com detalhes do evento\n";
-    prompt += "4. Conclusao ou expectativas\n";
-    prompt += "Use tom imparcial, linguagem clara e adequada para internet.";
-    prompt += "Retorne APENAS o conteudo da noticia (titulo + corpo), sem meta-informacoes.";
+    // 1) Preenche o form com os dados da pauta (garantido, igual ao "Criar noticia")
+    var corpo = p.texto || "";
+    if (p.times) corpo = "Times: " + p.times + "\n\n" + corpo;
+    if (p.local) corpo = "Local: " + p.local + "\n" + corpo;
+    if (p.dataEvento) corpo = "Data do evento: " + formatarData(p.dataEvento) + "\n" + corpo;
+    if (p.url) corpo += "\n\nFonte: " + p.url;
 
+    // 2) Marcar como convertida
+    p.status = "convertida";
+    setData("monitor_pautas", lista);
+
+    // 3) Navegar e preencher
+    navegar("noticias", null);
+    document.getElementById("noticiaTitle").value = p.titulo || "";
+    document.getElementById("noticiaBody").innerHTML = esc(corpo).replace(/\n/g, "<br>");
+    if (p.esporte) document.getElementById("noticiaCategoria").value = p.esporte;
+    var form = document.getElementById("adminNoticia");
+    if (form) form.style.display = "block";
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+    showToastAviso("Pauta copiada. Gerando rascunho por IA...");
+
+    // 4) Chamar API (assincrono, vai sobrescrever se conseguir)
     var btn = event && event.target ? event.target : null;
-    if (btn) {
-        btn.disabled = true;
-        btn.textContent = "Gerando...";
-    }
+    if (btn) { btn.disabled = true; btn.textContent = "Gerando..."; }
     showLoading();
 
     try {
+        var prompt = "Voce e um jornalista esportivo do portal Esporte Sao Pedro, que cobre esportes amadores e profissionais na cidade de Sao Pedro, Brasil.\n";
+        prompt += "Com base nas informacoes abaixo, escreva uma noticia esportiva completa em portugues brasileiro.\n\n";
+        prompt += "--- INFORMACOES DA PAUTA ---\n";
+        if (p.titulo) prompt += "Titulo/Assunto: " + p.titulo + "\n";
+        if (p.times) prompt += "Times/Equipes: " + p.times + "\n";
+        if (p.local) prompt += "Local: " + p.local + "\n";
+        if (p.dataEvento) prompt += "Data do evento: " + p.dataEvento + "\n";
+        if (p.esporte) {
+            var esporteNome = ESPORTES.find(function (e) { return e.id === p.esporte; });
+            prompt += "Esporte: " + (esporteNome ? esporteNome.nome : p.esporte) + "\n";
+        }
+        if (p.fonte) prompt += "Fonte original: " + p.fonte + "\n";
+        if (p.url) prompt += "Link de referencia: " + p.url + "\n";
+        if (p.texto) prompt += "\nTexto/referencia do autor:\n" + p.texto + "\n";
+        prompt += "\n--- INSTRUCOES ---\n";
+        prompt += "Escreva uma noticia jornalistica com:\n";
+        prompt += "1. Um titulo chamativo (comece com TITULO: na primeira linha)\n";
+        prompt += "2. Lead respondendo: quem, o que, quando, onde, por que\n";
+        prompt += "3. Desenvolvimento com detalhes do evento\n";
+        prompt += "4. Conclusao ou expectativas\n";
+        prompt += "Use tom imparcial, linguagem clara e adequada para internet.";
+        prompt += "Retorne APENAS o conteudo da noticia (titulo + corpo), sem meta-informacoes.";
+
         var resposta = await chamarGeminiAPI(prompt, apiKey);
 
         if (!resposta) {
-            showToastErro("IA nao retornou conteudo. Tente novamente.");
+            showToastErro("IA nao retornou conteudo. Os dados da pauta ja estao no editor.");
             if (btn) { btn.disabled = false; btn.innerHTML = "&#129302; IA"; }
             hideLoading();
             return;
         }
 
         // Extrair titulo e corpo
-        showToastAviso("API respondeu (" + resposta.length + " chars). Montando rascunho...");
         var tituloIA = p.titulo || "";
         var corpoIA = resposta;
 
@@ -1755,21 +1772,13 @@ async function gerarRascunhoComIA(id) {
             if (first.length > 5 && first.length < 200) tituloIA = first;
         }
 
-        // Marcar pauta como convertida
-        p.status = "convertida";
-        setData("monitor_pautas", lista);
-
-        // Navegar primeiro, depois preencher (garante DOM pronto)
-        navegar("noticias", null);
+        // Sobrescrever com o conteudo gerado
         document.getElementById("noticiaTitle").value = tituloIA || "";
         document.getElementById("noticiaBody").innerHTML = esc(corpoIA).replace(/\n/g, "<br>");
         if (p.esporte) document.getElementById("noticiaCategoria").value = p.esporte;
-        var form = document.getElementById("adminNoticia");
-        if (form) form.style.display = "block";
-        window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
         showToastSave("Rascunho gerado por IA! Revise e publique.");
     } catch (err) {
-        showToastErro("Erro ao gerar rascunho: " + err.message);
+        showToastErro("IA falhou, mas os dados da pauta estao no editor: " + err.message);
     }
 
     if (btn) { btn.disabled = false; btn.innerHTML = "&#129302; IA"; }
