@@ -613,6 +613,7 @@ function navegar(secao, e) {
         case "atletas": renderAtletas(); break;
         case "galeria": renderGaleria(); break;
         case "videos": renderVideos(); break;
+        case "podcast": renderEpisodios(); break;
         case "opiniao": renderOpinioes(); break;
         case "conquistas": renderConquistas(); break;
         case "redacao": if (!isAdmin()) { navegar("inicio", null); return; } renderTemplatesPauta(); renderAdminPautas(); renderEditorialDashboard(); renderAdminNewsList(); renderCalendario(); break;
@@ -2936,6 +2937,86 @@ async function deletarVideo(id) {
     renderVideos();
 }
 
+// ===== PODCAST / SPOTIFY =====
+var _filtroEpisodio = "todos";
+
+function filtrarEpisodios(cat, btn) {
+    _filtroEpisodio = cat;
+    document.querySelectorAll("#secao-podcast .chip").forEach(function (c) { c.classList.remove("active"); });
+    if (btn) btn.classList.add("active");
+    renderEpisodios();
+}
+
+function extrairSpotifyId(url) {
+    var m = url.match(/open\.spotify\.com\/(?:episode|embed\/episode)\/([a-zA-Z0-9]{22})/);
+    return m ? m[1] : null;
+}
+
+function renderEpisodios() {
+    var episodios = getData("episodios").sort(function (a, b) { return (b.data || "").localeCompare(a.data || ""); });
+    if (_filtroEpisodio !== "todos") {
+        episodios = episodios.filter(function (e) { return e.categoria === _filtroEpisodio; });
+    }
+
+    var grid = document.getElementById("episodiosGrid");
+    if (!grid) return;
+    grid.innerHTML = "";
+
+    if (episodios.length === 0) {
+        grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">&#127926;</div><div class="empty-state-text">Nenhum episodio em destaque.' + (isAdmin() ? ' Clique em "+ Adicionar Episodio" acima.' : '') + '</div></div>';
+        return;
+    }
+
+    episodios.forEach(function (e) {
+        var epId = extrairSpotifyId(e.url);
+        if (!epId) return;
+        grid.innerHTML +=
+            '<div class="episodio-card" style="position:relative;">' +
+                '<div class="episodio-card-embed">' +
+                    '<iframe src="https://open.spotify.com/embed/episode/' + esc(epId) + '?theme=0" width="100%" height="232" frameborder="0" allowtransparency="true" allow="encrypted-media" loading="lazy"></iframe>' +
+                '</div>' +
+                '<div class="episodio-card-info">' +
+                    '<span class="episodio-card-title">' + esc(e.titulo || "") + '</span>' +
+                    '<span class="episodio-card-meta">' + formatarData(e.data) + '</span>' +
+                '</div>' +
+                '<div class="episodio-card-actions">' +
+                    '<button onclick="deletarEpisodio(\'' + e.id + '\')" title="Excluir">X</button>' +
+                '</div>' +
+            '</div>';
+    });
+}
+
+function salvarEpisodio() {
+    if (!requireAdmin()) return;
+    var url = document.getElementById("episodioUrl").value.trim();
+    var titulo = document.getElementById("episodioTitulo").value.trim();
+    var cat = document.getElementById("episodioCategoria").value;
+    var data = document.getElementById("episodioData").value;
+
+    if (!url) return showToastAviso("Cole o link do episodio do Spotify.");
+    if (!extrairSpotifyId(url)) return showToastAviso("Link do Spotify invalido. Use o formato: https://open.spotify.com/episode/...");
+
+    var episodios = getData("episodios");
+    episodios.push({ id: gerarId(), url: url, titulo: titulo, categoria: cat, data: data || new Date().toISOString().split("T")[0] });
+    setData("episodios", episodios);
+
+    document.getElementById("episodioUrl").value = "";
+    document.getElementById("episodioTitulo").value = "";
+    document.getElementById("episodioData").value = "";
+    document.getElementById("adminEpisodio").style.display = "none";
+
+    renderEpisodios();
+    showToastSave("Episodio adicionado!");
+}
+
+async function deletarEpisodio(id) {
+    if (!requireAdmin()) return;
+    if (!await showConfirm("Excluir este episodio?")) return;
+    var episodios = getData("episodios").filter(function (e) { return e.id !== id; });
+    setData("episodios", episodios);
+    renderEpisodios();
+}
+
 // ===== LIGHTBOX =====
 function abrirLightbox(url, caption) {
     var lb = document.getElementById("lightbox");
@@ -3125,7 +3206,7 @@ var USAGE_DEFAULT_CONFIG = {
     averageImageBytes: Math.round(1.5 * 1024 * 1024)
 };
 var PORTAL_USAGE_KEYS = [
-    "noticias", "jogos", "atletas", "galeria", "videos", "patrocinadores",
+    "noticias", "jogos", "atletas", "galeria", "videos", "episodios", "patrocinadores",
     "campeonatos", "opinioes", "eventos", "enquetes", "conquistas", "resumos",
     "times", "pautas", "monitor_pautas", "newsletter", "sobre", "site_logo", "live", "views", "placar_vivo"
 ];

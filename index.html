@@ -84,6 +84,7 @@
                     <a href="#" class="nav-link" onclick="navegar('atletas', event)">Atletas</a>
                     <a href="#" class="nav-link" onclick="navegar('galeria', event)">Galeria</a>
                     <a href="#" class="nav-link" onclick="navegar('videos', event)">Videos</a>
+                    <a href="#" class="nav-link" onclick="navegar('podcast', event)">Podcast</a>
                     <a href="#" class="nav-link" onclick="navegar('opiniao', event)">Opiniao</a>
                     <a href="#" class="nav-link" onclick="navegar('conquistas', event)">Conquistas</a>
                     <a href="#" class="nav-link nav-live" onclick="abrirLive(event)" id="navLive" style="display:none;">&#128308; AO VIVO</a>
@@ -478,6 +479,56 @@
                     </select>
                     <input type="date" id="videoData">
                     <button class="btn btn-primary" onclick="salvarVideo()">Adicionar</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECAO: PODCAST SPOTIFY -->
+    <section class="section secao-page" id="secao-podcast">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Podcast</h2>
+                <p class="section-sub">Esporte Sao Pedro no Spotify</p>
+            </div>
+
+            <div class="spotify-show-embed">
+                <iframe src="https://open.spotify.com/embed/show/033g9qTuwQX6b2jlpHN0m8?theme=0" width="100%" height="352" frameborder="0" allowtransparency="true" allow="encrypted-media" loading="lazy"></iframe>
+            </div>
+
+            <div style="margin-top:28px;">
+                <div class="section-header" style="padding-bottom:8px;">
+                    <h2 class="section-title" style="font-size:1.3rem;">Episodios em Destaque</h2>
+                </div>
+                <div class="gallery-filters">
+                    <button class="chip active" onclick="filtrarEpisodios('todos', this)">Todos</button>
+                    <button class="chip" onclick="filtrarEpisodios('futebol', this)">Futebol</button>
+                    <button class="chip" onclick="filtrarEpisodios('volei', this)">Volei</button>
+                    <button class="chip" onclick="filtrarEpisodios('basquete', this)">Basquete</button>
+                    <button class="chip" onclick="filtrarEpisodios('corrida', this)">Corrida</button>
+                    <button class="chip" onclick="filtrarEpisodios('eventos', this)">Eventos</button>
+                    <button class="chip" onclick="filtrarEpisodios('geral', this)">Geral</button>
+                </div>
+                <div class="episodios-grid" id="episodiosGrid"></div>
+            </div>
+
+            <!-- ADMIN: ADICIONAR EPISODIO -->
+            <div class="admin-section admin-only">
+                <button class="btn btn-secondary" onclick="toggleAdmin('adminEpisodio')">+ Adicionar Episodio</button>
+                <div class="admin-form" id="adminEpisodio" style="display:none;">
+                    <h3>Novo Episodio</h3>
+                    <input type="text" id="episodioUrl" placeholder="Link do episodio no Spotify (ex: https://open.spotify.com/episode/...)">
+                    <input type="text" id="episodioTitulo" placeholder="Titulo do episodio">
+                    <select id="episodioCategoria">
+                        <option value="futebol">Futebol</option>
+                        <option value="volei">Volei</option>
+                        <option value="basquete">Basquete</option>
+                        <option value="corrida">Corrida</option>
+                        <option value="eventos">Eventos</option>
+                        <option value="geral">Geral</option>
+                    </select>
+                    <input type="date" id="episodioData">
+                    <button class="btn btn-primary" onclick="salvarEpisodio()">Adicionar</button>
                 </div>
             </div>
         </div>
