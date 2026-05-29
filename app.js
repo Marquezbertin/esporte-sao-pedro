@@ -1799,29 +1799,42 @@ async function gerarRascunhoComIA(id) {
 }
 
 async function chamarGeminiAPI(prompt, apiKey) {
-    var models = [
-        { modelo: "gemini-2.0-flash", api: "v1beta" },
-        { modelo: "gemini-1.5-flash", api: "v1beta" }
-    ];
     var errs = [];
 
-    for (var i = 0; i < models.length; i++) {
-        var m = models[i];
-        var url = "https://generativelanguage.googleapis.com/" + m.api + "/models/" + m.modelo + ":generateContent?key=" + encodeURIComponent(apiKey);
+    // Tenta listar modelos primeiro (diagnostico)
+    try {
+        var listUrl = "https://generativelanguage.googleapis.com/v1/models?key=" + encodeURIComponent(apiKey);
+        var listResp = await fetch(listUrl);
+        if (listResp.ok) {
+            var listData = await listResp.json();
+            var disp = (listData.models || []).map(function (m) { return m.name; }).join(", ");
+            errs.push("Modelos disponiveis: " + (disp || "nenhum"));
+        } else {
+            var listErr = await listResp.text();
+            errs.push("Listar modelos: HTTP " + listResp.status + " " + listErr.substring(0, 100));
+        }
+    } catch (e) {
+        errs.push("Listar modelos: " + e.message);
+    }
+
+    // Tenta multiplos endpoints/modelos
+    var attempts = [
+        { url: "v1/models/gemini-2.0-flash:generateContent" },
+        { url: "v1beta/models/gemini-2.0-flash:generateContent" },
+        { url: "v1/models/gemini-1.5-flash:generateContent" },
+        { url: "v1beta/models/gemini-1.5-flash:generateContent" }
+    ];
+
+    for (var i = 0; i < attempts.length; i++) {
+        var fullUrl = "https://generativelanguage.googleapis.com/" + attempts[i].url + "?key=" + encodeURIComponent(apiKey);
 
         var body = {
-            contents: [{
-                parts: [{ text: prompt }]
-            }],
-            generationConfig: {
-                temperature: 0.7,
-                maxOutputTokens: 4096,
-                topP: 0.9
-            }
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
         };
 
         try {
-            var resp = await fetch(url, {
+            var resp = await fetch(fullUrl, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(body)
@@ -1829,7 +1842,7 @@ async function chamarGeminiAPI(prompt, apiKey) {
 
             if (!resp.ok) {
                 var errTxt = await resp.text();
-                errs.push(m.modelo + " HTTP " + resp.status + ": " + errTxt.substring(0, 150));
+                errs.push(attempts[i].url + ": HTTP " + resp.status + " " + errTxt.substring(0, 120));
                 continue;
             }
 
@@ -1837,13 +1850,13 @@ async function chamarGeminiAPI(prompt, apiKey) {
             if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
                 return data.candidates[0].content.parts.map(function (p) { return p.text; }).join("\n");
             }
-            errs.push(m.modelo + ": resposta sem conteudo");
+            errs.push(attempts[i].url + ": resposta vazia");
         } catch (e) {
-            errs.push(m.modelo + ": " + e.message);
+            errs.push(attempts[i].url + ": " + e.message);
         }
     }
 
-    alert("Erros Gemini:\n" + errs.join("\n"));
+    alert("Gemini API - diagnosticos:\n" + errs.slice(0, 6).join("\n"));
     return null;
 }
 
