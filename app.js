@@ -1493,7 +1493,7 @@ function adicionarPautaMonitor() {
         status: "nova",
         data: new Date().toISOString().split("T")[0]
     });
-    saveData("monitor_pautas", lista);
+    setData("monitor_pautas", lista);
 
     // Limpar form
     document.getElementById("monitorUrl").value = "";
