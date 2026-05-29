@@ -292,6 +292,21 @@ function confirmarLoginAdmin() {
             if (!adminPermitido) {
                 return SupaDB.signOut().then(function () {
                     throw new Error("Usuario sem permissao de admin.");
+                });
+            }
+            aplicarEstadoAdmin(session, true);
+            return session;
+        });
+    }).then(function () {
+        fecharModalAdmin();
+        renderPaginaAtual();
+        atualizarLiveNav();
+        CloudUpload.init();
+    }).catch(function () {
+        erro.textContent = "Login nao autorizado. Confira e-mail, senha e permissao de admin.";
+        erro.style.display = "block";
+        document.getElementById("adminSenhaInput").value = "";
+        document.getElementById("adminSenhaInput").focus();
     });
 }
 
@@ -360,21 +375,6 @@ function gerarFeedRSS() {
         headers: { "Content-Type": "application/xml", "apikey": "sb_publishable_uXyjtoOUiaTJgwd7-U1hZg_8HUxSqA7" },
         body: xml
     }).catch(function () {});
-}
-            aplicarEstadoAdmin(session, true);
-            return session;
-        });
-    }).then(function () {
-        fecharModalAdmin();
-        renderPaginaAtual();
-        atualizarLiveNav();
-        CloudUpload.init();
-    }).catch(function () {
-        erro.textContent = "Login nao autorizado. Confira e-mail, senha e permissao de admin.";
-        erro.style.display = "block";
-        document.getElementById("adminSenhaInput").value = "";
-        document.getElementById("adminSenhaInput").focus();
-    });
 }
 
 function fecharModalAdmin() {
