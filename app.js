@@ -1747,10 +1747,7 @@ async function gerarRascunhoComIA(id) {
     try {
         var resposta = await chamarGeminiAPI(prompt, apiKey);
         if (!resposta) {
-            alert("Gemini retornou vazio. Testando conexao...");
-            var teste = await chamarGeminiAPI("Diga 'ok' e mais nada.", apiKey);
-            alert("Teste Gemini: " + (teste || "falhou"));
-            showToastErro("IA nao retornou conteudo.");
+            showToastErro("IA falhou. Veja o alerta para detalhes.");
             if (btn) { btn.disabled = false; btn.innerHTML = "&#129302; IA"; }
             hideLoading();
             return;
@@ -1782,7 +1779,6 @@ async function gerarRascunhoComIA(id) {
         window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
         showToastSave("Rascunho gerado por IA! Revise e publique.");
     } catch (err) {
-        alert("ERRO Gemini: " + err.message);
         showToastErro("Erro Gemini: " + err.message);
         // fallback: preenche com o que temos
         p.status = "convertida";
@@ -1803,10 +1799,15 @@ async function gerarRascunhoComIA(id) {
 }
 
 async function chamarGeminiAPI(prompt, apiKey) {
-    var modelos = ["gemini-1.5-flash", "gemini-2.0-flash"];
+    var models = [
+        { modelo: "gemini-2.0-flash", api: "v1beta" },
+        { modelo: "gemini-1.5-flash", api: "v1beta" }
+    ];
+    var errs = [];
 
-    for (var i = 0; i < modelos.length; i++) {
-        var url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelos[i] + ":generateContent?key=" + encodeURIComponent(apiKey);
+    for (var i = 0; i < models.length; i++) {
+        var m = models[i];
+        var url = "https://generativelanguage.googleapis.com/" + m.api + "/models/" + m.modelo + ":generateContent?key=" + encodeURIComponent(apiKey);
 
         var body = {
             contents: [{
@@ -1828,7 +1829,7 @@ async function chamarGeminiAPI(prompt, apiKey) {
 
             if (!resp.ok) {
                 var errTxt = await resp.text();
-                console.warn("Gemini " + modelos[i] + " erro " + resp.status, errTxt.substring(0, 200));
+                errs.push(m.modelo + " HTTP " + resp.status + ": " + errTxt.substring(0, 150));
                 continue;
             }
 
@@ -1836,11 +1837,13 @@ async function chamarGeminiAPI(prompt, apiKey) {
             if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
                 return data.candidates[0].content.parts.map(function (p) { return p.text; }).join("\n");
             }
+            errs.push(m.modelo + ": resposta sem conteudo");
         } catch (e) {
-            console.warn("Gemini " + modelos[i] + " exception", e.message);
+            errs.push(m.modelo + ": " + e.message);
         }
     }
 
+    alert("Erros Gemini:\n" + errs.join("\n"));
     return null;
 }
 
