@@ -1755,13 +1755,21 @@ async function chamarGeminiAPI(prompt, apiKey) {
         }
 
         var data = await resp.json();
+        console.log("[IA] chamarGeminiAPI raw response:", JSON.stringify(data).substring(0, 300));
+        if (data.text) {
+            return data.text;
+        }
         if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
             return data.candidates[0].content.parts.map(function (p) { return p.text; }).join("\n");
         }
+        if (data.response) {
+            return typeof data.response === "string" ? data.response : JSON.stringify(data.response);
+        }
         if (data.error) {
-            showToastErro("Gemini: " + data.error.message || JSON.stringify(data.error));
+            showToastErro("Gemini: " + (data.error.message || JSON.stringify(data.error)));
             return null;
         }
+        showToastErro("Resposta inesperada da API. Veja o console (F12).");
         return null;
     } catch (e) {
         showToastErro("Conexao com Edge Function falhou: " + e.message);
