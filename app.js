@@ -1579,6 +1579,13 @@ function salvarChaveIA() {
     showToastSave("Chave da API Gemini salva!");
 }
 
+function decodeHtmlEntities(s) {
+    if (!s) return "";
+    var t = document.createElement("textarea");
+    t.innerHTML = s;
+    return t.value;
+}
+
 async function gerarRascunhoComIA(id) {
     if (!requireAdmin()) return;
     var apiKey = getChaveIA();
@@ -1605,7 +1612,19 @@ async function gerarRascunhoComIA(id) {
             if (edgeResp.ok) {
                 var edgeData = await edgeResp.json();
                 if (edgeData.content) {
-                    conteudoLink = stripHtml(edgeData.content).substring(0, 5000);
+                    var raw = edgeData.content;
+                    if (/instagram\.com\/(p|reel|tv)\//i.test(p.url)) {
+                        var igTitle = raw.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i);
+                        var igDesc = raw.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i);
+                        var igImg = raw.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i);
+                        var parts = [];
+                        if (igTitle) parts.push(decodeHtmlEntities(igTitle[1]));
+                        if (igDesc) parts.push(decodeHtmlEntities(igDesc[1]));
+                        if (igImg) parts.push("Imagem: " + igImg[1]);
+                        conteudoLink = parts.join("\n\n").substring(0, 5000);
+                    } else {
+                        conteudoLink = stripHtml(raw).substring(0, 5000);
+                    }
                 }
             }
         } catch (e) {
