@@ -1741,7 +1741,8 @@ async function gerarRascunhoComIA(id) {
         }
 
         // Extrair titulo e corpo
-        var tituloIA = "";
+        showToastAviso("API respondeu (" + resposta.length + " chars). Montando rascunho...");
+        var tituloIA = p.titulo || "";
         var corpoIA = resposta;
 
         var matchTitulo = resposta.match(/TITULO:\s*(.+?)(?:\n|$)/i);
@@ -1749,22 +1750,20 @@ async function gerarRascunhoComIA(id) {
             tituloIA = matchTitulo[1].trim();
             corpoIA = resposta.replace(/TITULO:\s*.+?(?:\n|$)/i, "").trim();
         } else {
-            // Pega a primeira linha como titulo se nao tiver marcador
             var lines = resposta.split("\n");
-            tituloIA = lines[0].replace(/^["*#\s]+|["*\s]+$/g, "").substring(0, 100);
+            var first = lines[0].replace(/^["*#\s]+|["*\s]+$/g, "").trim();
+            if (first.length > 5 && first.length < 200) tituloIA = first;
         }
-
-        // Preencher o form de noticia
-        document.getElementById("noticiaTitle").value = tituloIA || p.titulo || "";
-        document.getElementById("noticiaBody").innerHTML = esc(corpoIA).replace(/\n/g, "<br>");
-        if (p.esporte) document.getElementById("noticiaCategoria").value = p.esporte;
 
         // Marcar pauta como convertida
         p.status = "convertida";
         setData("monitor_pautas", lista);
 
-        // Navegar para noticias e abrir form
+        // Navegar primeiro, depois preencher (garante DOM pronto)
         navegar("noticias", null);
+        document.getElementById("noticiaTitle").value = tituloIA || "";
+        document.getElementById("noticiaBody").innerHTML = esc(corpoIA).replace(/\n/g, "<br>");
+        if (p.esporte) document.getElementById("noticiaCategoria").value = p.esporte;
         var form = document.getElementById("adminNoticia");
         if (form) form.style.display = "block";
         window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
@@ -1778,35 +1777,46 @@ async function gerarRascunhoComIA(id) {
 }
 
 async function chamarGeminiAPI(prompt, apiKey) {
-    var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + encodeURIComponent(apiKey);
+    var modelos = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-2.5-flash"];
+    var ultimoErro = null;
 
-    var body = {
-        contents: [{
-            parts: [{ text: prompt }]
-        }],
-        generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 1024,
-            topP: 0.9
+    for (var i = 0; i < modelos.length; i++) {
+        var url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelos[i] + ":generateContent?key=" + encodeURIComponent(apiKey);
+
+        var body = {
+            contents: [{
+                parts: [{ text: prompt }]
+            }],
+            generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 2048,
+                topP: 0.9
+            }
+        };
+
+        try {
+            var resp = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body)
+            });
+
+            if (!resp.ok) {
+                ultimoErro = "Modelo " + modelos[i] + " erro " + resp.status;
+                continue;
+            }
+
+            var data = await resp.json();
+            if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
+                return data.candidates[0].content.parts.map(function (p) { return p.text; }).join("\n");
+            }
+            ultimoErro = "Modelo " + modelos[i] + " retornou vazio";
+        } catch (e) {
+            ultimoErro = "Modelo " + modelos[i] + ": " + e.message;
         }
-    };
-
-    var resp = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-    });
-
-    if (!resp.ok) {
-        var errText = await resp.text();
-        throw new Error("Gemini API erro " + resp.status + ": " + errText.substring(0, 200));
     }
 
-    var data = await resp.json();
-    if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
-        return data.candidates[0].content.parts.map(function (p) { return p.text; }).join("\n");
-    }
-    return null;
+    throw new Error("Nenhum modelo disponivel. " + ultimoErro);
 }
 
 // ===== ENQUETES / VOTACOES =====
