@@ -617,7 +617,7 @@ function navegar(secao, e) {
         case "opiniao": renderOpinioes(); break;
         case "conquistas": renderConquistas(); break;
         case "redacao": if (!isAdmin()) { navegar("inicio", null); return; } renderTemplatesPauta(); renderAdminPautas(); renderEditorialDashboard(); renderAdminNewsList(); renderCalendario(); break;
-        case "sobre": atualizarStorageInfo(); renderDashboardUsoPortal(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminTimes(); renderNewsletterAdmin(); renderMonitorPautas(); break;
+        case "sobre": atualizarStorageInfo(); renderDashboardUsoPortal(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminTimes(); renderNewsletterAdmin(); renderMonitorPautas(); renderConfigIA(); break;
     }
 
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1626,6 +1626,7 @@ function renderMonitorPautas() {
         }
         if (p.status === "nova" || p.status === "investigando") {
             statusActions += '<button class="btn btn-sm" onclick="converterPautaMonitorParaNoticia(\'' + p.id + '\')">&#128221; Criar noticia</button>';
+            statusActions += '<button class="btn btn-sm btn-ia" onclick="gerarRascunhoComIA(\'' + p.id + '\')" title="Gerar rascunho com IA">&#129302; IA</button>';
         }
         statusActions += '<button class="btn btn-sm" onclick="deletarPautaMonitor(\'' + p.id + '\')">&#10005;</button>';
 
@@ -1655,6 +1656,157 @@ function filtrarMonitorPautas(filtro, btn) {
     document.querySelectorAll("[onclick*='filtrarMonitorPautas']").forEach(function (c) { c.classList.remove("active"); });
     if (btn) btn.classList.add("active");
     renderMonitorPautas();
+}
+
+// ===== GERADOR DE RASCUNHO COM IA (GEMINI) =====
+function getChaveIA() {
+    try { return localStorage.getItem("esp_gemini_key") || ""; } catch (e) { return ""; }
+}
+
+function renderConfigIA() {
+    var container = document.getElementById("configIAContainer");
+    if (!container) return;
+    var key = getChaveIA();
+    var input = document.getElementById("geminiApiKey");
+    if (input) input.value = key;
+    var status = document.getElementById("geminiKeyStatus");
+    if (status) {
+        if (key) {
+            var masked = key.substring(0, 6) + "..." + key.substring(key.length - 4);
+            status.innerHTML = '&#9989; Chave configurada: <code style="background:var(--cinza-100);padding:2px 6px;border-radius:3px;font-size:0.75rem;">' + esc(masked) + '</code>';
+        } else {
+            status.innerHTML = '<span style="color:#ef4444;">&#9888; Nenhuma chave configurada. O botao "IA" no Monitor de Pautas nao funcionara.</span>';
+        }
+    }
+}
+
+function salvarChaveIA() {
+    if (!requireAdmin()) return;
+    var key = document.getElementById("geminiApiKey").value.trim();
+    if (!key) return showToastAviso("Cole sua chave da API Gemini.");
+    if (!key.match(/^AIza/)) return showToastAviso("Chave invalida. As chaves Gemini comecam com 'AIza'.");
+    try { localStorage.setItem("esp_gemini_key", key); } catch (e) {}
+    renderConfigIA();
+    showToastSave("Chave da API Gemini salva!");
+}
+
+async function gerarRascunhoComIA(id) {
+    if (!requireAdmin()) return;
+    var apiKey = getChaveIA();
+    if (!apiKey) return showToastAviso("Configure a chave da API Gemini no admin > Sobre > Configuracao de IA.");
+
+    var lista = getPautasMonitor();
+    var p = lista.find(function (x) { return x.id === id; });
+    if (!p) return showToastAviso("Pauta nao encontrada.");
+
+    // Construir prompt
+    var prompt = "Voce e um jornalista esportivo do portal Esporte Sao Pedro, que cobre esportes amadores e profissionais na cidade de Sao Pedro, Brasil.\n";
+    prompt += "Com base nas informacoes abaixo, escreva uma noticia esportiva completa em portugues brasileiro.\n\n";
+    prompt += "--- INFORMACOES DA PAUTA ---\n";
+    if (p.titulo) prompt += "Titulo/Assunto: " + p.titulo + "\n";
+    if (p.times) prompt += "Times/Equipes: " + p.times + "\n";
+    if (p.local) prompt += "Local: " + p.local + "\n";
+    if (p.dataEvento) prompt += "Data do evento: " + p.dataEvento + "\n";
+    if (p.esporte) {
+        var esporteNome = ESPORTES.find(function (e) { return e.id === p.esporte; });
+        prompt += "Esporte: " + (esporteNome ? esporteNome.nome : p.esporte) + "\n";
+    }
+    if (p.fonte) prompt += "Fonte original: " + p.fonte + "\n";
+    if (p.url) prompt += "Link de referencia: " + p.url + "\n";
+    if (p.texto) prompt += "\nTexto/referencia do autor:\n" + p.texto + "\n";
+    prompt += "\n--- INSTRUCOES ---\n";
+    prompt += "Escreva uma noticia jornalistica com:\n";
+    prompt += "1. Um titulo chamativo (comece com TITULO: na primeira linha)\n";
+    prompt += "2. Lead respondendo: quem, o que, quando, onde, por que\n";
+    prompt += "3. Desenvolvimento com detalhes do evento\n";
+    prompt += "4. Conclusao ou expectativas\n";
+    prompt += "Use tom imparcial, linguagem clara e adequada para internet.";
+    prompt += "Retorne APENAS o conteudo da noticia (titulo + corpo), sem meta-informacoes.";
+
+    var btn = event && event.target ? event.target : null;
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Gerando...";
+    }
+    showLoading();
+
+    try {
+        var resposta = await chamarGeminiAPI(prompt, apiKey);
+
+        if (!resposta) {
+            showToastErro("IA nao retornou conteudo. Tente novamente.");
+            if (btn) { btn.disabled = false; btn.innerHTML = "&#129302; IA"; }
+            hideLoading();
+            return;
+        }
+
+        // Extrair titulo e corpo
+        var tituloIA = "";
+        var corpoIA = resposta;
+
+        var matchTitulo = resposta.match(/TITULO:\s*(.+?)(?:\n|$)/i);
+        if (matchTitulo) {
+            tituloIA = matchTitulo[1].trim();
+            corpoIA = resposta.replace(/TITULO:\s*.+?(?:\n|$)/i, "").trim();
+        } else {
+            // Pega a primeira linha como titulo se nao tiver marcador
+            var lines = resposta.split("\n");
+            tituloIA = lines[0].replace(/^["*#\s]+|["*\s]+$/g, "").substring(0, 100);
+        }
+
+        // Preencher o form de noticia
+        document.getElementById("noticiaTitle").value = tituloIA || p.titulo || "";
+        document.getElementById("noticiaBody").innerHTML = esc(corpoIA).replace(/\n/g, "<br>");
+        if (p.esporte) document.getElementById("noticiaCategoria").value = p.esporte;
+
+        // Marcar pauta como convertida
+        p.status = "convertida";
+        setData("monitor_pautas", lista);
+
+        // Navegar para noticias e abrir form
+        navegar("noticias", null);
+        var form = document.getElementById("adminNoticia");
+        if (form) form.style.display = "block";
+        window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+        showToastSave("Rascunho gerado por IA! Revise e publique.");
+    } catch (err) {
+        showToastErro("Erro ao gerar rascunho: " + err.message);
+    }
+
+    if (btn) { btn.disabled = false; btn.innerHTML = "&#129302; IA"; }
+    hideLoading();
+}
+
+async function chamarGeminiAPI(prompt, apiKey) {
+    var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + encodeURIComponent(apiKey);
+
+    var body = {
+        contents: [{
+            parts: [{ text: prompt }]
+        }],
+        generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 1024,
+            topP: 0.9
+        }
+    };
+
+    var resp = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+    });
+
+    if (!resp.ok) {
+        var errText = await resp.text();
+        throw new Error("Gemini API erro " + resp.status + ": " + errText.substring(0, 200));
+    }
+
+    var data = await resp.json();
+    if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
+        return data.candidates[0].content.parts.map(function (p) { return p.text; }).join("\n");
+    }
+    return null;
 }
 
 // ===== ENQUETES / VOTACOES =====

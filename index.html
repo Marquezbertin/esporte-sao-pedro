@@ -991,7 +991,7 @@
                 <div id="adminTimesList" style="margin-top:16px;"></div>
             </div>
 
-            <!-- INSCRITOS NEWSLETTER -->
+<!-- INSCRITOS NEWSLETTER -->
             <div class="card-panel admin-only" style="margin-top:40px;">
                 <div class="card-panel-header">
                     <h3>Inscritos Newsletter</h3>
@@ -1000,6 +1000,27 @@
                 <p style="color:#8892a4;margin-bottom:12px;">E-mails cadastrados pelos leitores.</p>
                 <div id="adminNewsletterList" style="font-size:0.85rem;color:var(--cinza-600);"></div>
                 <button class="btn btn-sm" style="margin-top:12px;" onclick="exportarNewsletter()">Exportar e-mails</button>
+            </div>
+
+            <!-- ADMIN: CONFIGURACAO IA -->
+            <div class="card-panel admin-only" style="margin-top:40px;">
+                <div class="card-panel-header">
+                    <h3>Configuracao de IA</h3>
+                    <span class="badge">ADMIN</span>
+                </div>
+                <p style="color:#8892a4;margin-bottom:12px;">
+                    Configure a chave da API Google Gemini para gerar rascunhos automaticos de noticias
+                    a partir do <strong>Monitor de Pautas</strong>.
+                    Obtenha sua chave gratuita em <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:var(--azul-medio);">Google AI Studio</a>
+                    (sem cartao de credito, 250 consultas/dia gratis).
+                </p>
+                <div id="configIAContainer">
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">
+                        <input type="password" id="geminiApiKey" placeholder="Cole sua chave da API Gemini aqui" style="flex:1;min-width:250px;padding:9px 12px;border:1px solid var(--cinza-200);border-radius:6px;font-size:0.85rem;">
+                        <button class="btn btn-primary" onclick="salvarChaveIA()" style="padding:9px 20px;">Salvar Chave</button>
+                    </div>
+                    <div id="geminiKeyStatus" style="font-size:0.82rem;color:var(--cinza-500);"></div>
+                </div>
             </div>
 
             <!-- ADMIN: DASHBOARD DE USO -->

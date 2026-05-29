@@ -1631,6 +1631,18 @@ body.admin-mode .gallery-item:hover .gallery-item-actions { display: flex; gap: 
     font-size: 0.7rem;
     padding: 4px 10px;
 }
+.monitor-pauta-actions .btn-ia {
+    background: linear-gradient(135deg, #4285f4, #34a853);
+    color: #fff;
+    border: none;
+}
+.monitor-pauta-actions .btn-ia:hover {
+    background: linear-gradient(135deg, #3367d6, #2d8f47);
+}
+.monitor-pauta-actions .btn-ia:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
 .monitor-pauta-badge {
     display: inline-flex;
     align-items: center;
