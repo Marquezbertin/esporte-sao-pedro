@@ -617,7 +617,7 @@ function navegar(secao, e) {
         case "opiniao": renderOpinioes(); break;
         case "conquistas": renderConquistas(); break;
         case "redacao": if (!isAdmin()) { navegar("inicio", null); return; } renderTemplatesPauta(); renderAdminPautas(); renderEditorialDashboard(); renderAdminNewsList(); renderCalendario(); break;
-        case "sobre": atualizarStorageInfo(); renderDashboardUsoPortal(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminTimes(); renderNewsletterAdmin(); break;
+        case "sobre": atualizarStorageInfo(); renderDashboardUsoPortal(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminTimes(); renderNewsletterAdmin(); renderMonitorPautas(); renderConfigIA(); break;
     }
 
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -948,6 +948,7 @@ function renderArtilheirosHome() {
 
 // ===== NOTICIAS (PAGINA COMPLETA) =====
 var _filtroNoticia = "todas";
+var _filtroMonitorPautas = "todas";
 
 function renderNoticias() {
     var noticias = getData("noticias");
@@ -1332,6 +1333,403 @@ function renderAdminPautas() {
                 '</div>' +
             '</div>';
     });
+}
+
+// ===== MONITOR DE PAUTAS DA INTERNET =====
+var _filtroMonitorPautas = "todas";
+
+function getPautasMonitor() {
+    return getData("monitor_pautas");
+}
+
+function detectarFontePauta(url, texto) {
+    if (url) {
+        var u = url.toLowerCase();
+        if (u.indexOf("instagram") !== -1) return "instagram";
+        if (u.indexOf("facebook") !== -1) return "facebook";
+        if (u.indexOf("youtube") !== -1 || u.indexOf("youtu.be") !== -1) return "youtube";
+        if (u.indexOf("wa.me") !== -1 || u.indexOf("whatsapp") !== -1) return "whatsapp";
+        if (u.indexOf("globo") !== -1 || u.indexOf("ge.") !== -1 || u.indexOf("espn") !== -1) return "site";
+    }
+    if (texto && texto.length > 20) return "texto";
+    return "outro";
+}
+
+function detectarEsportePauta(texto, url) {
+    var alvo = ((texto || "") + " " + (url || "")).toLowerCase();
+    var scores = {};
+    ESPORTES.forEach(function (e) {
+        var count = 0;
+        (e.palavras || [e.nome]).forEach(function (p) {
+            if (alvo.indexOf(p.toLowerCase()) !== -1) count++;
+        });
+        if (count > 0) scores[e.id] = count;
+    });
+    var best = Object.keys(scores).sort(function (a, b) { return scores[b] - scores[a]; });
+    return best.length > 0 ? best[0] : "";
+}
+
+function extrairInfoPautaAuto() {
+    var texto = document.getElementById("monitorTexto").value.trim();
+    var url = document.getElementById("monitorUrl").value.trim();
+    var esporte = detectarEsportePauta(texto, url);
+    var fonte = detectarFontePauta(url, texto);
+    var info = [];
+    if (fonte) {
+        var nomes = { instagram: "Instagram", facebook: "Facebook", youtube: "YouTube", whatsapp: "WhatsApp", site: "Site de noticias", texto: "Texto proprio", outro: "Outra fonte" };
+        info.push("Fonte: " + (nomes[fonte] || fonte));
+    }
+    if (esporte) {
+        var en = ESPORTES.find(function (e) { return e.id === esporte; });
+        if (en) info.push("Esporte: " + en.nome);
+        document.getElementById("monitorEsporte").value = esporte;
+    }
+    var el = document.getElementById("monitorAutoInfo");
+    var txt = document.getElementById("monitorAutoDetectText");
+    if (info.length > 0) {
+        el.style.display = "block";
+        txt.textContent = info.join(" | ");
+    } else {
+        el.style.display = "none";
+    }
+}
+
+function adicionarPautaMonitor() {
+    if (!requireAdmin()) return;
+    var url = document.getElementById("monitorUrl").value.trim();
+    var texto = document.getElementById("monitorTexto").value.trim();
+    if (!url && !texto) return showToastAviso("Cole um link ou texto para registrar a pauta.");
+    var esporte = detectarEsportePauta(texto, url);
+    if (!esporte || document.getElementById("monitorEsporte").value) {
+        esporte = document.getElementById("monitorEsporte").value || esporte;
+    }
+    var lista = getPautasMonitor();
+    lista.push({
+        id: gerarId(),
+        url: url,
+        texto: texto,
+        titulo: document.getElementById("monitorTitulo") ? document.getElementById("monitorTitulo").value.trim() : "",
+        times: document.getElementById("monitorTimes").value.trim(),
+        local: document.getElementById("monitorLocal").value.trim(),
+        dataEvento: document.getElementById("monitorDataEvento").value,
+        esporte: esporte,
+        fonte: detectarFontePauta(url, texto),
+        prioridade: document.getElementById("monitorPrioridade").value,
+        status: "nova",
+        data: new Date().toISOString()
+    });
+    setData("monitor_pautas", lista);
+    document.getElementById("monitorUrl").value = "";
+    document.getElementById("monitorTexto").value = "";
+    document.getElementById("monitorTimes").value = "";
+    document.getElementById("monitorLocal").value = "";
+    document.getElementById("monitorDataEvento").value = "";
+    document.getElementById("monitorEsporte").value = "";
+    document.getElementById("monitorAutoInfo").style.display = "none";
+    renderMonitorPautas();
+    showToastSave("Pauta registrada! Use o botao IA para gerar rascunho automaticamente.");
+}
+
+function renderMonitorPautas() {
+    var container = document.getElementById("monitorPautasList");
+    if (!container) return;
+    var lista = getPautasMonitor().sort(function (a, b) {
+        var prioOrder = { alta: 0, media: 1, baixa: 2 };
+        var statusOrder = { nova: 0, investigando: 1, convertida: 2, descartada: 3 };
+        var sa = statusOrder[a.status] || 9;
+        var sb = statusOrder[b.status] || 9;
+        if (sa !== sb) return sa - sb;
+        return (prioOrder[a.prioridade] || 9) - (prioOrder[b.prioridade] || 9);
+    });
+    if (_filtroMonitorPautas !== "todas") {
+        lista = lista.filter(function (p) { return p.status === _filtroMonitorPautas; });
+    }
+    if (lista.length === 0) {
+        container.innerHTML = '<div class="empty-state" style="padding:20px;"><div class="empty-state-icon">&#128269;</div><div class="empty-state-text">Nenhuma pauta encontrada.</div></div>';
+        return;
+    }
+    var fontes = { instagram: 'IG', facebook: 'fb', youtube: 'YT', whatsapp: 'WA', site: 'site', texto: 'texto', outro: '?' };
+    var fonteIcone = { instagram: 'IG', facebook: 'fb', youtube: 'YT', whatsapp: 'WA', site: 'site', texto: 'texto', outro: '?' };
+    var statusLabels = { nova: 'Nova', investigando: 'Investigando', convertida: 'Convertida', descartada: 'Descartada' };
+    var prioLabels = { alta: 'Alta', media: 'Media', baixa: 'Baixa' };
+    var html = "";
+    lista.forEach(function (p) {
+        var fonteBadge = p.fonte ? '<span class="monitor-pauta-fonte ' + p.fonte + '">' + (fonteIcone[p.fonte] || "?") + "</span>" : "";
+        var statusBadge = '<span class="monitor-pauta-badge" style="background:' + (p.status === "nova" ? "#eff6ff" : p.status === "investigando" ? "#fffbeb" : p.status === "convertida" ? "#f0fdf4" : "#f1f5f9") + ";color:" + (p.status === "nova" ? "#2563eb" : p.status === "investigando" ? "#d97706" : p.status === "convertida" ? "#16a34a" : "#94a3b8") + ';">' + (statusLabels[p.status] || p.status) + "</span>";
+        var prioBadge = '<span class="monitor-pauta-badge prio-' + p.prioridade + '">' + (prioLabels[p.prioridade] || p.prioridade) + "</span>";
+        var meta = "";
+        if (p.times) meta += '<span>&#9917; ' + esc(p.times) + "</span>";
+        if (p.local) meta += '<span>&#128205; ' + esc(p.local) + "</span>";
+        if (p.dataEvento) meta += '<span>&#128197; ' + formatarData(p.dataEvento) + "</span>";
+        if (p.esporte) {
+            var en = ESPORTES.find(function (e) { return e.id === p.esporte; });
+            if (en) meta += '<span>&#127944; ' + en.nome + "</span>";
+        }
+        var textoPreview = p.texto ? p.texto.substring(0, 150) : "";
+        var statusActions = "";
+        if (p.status === "nova") statusActions += '<button class="btn btn-sm" onclick="alterarStatusPautaMonitor(\'' + p.id + "','investigando'" + ')">Investigando</button>';
+        if (p.status !== "convertida" && p.status !== "descartada") {
+            statusActions += '<button class="btn btn-sm" onclick="converterPautaMonitorParaNoticia(\'' + p.id + "')\">Criar noticia</button>";
+            statusActions += '<button class="btn btn-sm btn-ia" onclick="gerarRascunhoComIA(\'' + p.id + "')\" title=\"Gerar rascunho com IA\">&#129302; IA</button>";
+        }
+        if (p.status !== "descartada") statusActions += '<button class="btn btn-sm btn-danger" onclick="deletarPautaMonitor(\'' + p.id + "')\">Descartar</button>";
+        html += '<div class="monitor-pauta-card status-' + p.status + '">';
+        html += '<div style="display:flex;flex-direction:column;gap:4px;align-items:center;min-width:40px;">' + prioBadge + statusBadge + "</div>";
+        html += '<div class="monitor-pauta-body">';
+        html += '<div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;">' + fonteBadge + "</div>";
+        if (p.titulo) html += '<div class="monitor-pauta-titulo">' + esc(p.titulo) + "</div>";
+        else if (p.url) html += '<div class="monitor-pauta-titulo" style="font-weight:400;font-size:0.8rem;color:var(--azul-medio);word-break:break-all;">' + esc(p.url) + "</div>";
+        if (meta) html += '<div class="monitor-pauta-meta">' + meta + "</div>";
+        if (textoPreview) html += '<div class="monitor-pauta-texto">' + esc(textoPreview) + "</div>";
+        if (p.url) {
+            var infoDetectada = "";
+            if (p.fonte) infoDetectada += "Fonte: " + p.fonte + ". ";
+            if (p.esporte) {
+                var en = ESPORTES.find(function (e) { return e.id === p.esporte; });
+                if (en) infoDetectada += "Esporte detectado: " + en.nome + ".";
+            }
+            if (infoDetectada) html += '<div class="monitor-pauta-info-detectada">&#128200; ' + infoDetectada + "</div>";
+        }
+        html += '<div class="monitor-pauta-actions">' + statusActions + "</div>";
+        html += "</div></div>";
+    });
+    container.innerHTML = html;
+    document.getElementById("monitorFiltroTodas") && document.getElementById("monitorFiltroTodas").classList.toggle("active", _filtroMonitorPautas === "todas");
+}
+
+function alterarStatusPautaMonitor(id, status) {
+    if (!requireAdmin()) return;
+    var lista = getPautasMonitor();
+    var p = lista.find(function (x) { return x.id === id; });
+    if (!p) return;
+    p.status = status;
+    setData("monitor_pautas", lista);
+    renderMonitorPautas();
+    showToastSave("Status atualizado.");
+}
+
+function converterPautaMonitorParaNoticia(id) {
+    if (!requireAdmin()) return;
+    var lista = getPautasMonitor();
+    var p = lista.find(function (x) { return x.id === id; });
+    if (!p) return showToastAviso("Pauta nao encontrada.");
+    var corpo = p.texto || "";
+    if (p.times) corpo = "Times: " + p.times + "\n\n" + corpo;
+    if (p.local) corpo = "Local: " + p.local + "\n" + corpo;
+    if (p.dataEvento) corpo = "Data do evento: " + formatarData(p.dataEvento) + "\n" + corpo;
+    if (p.url) corpo += "\n\nFonte: " + p.url;
+    p.status = "convertida";
+    setData("monitor_pautas", lista);
+    navegar("noticias", null);
+    document.getElementById("noticiaTitle").value = p.titulo || "";
+    document.getElementById("noticiaBody").innerHTML = esc(corpo).replace(/\n/g, "<br>");
+    if (p.esporte) document.getElementById("noticiaCategoria").value = p.esporte;
+    var form = document.getElementById("adminNoticia");
+    if (form) form.style.display = "block";
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+    showToastSave("Pauta enviada para o editor!");
+}
+
+function deletarPautaMonitor(id) {
+    if (!requireAdmin()) return;
+    var lista = getPautasMonitor().filter(function (x) { return x.id !== id; });
+    setData("monitor_pautas", lista);
+    renderMonitorPautas();
+    showToastSave("Pauta descartada.");
+}
+
+function filtrarMonitorPautas(filtro, btn) {
+    _filtroMonitorPautas = filtro;
+    document.querySelectorAll("#monitorPautasList .chip, .monitor-pauta-form + .chip").forEach(function (c) { c.classList.remove("active"); });
+    if (btn) btn.classList.add("active");
+    renderMonitorPautas();
+}
+
+// ===== GERADOR DE RASCUNHO COM IA (GEMINI) =====
+var EDGE_FN_URL = "https://cyihlqyhefdwypkzvztj.supabase.co/functions/v1/hyper-responder";
+
+function getChaveIA() {
+    try { return localStorage.getItem("esp_gemini_key") || ""; } catch (e) { return ""; }
+}
+
+function renderConfigIA() {
+    var container = document.getElementById("configIAContainer");
+    if (!container) return;
+    var key = getChaveIA();
+    var input = document.getElementById("geminiApiKey");
+    if (input) input.value = key;
+    var status = document.getElementById("geminiKeyStatus");
+    if (status) {
+        if (key) {
+            var masked = key.substring(0, 6) + "..." + key.substring(key.length - 4);
+            status.innerHTML = '&#9989; Chave configurada: <code style="background:var(--cinza-100);padding:2px 6px;border-radius:3px;font-size:0.75rem;">' + esc(masked) + '</code>';
+        } else {
+            status.innerHTML = '<span style="color:#ef4444;">&#9888; Nenhuma chave configurada. O botao "IA" no Monitor de Pautas nao funcionara.</span>';
+        }
+    }
+}
+
+function salvarChaveIA() {
+    if (!requireAdmin()) return;
+    var key = document.getElementById("geminiApiKey").value.trim();
+    if (!key) return showToastAviso("Cole sua chave da API Gemini.");
+    if (key.length < 10) return showToastAviso("Chave invalida. Verifique se copiou a chave completa do Google AI Studio.");
+    try { localStorage.setItem("esp_gemini_key", key); } catch (e) {}
+    renderConfigIA();
+    showToastSave("Chave da API Gemini salva!");
+}
+
+async function gerarRascunhoComIA(id) {
+    if (!requireAdmin()) return;
+    var apiKey = getChaveIA();
+    if (!apiKey) return showToastAviso("Configure a chave da API Gemini no admin > Sobre > Configuracao de IA.");
+
+    var lista = getPautasMonitor();
+    var p = lista.find(function (x) { return x.id === id; });
+    if (!p) return showToastAviso("Pauta nao encontrada.");
+
+    var btn = event && event.target ? event.target : null;
+    if (btn) { btn.disabled = true; btn.textContent = "Aguarde..."; }
+    showLoading();
+
+    // 1) Tenta buscar o conteudo do link via Edge Function
+    var conteudoLink = "";
+    if (p.url) {
+        try {
+            showToastAviso("Buscando conteudo do link via Edge Function...");
+            var edgeResp = await fetch(EDGE_FN_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: p.url })
+            });
+            if (edgeResp.ok) {
+                var edgeData = await edgeResp.json();
+                if (edgeData.content) {
+                    conteudoLink = stripHtml(edgeData.content).substring(0, 5000);
+                }
+            }
+        } catch (e) {
+            // Edge function indisponivel, segue sem conteudo
+        }
+    }
+
+    // 2) Constroi prompt
+    var prompt = "Voce e um jornalista esportivo do portal Esporte Sao Pedro.\n";
+    prompt += "Escreva uma noticia esportiva completa em portugues brasileiro.\n\n";
+    prompt += "--- DADOS DA PAUTA ---\n";
+    if (p.titulo) prompt += "Titulo/Assunto: " + p.titulo + "\n";
+    if (p.times) prompt += "Times: " + p.times + "\n";
+    if (p.local) prompt += "Local: " + p.local + "\n";
+    if (p.dataEvento) prompt += "Data: " + p.dataEvento + "\n";
+    if (p.esporte) {
+        var en = ESPORTES.find(function (e) { return e.id === p.esporte; });
+        prompt += "Esporte: " + (en ? en.nome : p.esporte) + "\n";
+    }
+    if (p.fonte) prompt += "Fonte: " + p.fonte + "\n";
+    if (conteudoLink) prompt += "\n--- CONTEUDO ORIGINAL (extraido do link) ---\n" + conteudoLink + "\n";
+    if (p.texto) prompt += "\n--- OBSERVACOES DO AUTOR ---\n" + p.texto + "\n";
+    prompt += "\n--- INSTRUCOES ---\n";
+    if (conteudoLink) prompt += "Reescreva o conteudo acima como uma noticia propria do portal.\n";
+    else if (p.url) prompt += "O link nao pôde ser acessado. Escreva baseado nos dados disponiveis.\n";
+    prompt += "Formato:\n";
+    prompt += "TITULO: (titulo chamativo)\n";
+    prompt += "Corpo da noticia com lead, desenvolvimento e conclusao.\n";
+    prompt += "Use tom imparcial e linguagem clara.\n";
+    prompt += "Retorne APENAS o conteudo (titulo + corpo).";
+
+    // 3) Chama Gemini via Edge Function
+    try {
+        var resposta = await chamarGeminiAPI(prompt, apiKey);
+        if (!resposta) {
+            showToastErro("IA nao retornou conteudo. Os dados da pauta ja estao no editor.");
+            if (btn) { btn.disabled = false; btn.innerHTML = "&#129302; IA"; }
+            hideLoading();
+            // fallback: preenche com dados da pauta
+            preencherFormPauta(p);
+            return;
+        }
+
+        // Extrair titulo e corpo
+        var tituloIA = p.titulo || "";
+        var corpoIA = resposta;
+        var matchT = resposta.match(/TITULO:\s*(.+?)(?:\n|$)/i);
+        if (matchT) {
+            tituloIA = matchT[1].trim();
+            corpoIA = resposta.replace(/TITULO:\s*.+?(?:\n|$)/i, "").trim();
+        } else {
+            var lines = resposta.split("\n");
+            var first = lines[0].replace(/^["*#\s]+|["*\s]+$/g, "").trim();
+            if (first.length > 5 && first.length < 200) tituloIA = first;
+        }
+
+        // Marcar como convertida e preencher form
+        p.status = "convertida";
+        setData("monitor_pautas", lista);
+
+        navegar("noticias", null);
+        document.getElementById("noticiaTitle").value = tituloIA || "";
+        document.getElementById("noticiaBody").innerHTML = esc(corpoIA).replace(/\n/g, "<br>");
+        if (p.esporte) document.getElementById("noticiaCategoria").value = p.esporte;
+        var form = document.getElementById("adminNoticia");
+        if (form) form.style.display = "block";
+        window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+        showToastSave("Rascunho gerado por IA! Revise e publique.");
+    } catch (err) {
+        showToastErro("IA falhou: " + err.message);
+        preencherFormPauta(p);
+    }
+
+    if (btn) { btn.disabled = false; btn.innerHTML = "&#129302; IA"; }
+    hideLoading();
+}
+
+function preencherFormPauta(p) {
+    var corpo = p.texto || "";
+    if (p.times) corpo = "Times: " + p.times + "\n\n" + corpo;
+    if (p.local) corpo = "Local: " + p.local + "\n" + corpo;
+    if (p.dataEvento) corpo = "Data do evento: " + formatarData(p.dataEvento) + "\n" + corpo;
+    if (p.url) corpo = "Link: " + p.url + (corpo ? "\n\n" + corpo : "");
+    navegar("noticias", null);
+    document.getElementById("noticiaTitle").value = p.titulo || (p.fonte ? "Via " + p.fonte : "Link");
+    document.getElementById("noticiaBody").innerHTML = esc(corpo).replace(/\n/g, "<br>");
+    if (p.esporte) document.getElementById("noticiaCategoria").value = p.esporte;
+    var form = document.getElementById("adminNoticia");
+    if (form) form.style.display = "block";
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+}
+
+async function chamarGeminiAPI(prompt, apiKey) {
+    try {
+        var resp = await fetch(EDGE_FN_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt: prompt, apiKey: apiKey })
+        });
+
+        if (resp.status === 429) {
+            showToastErro("Limite da API Gemini excedido. Aguarde 1 minuto e tente novamente.");
+            return null;
+        }
+
+        if (!resp.ok) {
+            var errTxt = await resp.text();
+            showToastErro("Erro na API: " + errTxt.substring(0, 150));
+            return null;
+        }
+
+        var data = await resp.json();
+        if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
+            return data.candidates[0].content.parts.map(function (p) { return p.text; }).join("\n");
+        }
+        if (data.error) {
+            showToastErro("Gemini: " + data.error.message || JSON.stringify(data.error));
+            return null;
+        }
+        return null;
+    } catch (e) {
+        showToastErro("Conexao com Edge Function falhou: " + e.message);
+        return null;
+    }
 }
 
 // ===== ENQUETES / VOTACOES =====
@@ -2885,7 +3283,7 @@ var USAGE_DEFAULT_CONFIG = {
 var PORTAL_USAGE_KEYS = [
     "noticias", "jogos", "atletas", "galeria", "videos", "episodios", "patrocinadores",
     "campeonatos", "opinioes", "eventos", "enquetes", "conquistas", "resumos",
-    "times", "pautas", "newsletter", "sobre", "site_logo", "live", "views", "placar_vivo"
+    "times", "pautas", "newsletter", "sobre", "site_logo", "live", "views", "placar_vivo", "monitor_pautas"
 ];
 
 function bytesPortal(value) {

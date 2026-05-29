@@ -775,6 +775,74 @@
                 </div>
             </div>
 
+            <!-- ADMIN: MONITOR DE PAUTAS DA INTERNET -->
+            <div class="card-panel admin-only" style="margin-top:40px;">
+                <div class="card-panel-header">
+                    <h3>&#128269; Monitor de Pautas da Internet</h3>
+                    <span class="badge">ADMIN</span>
+                </div>
+                <p style="color:#8892a4;margin-bottom:16px;">
+                    Cole links ou textos encontrados na internet (Instagram, Facebook, sites, WhatsApp)
+                    para rastrear possiveis pautas. O sistema extrai automaticamente times, locais e
+                    modalidades esportivas mencionados.
+                </p>
+
+                <!-- FORM: ADICIONAR NOVA PAUTA MONITORADA -->
+                <div class="monitor-pauta-form" id="monitorPautaForm">
+                    <div style="margin-bottom:8px;position:relative;">
+                        <input type="url" id="monitorUrl" placeholder="Link de origem (Instagram, Facebook, site, YouTube...)" style="width:100%;padding:9px 12px;border:1px solid var(--cinza-200);border-radius:6px;font-size:0.85rem;">
+                    </div>
+                    <div style="margin-bottom:8px;">
+                        <textarea id="monitorTexto" placeholder="Cole o texto da publicacao ou descreva o que encontrou..." rows="3" style="width:100%;padding:9px 12px;border:1px solid var(--cinza-200);border-radius:6px;font-size:0.85rem;resize:vertical;font-family:inherit;" oninput="extrairInfoPautaAuto()"></textarea>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+                        <input type="text" id="monitorTimes" placeholder="Times (separados por x)" style="flex:2;min-width:140px;padding:9px 12px;border:1px solid var(--cinza-200);border-radius:6px;font-size:0.85rem;">
+                        <input type="text" id="monitorLocal" placeholder="Local" style="flex:1;min-width:120px;padding:9px 12px;border:1px solid var(--cinza-200);border-radius:6px;font-size:0.85rem;">
+                        <input type="date" id="monitorDataEvento" style="flex:1;min-width:130px;padding:8px 12px;border:1px solid var(--cinza-200);border-radius:6px;font-size:0.85rem;">
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+                        <select id="monitorEsporte" style="flex:1;min-width:130px;padding:9px 12px;border:1px solid var(--cinza-200);border-radius:6px;font-size:0.85rem;">
+                            <option value="">Detectar automaticamente</option>
+                            <option value="futebol">Futebol</option>
+                            <option value="volei">Volei</option>
+                            <option value="basquete">Basquete</option>
+                            <option value="corrida">Corrida</option>
+                            <option value="ciclismo">Ciclismo</option>
+                            <option value="artes-marciais">Artes Marciais</option>
+                            <option value="skate-radicais">Skate e Radicais</option>
+                            <option value="geral">Geral</option>
+                        </select>
+                        <select id="monitorPrioridade" style="flex:1;min-width:120px;padding:9px 12px;border:1px solid var(--cinza-200);border-radius:6px;font-size:0.85rem;">
+                            <option value="media">Prioridade Media</option>
+                            <option value="alta">Prioridade Alta</option>
+                            <option value="baixa">Prioridade Baixa</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="adicionarPautaMonitor()" style="padding:9px 20px;">Registrar Pauta</button>
+                    </div>
+                    <div id="monitorAutoInfo" style="display:none;padding:10px 14px;background:var(--dourado-light);border-radius:6px;font-size:0.82rem;color:var(--cinza-700);margin-bottom:8px;border-left:3px solid var(--dourado);">
+                        <strong>&#128200; Informacoes detectadas automaticamente:</strong>
+                        <span id="monitorAutoDetectText"></span>
+                    </div>
+                </div>
+
+                <!-- FILTROS -->
+                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--cinza-200);">
+                    <button class="chip active" onclick="filtrarMonitorPautas('todas', this)" id="monitorFiltroTodas">Todas</button>
+                    <button class="chip" onclick="filtrarMonitorPautas('nova', this)">Novas</button>
+                    <button class="chip" onclick="filtrarMonitorPautas('investigando', this)">Investigando</button>
+                    <button class="chip" onclick="filtrarMonitorPautas('convertida', this)">Convertidas</button>
+                    <button class="chip" onclick="filtrarMonitorPautas('descartada', this)">Descartadas</button>
+                </div>
+
+                <!-- LISTA DE PAUTAS MONITORADAS -->
+                <div id="monitorPautasList" style="margin-top:8px;">
+                    <div class="empty-state" style="padding:20px;">
+                        <div class="empty-state-icon">&#128269;</div>
+                        <div class="empty-state-text">Nenhuma pauta monitorada ainda. Cole links ou textos acima para comecar a rastrear.</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- ADMIN: LIVE STREAMING -->
             <div class="card-panel admin-only" style="margin-top:40px;">
                 <div class="card-panel-header">
@@ -932,6 +1000,27 @@
                 <p style="color:#8892a4;margin-bottom:12px;">E-mails cadastrados pelos leitores.</p>
                 <div id="adminNewsletterList" style="font-size:0.85rem;color:var(--cinza-600);"></div>
                 <button class="btn btn-sm" style="margin-top:12px;" onclick="exportarNewsletter()">Exportar e-mails</button>
+            </div>
+
+            <!-- ADMIN: CONFIGURACAO IA -->
+            <div class="card-panel admin-only" style="margin-top:40px;">
+                <div class="card-panel-header">
+                    <h3>Configuracao de IA</h3>
+                    <span class="badge">ADMIN</span>
+                </div>
+                <p style="color:#8892a4;margin-bottom:12px;">
+                    Configure a chave da API Google Gemini para gerar rascunhos automaticos de noticias
+                    a partir do <strong>Monitor de Pautas</strong>.
+                    Obtenha sua chave gratuita em <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:var(--azul-medio);">Google AI Studio</a>
+                    (sem cartao de credito, 250 consultas/dia gratis). A chave pode comecar com <code>AIza</code> ou <code>AQ.</code>.
+                </p>
+                <div id="configIAContainer">
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">
+                        <input type="password" id="geminiApiKey" placeholder="Cole sua chave da API Gemini aqui" style="flex:1;min-width:250px;padding:9px 12px;border:1px solid var(--cinza-200);border-radius:6px;font-size:0.85rem;">
+                        <button class="btn btn-primary" onclick="salvarChaveIA()" style="padding:9px 20px;">Salvar Chave</button>
+                    </div>
+                    <div id="geminiKeyStatus" style="font-size:0.82rem;color:var(--cinza-500);"></div>
+                </div>
             </div>
 
             <!-- ADMIN: DASHBOARD DE USO -->
