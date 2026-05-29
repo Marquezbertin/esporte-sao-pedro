@@ -1699,65 +1699,58 @@ async function gerarRascunhoComIA(id) {
     var p = lista.find(function (x) { return x.id === id; });
     if (!p) return showToastAviso("Pauta nao encontrada.");
 
-    // 1) Preenche o form com os dados da pauta (garantido, mesmo que so tenha URL)
-    var corpo = p.texto || "";
-    if (p.times) corpo = "Times: " + p.times + "\n\n" + corpo;
-    if (p.local) corpo = "Local: " + p.local + "\n" + corpo;
-    if (p.dataEvento) corpo = "Data do evento: " + formatarData(p.dataEvento) + "\n" + corpo;
-    if (p.url) {
-        if (corpo) corpo += "\n\n---\nLink original: " + p.url;
-        else corpo = "Link original: " + p.url;
-    }
-
-    // 2) Marcar como convertida
-    p.status = "convertida";
-    setData("monitor_pautas", lista);
-
-    // 3) Navegar e preencher
-    navegar("noticias", null);
-    document.getElementById("noticiaTitle").value = p.titulo || (p.fonte ? "Noticia via " + p.fonte : "Noticia do link");
-    document.getElementById("noticiaBody").innerHTML = esc(corpo).replace(/\n/g, "<br>");
-    if (p.esporte) document.getElementById("noticiaCategoria").value = p.esporte;
-    var form = document.getElementById("adminNoticia");
-    if (form) form.style.display = "block";
-    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-    showToastAviso("Pauta copiada. Gerando rascunho por IA...");
-
-    // 4) Chamar API (assincrono, vai sobrescrever se conseguir)
     var btn = event && event.target ? event.target : null;
-    if (btn) { btn.disabled = true; btn.textContent = "Gerando..."; }
+    if (btn) { btn.disabled = true; btn.textContent = "Aguarde..."; }
     showLoading();
 
-    try {
-        var prompt = "Voce e um jornalista esportivo do portal Esporte Sao Pedro, que cobre esportes amadores e profissionais na cidade de Sao Pedro, Brasil.\n";
-        prompt += "Sua tarefa e ESCREVER UMA NOTICIA completa em portugues brasileiro.\n\n";
-        prompt += "--- INFORMACOES DISPONIVEIS ---\n";
-        if (p.url) prompt += "Link para acessar o conteudo original: " + p.url + "\n\n";
-        if (p.titulo) prompt += "Titulo/Assunto: " + p.titulo + "\n";
-        if (p.times) prompt += "Times/Equipes: " + p.times + "\n";
-        if (p.local) prompt += "Local: " + p.local + "\n";
-        if (p.dataEvento) prompt += "Data do evento: " + p.dataEvento + "\n";
-        if (p.esporte) {
-            var esporteNome = ESPORTES.find(function (e) { return e.id === p.esporte; });
-            prompt += "Esporte: " + (esporteNome ? esporteNome.nome : p.esporte) + "\n";
+    // 1) Tenta buscar o conteudo do link via proxy CORS
+    var conteudoLink = "";
+    if (p.url) {
+        try {
+            showToastAviso("Buscando conteudo do link...");
+            var proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(p.url);
+            var fetchResp = await fetch(proxyUrl);
+            if (fetchResp.ok) {
+                conteudoLink = await fetchResp.text();
+                conteudoLink = stripHtml(conteudoLink).substring(0, 5000);
+            }
+        } catch (e) {
+            conteudoLink = "";
         }
-        if (p.fonte) prompt += "Fonte original: " + p.fonte + "\n";
-        if (p.texto) prompt += "\nTexto/referencia do autor:\n" + p.texto + "\n";
-        prompt += "\n--- INSTRUCOES ---\n";
-        if (p.url) prompt += "IMPORTANTE: Acesse o link acima e EXTRAIA o conteudo da noticia original para reescrever com suas palavras.\n";
-        prompt += "Escreva uma noticia jornalistica completa com:\n";
-        prompt += "1. Um titulo chamativo (comece a linha com TITULO:)\n";
-        prompt += "2. Lead (quem, o que, quando, onde, por que)\n";
-        prompt += "3. Desenvolvimento com detalhes\n";
-        prompt += "4. Conclusao\n";
-        prompt += "Use tom imparcial, linguagem clara e adequada para internet.";
-        if (p.url) prompt += "\nNao copie o link original no corpo da noticia. Escreva como se fosse uma materia propria do portal.";
-        prompt += "\nRetorne APENAS o conteudo (titulo + corpo), sem meta-informacoes.";
+    }
 
+    // 2) Constroi prompt com o conteudo obtido
+    var prompt = "Voce e um jornalista esportivo do portal Esporte Sao Pedro.\n";
+    prompt += "Escreva uma noticia esportiva completa em portugues brasileiro.\n\n";
+    prompt += "--- DADOS DA PAUTA ---\n";
+    if (p.titulo) prompt += "Titulo/Assunto: " + p.titulo + "\n";
+    if (p.times) prompt += "Times: " + p.times + "\n";
+    if (p.local) prompt += "Local: " + p.local + "\n";
+    if (p.dataEvento) prompt += "Data: " + p.dataEvento + "\n";
+    if (p.esporte) {
+        var en = ESPORTES.find(function (e) { return e.id === p.esporte; });
+        prompt += "Esporte: " + (en ? en.nome : p.esporte) + "\n";
+    }
+    if (p.fonte) prompt += "Fonte: " + p.fonte + "\n";
+    if (conteudoLink) prompt += "\n--- CONTEUDO ORIGINAL (extraido do link) ---\n" + conteudoLink + "\n";
+    if (p.texto) prompt += "\n--- OBSERVACOES DO AUTOR ---\n" + p.texto + "\n";
+    prompt += "\n--- INSTRUCOES ---\n";
+    if (conteudoLink) prompt += "Reescreva o conteudo acima como uma noticia propria do portal.\n";
+    else if (p.url) prompt += "O link nao pôde ser acessado. Escreva baseado nos dados disponiveis.\n";
+    prompt += "Formato:\n";
+    prompt += "TITULO: (titulo chamativo)\n";
+    prompt += "Corpo da noticia com lead, desenvolvimento e conclusao.\n";
+    prompt += "Use tom imparcial e linguagem clara.\n";
+    prompt += "Retorne APENAS o conteudo (titulo + corpo).";
+
+    // 3) Chama Gemini
+    try {
         var resposta = await chamarGeminiAPI(prompt, apiKey);
-
         if (!resposta) {
-            showToastErro("IA nao retornou conteudo. Os dados da pauta ja estao no editor.");
+            alert("Gemini retornou vazio. Testando conexao...");
+            var teste = await chamarGeminiAPI("Diga 'ok' e mais nada.", apiKey);
+            alert("Teste Gemini: " + (teste || "falhou"));
+            showToastErro("IA nao retornou conteudo.");
             if (btn) { btn.disabled = false; btn.innerHTML = "&#129302; IA"; }
             hideLoading();
             return;
@@ -1766,10 +1759,9 @@ async function gerarRascunhoComIA(id) {
         // Extrair titulo e corpo
         var tituloIA = p.titulo || "";
         var corpoIA = resposta;
-
-        var matchTitulo = resposta.match(/TITULO:\s*(.+?)(?:\n|$)/i);
-        if (matchTitulo) {
-            tituloIA = matchTitulo[1].trim();
+        var matchT = resposta.match(/TITULO:\s*(.+?)(?:\n|$)/i);
+        if (matchT) {
+            tituloIA = matchT[1].trim();
             corpoIA = resposta.replace(/TITULO:\s*.+?(?:\n|$)/i, "").trim();
         } else {
             var lines = resposta.split("\n");
@@ -1777,13 +1769,33 @@ async function gerarRascunhoComIA(id) {
             if (first.length > 5 && first.length < 200) tituloIA = first;
         }
 
-        // Sobrescrever com o conteudo gerado
+        // Marcar como convertida e preencher form
+        p.status = "convertida";
+        setData("monitor_pautas", lista);
+
+        navegar("noticias", null);
         document.getElementById("noticiaTitle").value = tituloIA || "";
         document.getElementById("noticiaBody").innerHTML = esc(corpoIA).replace(/\n/g, "<br>");
         if (p.esporte) document.getElementById("noticiaCategoria").value = p.esporte;
+        var form = document.getElementById("adminNoticia");
+        if (form) form.style.display = "block";
+        window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
         showToastSave("Rascunho gerado por IA! Revise e publique.");
     } catch (err) {
-        showToastErro("IA falhou, mas os dados da pauta estao no editor: " + err.message);
+        alert("ERRO Gemini: " + err.message);
+        showToastErro("Erro Gemini: " + err.message);
+        // fallback: preenche com o que temos
+        p.status = "convertida";
+        setData("monitor_pautas", lista);
+        navegar("noticias", null);
+        document.getElementById("noticiaTitle").value = p.titulo || (p.fonte ? "Via " + p.fonte : "Link");
+        var corpo_fallback = p.texto || "";
+        if (p.url) corpo_fallback = "Link: " + p.url + (corpo_fallback ? "\n\n" + corpo_fallback : "");
+        document.getElementById("noticiaBody").innerHTML = esc(corpo_fallback).replace(/\n/g, "<br>");
+        if (p.esporte) document.getElementById("noticiaCategoria").value = p.esporte;
+        var form = document.getElementById("adminNoticia");
+        if (form) form.style.display = "block";
+        window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
     }
 
     if (btn) { btn.disabled = false; btn.innerHTML = "&#129302; IA"; }
@@ -1791,8 +1803,7 @@ async function gerarRascunhoComIA(id) {
 }
 
 async function chamarGeminiAPI(prompt, apiKey) {
-    var modelos = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-2.5-flash"];
-    var ultimoErro = null;
+    var modelos = ["gemini-1.5-flash", "gemini-2.0-flash"];
 
     for (var i = 0; i < modelos.length; i++) {
         var url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelos[i] + ":generateContent?key=" + encodeURIComponent(apiKey);
@@ -1801,7 +1812,6 @@ async function chamarGeminiAPI(prompt, apiKey) {
             contents: [{
                 parts: [{ text: prompt }]
             }],
-            tools: [{ googleSearch: {} }],
             generationConfig: {
                 temperature: 0.7,
                 maxOutputTokens: 4096,
@@ -1817,7 +1827,8 @@ async function chamarGeminiAPI(prompt, apiKey) {
             });
 
             if (!resp.ok) {
-                ultimoErro = "Modelo " + modelos[i] + " erro " + resp.status;
+                var errTxt = await resp.text();
+                console.warn("Gemini " + modelos[i] + " erro " + resp.status, errTxt.substring(0, 200));
                 continue;
             }
 
@@ -1825,13 +1836,12 @@ async function chamarGeminiAPI(prompt, apiKey) {
             if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
                 return data.candidates[0].content.parts.map(function (p) { return p.text; }).join("\n");
             }
-            ultimoErro = "Modelo " + modelos[i] + " retornou vazio";
         } catch (e) {
-            ultimoErro = "Modelo " + modelos[i] + ": " + e.message;
+            console.warn("Gemini " + modelos[i] + " exception", e.message);
         }
     }
 
-    throw new Error("Nenhum modelo disponivel. " + ultimoErro);
+    return null;
 }
 
 // ===== ENQUETES / VOTACOES =====
