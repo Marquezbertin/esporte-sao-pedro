@@ -720,6 +720,43 @@ function renderInicio() {
     renderArtilheirosHome();
     renderEnqueteHome();
     renderResumoSemana();
+    renderFinanceiroHome();
+}
+
+function renderFinanceiroHome() {
+    if (!isAdmin()) return;
+    var container = document.getElementById("finAdminHome");
+    if (!container) return;
+    var orcamentos = getOrcamentos();
+    var produtos = getProdutosFinanceiros();
+    var totalVendidos = orcamentos.filter(function (o) { return o.status === "vendido"; }).length;
+    var somaVendidos = orcamentos.filter(function (o) { return o.status === "vendido"; }).reduce(function (acc, o) { return acc + (parseFloat(o.total) || 0); }, 0);
+    var orcamentosAbertos = orcamentos.filter(function (o) { return o.status === "orcamento"; }).length;
+    container.innerHTML =
+        '<div class="card-panel" style="border-top:4px solid var(--dourado);">' +
+            '<div class="card-panel-header">' +
+                '<h3 style="font-size:1rem;">Dashboard Financeiro</h3>' +
+                '<span class="badge">ADMIN</span>' +
+            '</div>' +
+            '<div class="fin-orc-resumo">' +
+                '<div class="fin-orc-resumo-item">' +
+                    '<span class="fin-orc-resumo-label">Produtos</span>' +
+                    '<span class="fin-orc-resumo-valor">' + produtos.length + '</span>' +
+                '</div>' +
+                '<div class="fin-orc-resumo-item">' +
+                    '<span class="fin-orc-resumo-label">Orcamentos Abertos</span>' +
+                    '<span class="fin-orc-resumo-valor">' + orcamentosAbertos + '</span>' +
+                '</div>' +
+                '<div class="fin-orc-resumo-item">' +
+                    '<span class="fin-orc-resumo-label">Vendidos</span>' +
+                    '<span class="fin-orc-resumo-valor verde">' + totalVendidos + '</span>' +
+                '</div>' +
+                '<div class="fin-orc-resumo-item">' +
+                    '<span class="fin-orc-resumo-label">Faturamento</span>' +
+                    '<span class="fin-orc-resumo-valor verde">R$ ' + (somaVendidos.toFixed(2).replace(".", ",")) + '</span>' +
+                '</div>' +
+            '</div>' +
+        '</div>';
 }
 
 function renderNoticiasHome() {
