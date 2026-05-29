@@ -1599,71 +1599,79 @@ async function gerarRascunhoComIA(id) {
     if (btn) { btn.disabled = true; btn.textContent = "Aguarde..."; }
     showLoading();
 
-    // 1) Tenta buscar o conteudo do link via Edge Function
-    var conteudoLink = "";
-    if (p.url) {
-        try {
-            showToastAviso("Buscando conteudo do link via Edge Function...");
-            var edgeResp = await fetch(EDGE_FN_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ url: p.url })
-            });
-            if (edgeResp.ok) {
-                var edgeData = await edgeResp.json();
-                if (edgeData.content) {
-                    var raw = edgeData.content;
-                    if (/instagram\.com\/(p|reel|tv)\//i.test(p.url)) {
-                        var igTitle = raw.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i);
-                        var igDesc = raw.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i);
-                        var igImg = raw.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i);
-                        var parts = [];
-                        if (igTitle) parts.push(decodeHtmlEntities(igTitle[1]));
-                        if (igDesc) parts.push(decodeHtmlEntities(igDesc[1]));
-                        if (igImg) parts.push("Imagem: " + igImg[1]);
-                        conteudoLink = parts.join("\n\n").substring(0, 5000);
-                    } else {
-                        conteudoLink = stripHtml(raw).substring(0, 5000);
+    try {
+        console.log("[IA] Step 1: buscando conteudo do link via Edge Function...");
+        var conteudoLink = "";
+        if (p.url) {
+            try {
+                showToastAviso("Buscando conteudo do link via Edge Function...");
+                var edgeResp = await fetch(EDGE_FN_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ url: p.url })
+                });
+                console.log("[IA] Edge response status:", edgeResp.status);
+                if (edgeResp.ok) {
+                    var edgeData = await edgeResp.json();
+                    console.log("[IA] Edge content length:", edgeData.content ? edgeData.content.length : 0);
+                    if (edgeData.content) {
+                        var raw = edgeData.content;
+                        if (/instagram\.com\/(p|reel|tv)\//i.test(p.url)) {
+                            console.log("[IA] Instagram detected, extracting OG tags...");
+                            var igTitle = raw.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i);
+                            var igDesc = raw.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i);
+                            var igImg = raw.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i);
+                            console.log("[IA] OG title:", igTitle ? igTitle[1].substring(0, 80) : "null");
+                            console.log("[IA] OG desc:", igDesc ? igDesc[1].substring(0, 80) : "null");
+                            var parts = [];
+                            if (igTitle) parts.push(decodeHtmlEntities(igTitle[1]));
+                            if (igDesc) parts.push(decodeHtmlEntities(igDesc[1]));
+                            if (igImg) parts.push("Imagem: " + igImg[1]);
+                            conteudoLink = parts.join("\n\n").substring(0, 5000);
+                        } else {
+                            console.log("[IA] Non-Instagram, stripHtml...");
+                            conteudoLink = stripHtml(raw).substring(0, 5000);
+                        }
                     }
                 }
+            } catch (e) {
+                console.log("[IA] Edge function fetch failed:", e.message);
             }
-        } catch (e) {
-            // Edge function indisponivel, segue sem conteudo
         }
-    }
+        console.log("[IA] conteudoLink length:", conteudoLink.length);
 
-    // 2) Constroi prompt
-    var prompt = "Voce e um jornalista esportivo do portal Esporte Sao Pedro.\n";
-    prompt += "Escreva uma noticia esportiva completa em portugues brasileiro.\n\n";
-    prompt += "--- DADOS DA PAUTA ---\n";
-    if (p.titulo) prompt += "Titulo/Assunto: " + p.titulo + "\n";
-    if (p.times) prompt += "Times: " + p.times + "\n";
-    if (p.local) prompt += "Local: " + p.local + "\n";
-    if (p.dataEvento) prompt += "Data: " + p.dataEvento + "\n";
-    if (p.esporte) {
-        var en = ESPORTES.find(function (e) { return e.id === p.esporte; });
-        prompt += "Esporte: " + (en ? en.nome : p.esporte) + "\n";
-    }
-    if (p.fonte) prompt += "Fonte: " + p.fonte + "\n";
-    if (conteudoLink) prompt += "\n--- CONTEUDO ORIGINAL (extraido do link) ---\n" + conteudoLink + "\n";
-    if (p.texto) prompt += "\n--- OBSERVACOES DO AUTOR ---\n" + p.texto + "\n";
-    prompt += "\n--- INSTRUCOES ---\n";
-    if (conteudoLink) prompt += "Reescreva o conteudo acima como uma noticia propria do portal.\n";
-    else if (p.url) prompt += "O link nao pôde ser acessado. Escreva baseado nos dados disponiveis.\n";
-    prompt += "Formato:\n";
-    prompt += "TITULO: (titulo chamativo)\n";
-    prompt += "Corpo da noticia com lead, desenvolvimento e conclusao.\n";
-    prompt += "Use tom imparcial e linguagem clara.\n";
-    prompt += "Retorne APENAS o conteudo (titulo + corpo).";
+        // 2) Constroi prompt
+        console.log("[IA] Step 2: construindo prompt...");
+        var prompt = "Voce e um jornalista esportivo do portal Esporte Sao Pedro.\n";
+        prompt += "Escreva uma noticia esportiva completa em portugues brasileiro.\n\n";
+        prompt += "--- DADOS DA PAUTA ---\n";
+        if (p.titulo) prompt += "Titulo/Assunto: " + p.titulo + "\n";
+        if (p.times) prompt += "Times: " + p.times + "\n";
+        if (p.local) prompt += "Local: " + p.local + "\n";
+        if (p.dataEvento) prompt += "Data: " + p.dataEvento + "\n";
+        if (p.esporte) {
+            var en = ESPORTES.find(function (e) { return e.id === p.esporte; });
+            prompt += "Esporte: " + (en ? en.nome : p.esporte) + "\n";
+        }
+        if (p.fonte) prompt += "Fonte: " + p.fonte + "\n";
+        if (conteudoLink) prompt += "\n--- CONTEUDO ORIGINAL (extraido do link) ---\n" + conteudoLink + "\n";
+        if (p.texto) prompt += "\n--- OBSERVACOES DO AUTOR ---\n" + p.texto + "\n";
+        prompt += "\n--- INSTRUCOES ---\n";
+        if (conteudoLink) prompt += "Reescreva o conteudo acima como uma noticia propria do portal.\n";
+        else if (p.url) prompt += "O link nao pôde ser acessado. Escreva baseado nos dados disponiveis.\n";
+        prompt += "Formato:\n";
+        prompt += "TITULO: (titulo chamativo)\n";
+        prompt += "Corpo da noticia com lead, desenvolvimento e conclusao.\n";
+        prompt += "Use tom imparcial e linguagem clara.\n";
+        prompt += "Retorne APENAS o conteudo (titulo + corpo).";
 
-    // 3) Chama Gemini via Edge Function
-    try {
+        // 3) Chama Gemini via Edge Function
+        console.log("[IA] Step 3: chamando Gemini...");
         var resposta = await chamarGeminiAPI(prompt, apiKey);
+        console.log("[IA] Gemini resposta:", resposta ? resposta.substring(0, 100) : "null");
+
         if (!resposta) {
             showToastErro("IA nao retornou conteudo. Os dados da pauta ja estao no editor.");
-            if (btn) { btn.disabled = false; btn.innerHTML = "&#129302; IA"; }
-            hideLoading();
-            // fallback: preenche com dados da pauta
             preencherFormPauta(p);
             return;
         }
@@ -1685,21 +1693,31 @@ async function gerarRascunhoComIA(id) {
         p.status = "convertida";
         setData("monitor_pautas", lista);
 
-        navegar("noticias", null);
-        document.getElementById("noticiaTitle").value = tituloIA || "";
-        document.getElementById("noticiaBody").innerHTML = esc(corpoIA).replace(/\n/g, "<br>");
-        if (p.esporte) document.getElementById("noticiaCategoria").value = p.esporte;
-        var form = document.getElementById("adminNoticia");
-        if (form) form.style.display = "block";
-        window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-        showToastSave("Rascunho gerado por IA! Revise e publique.");
+        console.log("[IA] Step 4: preenchendo form...");
+        try {
+            navegar("noticias", null);
+            document.getElementById("noticiaTitle").value = tituloIA || "";
+            document.getElementById("noticiaBody").innerHTML = esc(corpoIA).replace(/\n/g, "<br>");
+            if (p.esporte) document.getElementById("noticiaCategoria").value = p.esporte;
+            var form = document.getElementById("adminNoticia");
+            if (form) form.style.display = "block";
+            window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+            showToastSave("Rascunho gerado por IA! Revise e publique.");
+        } catch (innerErr) {
+            console.log("[IA] Erro ao preencher form:", innerErr.message);
+            preencherFormPauta(p);
+        }
     } catch (err) {
+        console.log("[IA] ERRO GERAL:", err.message);
         showToastErro("IA falhou: " + err.message);
-        preencherFormPauta(p);
+        try { preencherFormPauta(p); } catch (e2) {
+            console.log("[IA] Fallback preencherFormPauta tb falhou:", e2.message);
+            alert("Erro ao navegar para Noticias: " + e2.message + ". Recarregue a pagina e tente novamente.");
+        }
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = "&#129302; IA"; }
+        hideLoading();
     }
-
-    if (btn) { btn.disabled = false; btn.innerHTML = "&#129302; IA"; }
-    hideLoading();
 }
 
 function preencherFormPauta(p) {
