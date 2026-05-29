@@ -1684,7 +1684,7 @@ function salvarChaveIA() {
     if (!requireAdmin()) return;
     var key = document.getElementById("geminiApiKey").value.trim();
     if (!key) return showToastAviso("Cole sua chave da API Gemini.");
-    if (!key.match(/^AIza/)) return showToastAviso("Chave invalida. As chaves Gemini comecam com 'AIza'.");
+    if (key.length < 10) return showToastAviso("Chave invalida. Verifique se copiou a chave completa do Google AI Studio.");
     try { localStorage.setItem("esp_gemini_key", key); } catch (e) {}
     renderConfigIA();
     showToastSave("Chave da API Gemini salva!");
