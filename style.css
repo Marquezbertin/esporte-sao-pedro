@@ -3905,3 +3905,199 @@ body.admin-mode .episodio-card-actions { display: flex; }
     .fin-item { flex-wrap: wrap; }
     .fin-item-actions { width: 100%; justify-content: flex-end; }
 }
+
+/* ===== CALCULADORA DE VENDAS ===== */
+.fin-calc-produto {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--cinza-50);
+    border: 1px solid var(--cinza-100);
+    border-radius: var(--radius-sm);
+    margin-bottom: 6px;
+    transition: background var(--transition);
+}
+.fin-calc-produto:hover { background: var(--branco); }
+.fin-calc-produto input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--azul-medio);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.fin-calc-produto-info { flex: 1; min-width: 0; }
+.fin-calc-produto-info strong {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--azul-escuro);
+}
+.fin-calc-produto-info small {
+    color: var(--cinza-500);
+    font-size: 0.72rem;
+}
+.fin-calc-produto-valor {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--azul-medio);
+    white-space: nowrap;
+    min-width: 80px;
+    text-align: right;
+}
+.fin-calc-produto-qtd {
+    width: 60px;
+    padding: 4px 6px;
+    border: 1px solid var(--cinza-200);
+    border-radius: 4px;
+    font-size: 0.85rem;
+    text-align: center;
+}
+.fin-calc-produto.qtd-visible { display: flex; }
+.fin-calc-vazio {
+    padding: 20px;
+    text-align: center;
+    color: var(--cinza-400);
+    font-size: 0.85rem;
+    background: var(--cinza-50);
+    border-radius: var(--radius-md);
+    border: 1px dashed var(--cinza-200);
+}
+.fin-calc-total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 20px;
+    background: var(--azul-escuro);
+    border-radius: var(--radius-md);
+    flex-wrap: wrap;
+}
+.fin-calc-total-info { display: flex; flex-direction: column; }
+.fin-calc-total-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--cinza-400);
+    font-weight: 700;
+}
+.fin-calc-total-value {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 1.8rem;
+    color: var(--dourado);
+}
+.fin-calc-total input { background: var(--branco); border: none; }
+.fin-calc-total .btn-primary { background: var(--dourado); color: var(--azul-escuro); font-weight: 800; }
+.fin-calc-total .btn-primary:hover { background: var(--dourado-hover); }
+.fin-calc-total .btn-secondary { background: rgba(255,255,255,0.15); color: var(--branco); border-color: rgba(255,255,255,0.3); }
+.fin-calc-total .btn-secondary:hover { background: rgba(255,255,255,0.25); }
+
+/* ===== ORCAMENTOS ===== */
+.fin-orc-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 16px;
+    background: var(--cinza-50);
+    border: 1px solid var(--cinza-100);
+    border-radius: var(--radius-md);
+    margin-bottom: 10px;
+    border-left: 4px solid var(--azul-medio);
+}
+.fin-orc-item.status-vendido { border-left-color: #16a34a; background: #f0fdf4; }
+.fin-orc-item.status-cancelado { border-left-color: #94a3b8; background: #f8fafc; opacity: 0.7; }
+.fin-orc-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.fin-orc-cliente {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--azul-escuro);
+}
+.fin-orc-data {
+    font-size: 0.75rem;
+    color: var(--cinza-500);
+}
+.fin-orc-status {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.fin-orc-status.status-orcamento { background: #dbeafe; color: #2563eb; }
+.fin-orc-status.status-vendido { background: #dcfce7; color: #16a34a; }
+.fin-orc-status.status-cancelado { background: #f1f5f9; color: #64748b; }
+.fin-orc-itens {
+    font-size: 0.82rem;
+    color: var(--cinza-600);
+    line-height: 1.6;
+}
+.fin-orc-itens span { display: inline-block; margin-right: 12px; }
+.fin-orc-total-valor {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 1.1rem;
+    color: var(--azul-medio);
+}
+.fin-orc-obs {
+    font-size: 0.78rem;
+    color: var(--cinza-500);
+    font-style: italic;
+}
+.fin-orc-actions {
+    display: flex;
+    gap: 6px;
+}
+.fin-orc-actions button {
+    font-size: 0.7rem;
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--cinza-200);
+    background: var(--branco);
+    cursor: pointer;
+    font-weight: 600;
+    transition: var(--transition);
+}
+.fin-orc-actions button:hover { background: var(--azul-medio); color: var(--branco); border-color: var(--azul-medio); }
+.fin-orc-actions button.btn-vendido { color: #16a34a; border-color: #16a34a; }
+.fin-orc-actions button.btn-vendido:hover { background: #16a34a; color: #fff; }
+.fin-orc-actions button.btn-cancelar { color: #dc2626; border-color: #dc2626; }
+.fin-orc-actions button.btn-cancelar:hover { background: #dc2626; color: #fff; }
+.fin-orc-actions button.btn-excluir { color: #94a3b8; border-color: #94a3b8; }
+.fin-orc-actions button.btn-excluir:hover { background: #94a3b8; color: #fff; }
+.fin-orc-resumo {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    padding: 12px 16px;
+    background: var(--branco);
+    border: 1px solid var(--cinza-200);
+    border-radius: var(--radius-md);
+    margin-bottom: 16px;
+}
+.fin-orc-resumo-item { display: flex; flex-direction: column; }
+.fin-orc-resumo-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--cinza-500);
+    font-weight: 700;
+}
+.fin-orc-resumo-valor {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 1.2rem;
+    color: var(--azul-escuro);
+}
+.fin-orc-resumo-valor.verde { color: #16a34a; }
+.fin-orc-resumo-valor.vermelho { color: #dc2626; }
+@media (max-width: 600px) {
+    .fin-calc-total { flex-direction: column; align-items: stretch; }
+    .fin-calc-total > div:last-child { flex-direction: column; }
+    .fin-orc-top { flex-direction: column; align-items: flex-start; }
+}

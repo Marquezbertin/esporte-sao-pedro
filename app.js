@@ -617,7 +617,7 @@ function navegar(secao, e) {
         case "opiniao": renderOpinioes(); break;
         case "conquistas": renderConquistas(); break;
         case "redacao": if (!isAdmin()) { navegar("inicio", null); return; } renderTemplatesPauta(); renderAdminPautas(); renderEditorialDashboard(); renderAdminNewsList(); renderCalendario(); break;
-        case "sobre": atualizarStorageInfo(); renderDashboardUsoPortal(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminTimes(); renderNewsletterAdmin(); renderMonitorPautas(); renderConfigIA(); renderAdminFinanceiro(); break;
+        case "sobre": atualizarStorageInfo(); renderDashboardUsoPortal(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminTimes(); renderNewsletterAdmin(); renderMonitorPautas(); renderConfigIA(); renderAdminFinanceiro(); renderCalculadoraFinanceira(); renderOrcamentos(); break;
     }
 
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -4206,5 +4206,247 @@ async function deletarProdutoFinanceiro(id) {
     var lista = getProdutosFinanceiros().filter(function (p) { return p.id !== id; });
     setData("financeiro", lista);
     renderAdminFinanceiro();
+    renderCalculadoraFinanceira();
     showToastSave("Produto excluido.");
+}
+
+// ===== CALCULADORA DE VENDAS / ORCAMENTOS =====
+var _filtroOrcamento = "todos";
+
+function filtrarOrcamentos(filtro, btn) {
+    _filtroOrcamento = filtro;
+    document.querySelectorAll("#finOrcFiltros .chip").forEach(function (c) { c.classList.remove("active"); });
+    if (btn) btn.classList.add("active");
+    renderOrcamentos();
+}
+
+function renderCalculadoraFinanceira() {
+    var produtos = getProdutosFinanceiros();
+    var container = document.getElementById("finCalcProdutos");
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    if (produtos.length === 0) {
+        container.innerHTML = '<div class="fin-calc-vazio">Cadastre produtos no painel acima para usar a calculadora.</div>';
+        return;
+    }
+
+    // Carregar selecao salva na sessao (se houver)
+    var selecaoSalva = sessionStorage.getItem("esp_fin_calc_selecao");
+    var selecao = {};
+    if (selecaoSalva) {
+        try { selecao = JSON.parse(selecaoSalva); } catch (e) {}
+    }
+
+    produtos.forEach(function (p) {
+        var checked = selecao[p.id] ? "checked" : "";
+        var qtd = selecao[p.id] || 1;
+        var valorFormat = "R$ " + ((parseFloat(p.valor) || 0).toFixed(2).replace(".", ","));
+        var tipoLabel = (p.tipo || "outro").charAt(0).toUpperCase() + (p.tipo || "outro").slice(1).replace(/-/g, " ");
+
+        container.innerHTML +=
+            '<div class="fin-calc-produto">' +
+                '<input type="checkbox" id="finCalc_' + esc(p.id) + '" ' + checked + ' onchange="recalcularOrcamento()" data-produto-id="' + esc(p.id) + '">' +
+                '<div class="fin-calc-produto-info">' +
+                    '<strong>' + esc(p.nome) + '</strong>' +
+                    '<small>' + esc(tipoLabel) + (p.metricas ? " &middot; " + esc(p.metricas) : "") + '</small>' +
+                '</div>' +
+                '<input type="number" class="fin-calc-produto-qtd" id="finCalcQtd_' + esc(p.id) + '" value="' + qtd + '" min="1" onchange="recalcularOrcamento()" style="' + (checked ? "" : "display:none") + '">' +
+                '<div class="fin-calc-produto-valor" id="finCalcValor_' + esc(p.id) + '" data-valor="' + (parseFloat(p.valor) || 0) + '">' + valorFormat + '</div>' +
+            '</div>';
+    });
+
+    recalcularOrcamento();
+}
+
+function recalcularOrcamento() {
+    var checkboxes = document.querySelectorAll("#finCalcProdutos input[type='checkbox']");
+    var total = 0;
+    var selecao = {};
+
+    checkboxes.forEach(function (cb) {
+        var id = cb.getAttribute("data-produto-id");
+        var qtdInput = document.getElementById("finCalcQtd_" + id);
+        var valorEl = document.getElementById("finCalcValor_" + id);
+
+        if (cb.checked && id) {
+            var qtd = parseInt(qtdInput ? qtdInput.value : 1) || 1;
+            var valorUnit = parseFloat(valorEl ? valorEl.getAttribute("data-valor") : 0) || 0;
+            var subtotal = qtd * valorUnit;
+            total += subtotal;
+
+            if (valorEl) {
+                valorEl.textContent = "R$ " + (subtotal.toFixed(2).replace(".", ","));
+            }
+            if (qtdInput) qtdInput.style.display = "inline-block";
+            selecao[id] = qtd;
+        } else {
+            if (qtdInput) qtdInput.style.display = "none";
+            if (valorEl && id) {
+                var vu = parseFloat(valorEl.getAttribute("data-valor")) || 0;
+                valorEl.textContent = "R$ " + (vu.toFixed(2).replace(".", ","));
+            }
+        }
+    });
+
+    document.getElementById("finCalcTotalValue").textContent = "R$ " + (total.toFixed(2).replace(".", ","));
+
+    // Salvar selecao na sessao
+    try { sessionStorage.setItem("esp_fin_calc_selecao", JSON.stringify(selecao)); } catch (e) {}
+}
+
+function limparCalculadora() {
+    document.querySelectorAll("#finCalcProdutos input[type='checkbox']").forEach(function (cb) { cb.checked = false; });
+    document.querySelectorAll("#finCalcProdutos .fin-calc-produto-qtd").forEach(function (qtd) {
+        qtd.value = 1;
+        qtd.style.display = "none";
+    });
+    document.getElementById("finCalcCliente").value = "";
+    document.getElementById("finCalcObs").value = "";
+    try { sessionStorage.removeItem("esp_fin_calc_selecao"); } catch (e) {}
+    recalcularOrcamento();
+}
+
+function salvarOrcamento() {
+    if (!requireAdmin()) return;
+    var checkboxes = document.querySelectorAll("#finCalcProdutos input[type='checkbox']:checked");
+    if (checkboxes.length === 0) return showToastAviso("Selecione ao menos um produto.");
+
+    var itens = [];
+    var total = 0;
+
+    checkboxes.forEach(function (cb) {
+        var id = cb.getAttribute("data-produto-id");
+        if (!id) return;
+        var qtd = parseInt(document.getElementById("finCalcQtd_" + id).value) || 1;
+        // Buscar dados do produto original
+        var produtos = getProdutosFinanceiros();
+        var p = produtos.find(function (x) { return x.id === id; });
+        if (!p) return;
+        var subtotal = qtd * (parseFloat(p.valor) || 0);
+        total += subtotal;
+        itens.push({
+            produtoId: id,
+            nome: p.nome,
+            tipo: p.tipo,
+            descricao: p.descricao,
+            metricas: p.metricas,
+            valorUnitario: parseFloat(p.valor) || 0,
+            quantidade: qtd,
+            subtotal: subtotal
+        });
+    });
+
+    if (itens.length === 0) return showToastAviso("Nenhum item valido selecionado.");
+
+    var cliente = document.getElementById("finCalcCliente").value.trim() || "Sem nome";
+    var obs = document.getElementById("finCalcObs").value.trim();
+
+    var orcamentos = getOrcamentos();
+    orcamentos.push({
+        id: gerarId(),
+        data: new Date().toISOString().split("T")[0],
+        cliente: cliente,
+        observacoes: obs,
+        itens: itens,
+        total: total,
+        status: "orcamento"
+    });
+
+    setData("financeiro_orcamentos", orcamentos);
+    limparCalculadora();
+    renderOrcamentos();
+    renderCalculadoraFinanceira();
+    showToastSave("Orcamento salvo para \"" + cliente + "\"!");
+}
+
+function getOrcamentos() { return getData("financeiro_orcamentos"); }
+
+function renderOrcamentos() {
+    var lista = getOrcamentos();
+    var container = document.getElementById("adminOrcamentosList");
+    var resumo = document.getElementById("finOrcResumo");
+    if (!container) return;
+
+    if (_filtroOrcamento !== "todos") {
+        lista = lista.filter(function (o) { return o.status === _filtroOrcamento; });
+    }
+
+    lista.sort(function (a, b) { return b.data.localeCompare(a.data); });
+
+    container.innerHTML = "";
+    if (lista.length === 0) {
+        container.innerHTML = '<p style="color:#94a3b8;font-size:0.85rem;">Nenhum orcamento encontrado.</p>';
+        if (resumo) resumo.innerHTML = "";
+        return;
+    }
+
+    // Resumo
+    if (resumo) {
+        var todos = getOrcamentos();
+        var totalOrcamentos = todos.length;
+        var totalVendidos = todos.filter(function (o) { return o.status === "vendido"; }).length;
+        var somaVendidos = todos.filter(function (o) { return o.status === "vendido"; }).reduce(function (acc, o) { return acc + (parseFloat(o.total) || 0); }, 0);
+        resumo.innerHTML =
+            '<div class="fin-orc-resumo-item">' +
+                '<span class="fin-orc-resumo-label">Total Orcamentos</span>' +
+                '<span class="fin-orc-resumo-valor">' + totalOrcamentos + '</span>' +
+            '</div>' +
+            '<div class="fin-orc-resumo-item">' +
+                '<span class="fin-orc-resumo-label">Vendidos</span>' +
+                '<span class="fin-orc-resumo-valor verde">' + totalVendidos + '</span>' +
+            '</div>' +
+            '<div class="fin-orc-resumo-item">' +
+                '<span class="fin-orc-resumo-label">Faturamento</span>' +
+                '<span class="fin-orc-resumo-valor verde">R$ ' + (somaVendidos.toFixed(2).replace(".", ",")) + '</span>' +
+            '</div>';
+    }
+
+    lista.forEach(function (o) {
+        var statusLabel = o.status.charAt(0).toUpperCase() + o.status.slice(1);
+        var itensHtml = o.itens.map(function (item) {
+            return '<span>&bull; ' + esc(item.nome) + ' x' + item.quantidade + ' = R$ ' + ((item.subtotal || 0).toFixed(2).replace(".", ",")) + '</span>';
+        }).join("");
+        var obsHtml = o.observacoes ? '<div class="fin-orc-obs">Obs: ' + esc(o.observacoes) + '</div>' : "";
+
+        container.innerHTML +=
+            '<div class="fin-orc-item status-' + esc(o.status) + '">' +
+                '<div class="fin-orc-top">' +
+                    '<div>' +
+                        '<div class="fin-orc-cliente">' + esc(o.cliente || "Sem nome") + '</div>' +
+                        '<div class="fin-orc-data">' + formatarData(o.data) + '</div>' +
+                    '</div>' +
+                    '<span class="fin-orc-status status-' + esc(o.status) + '">' + statusLabel + '</span>' +
+                    '<div class="fin-orc-total-valor">R$ ' + ((parseFloat(o.total) || 0).toFixed(2).replace(".", ",")) + '</div>' +
+                    '<div class="fin-orc-actions">' +
+                        (o.status !== "vendido" ? '<button class="btn-vendido" onclick="mudarStatusOrcamento(\'' + o.id + '\',\'vendido\')">Vendido</button>' : '') +
+                        (o.status !== "cancelado" ? '<button class="btn-cancelar" onclick="mudarStatusOrcamento(\'' + o.id + '\',\'cancelado\')">Cancelar</button>' : '') +
+                        '<button class="btn-excluir" onclick="deletarOrcamento(\'' + o.id + '\')">Excluir</button>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="fin-orc-itens">' + itensHtml + '</div>' +
+                obsHtml +
+            '</div>';
+    });
+}
+
+function mudarStatusOrcamento(id, novoStatus) {
+    if (!requireAdmin()) return;
+    var lista = getOrcamentos();
+    var o = lista.find(function (x) { return x.id === id; });
+    if (!o) return;
+    o.status = novoStatus;
+    setData("financeiro_orcamentos", lista);
+    renderOrcamentos();
+    showToastSave("Orcamento marcado como \"" + novoStatus + "\"!");
+}
+
+async function deletarOrcamento(id) {
+    if (!requireAdmin()) return;
+    if (!await showConfirm("Excluir este orcamento?")) return;
+    var lista = getOrcamentos().filter(function (o) { return o.id !== id; });
+    setData("financeiro_orcamentos", lista);
+    renderOrcamentos();
+    showToastSave("Orcamento excluido.");
 }
