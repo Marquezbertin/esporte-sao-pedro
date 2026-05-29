@@ -1699,12 +1699,15 @@ async function gerarRascunhoComIA(id) {
     var p = lista.find(function (x) { return x.id === id; });
     if (!p) return showToastAviso("Pauta nao encontrada.");
 
-    // 1) Preenche o form com os dados da pauta (garantido, igual ao "Criar noticia")
+    // 1) Preenche o form com os dados da pauta (garantido, mesmo que so tenha URL)
     var corpo = p.texto || "";
     if (p.times) corpo = "Times: " + p.times + "\n\n" + corpo;
     if (p.local) corpo = "Local: " + p.local + "\n" + corpo;
     if (p.dataEvento) corpo = "Data do evento: " + formatarData(p.dataEvento) + "\n" + corpo;
-    if (p.url) corpo += "\n\nFonte: " + p.url;
+    if (p.url) {
+        if (corpo) corpo += "\n\n---\nLink original: " + p.url;
+        else corpo = "Link original: " + p.url;
+    }
 
     // 2) Marcar como convertida
     p.status = "convertida";
@@ -1712,7 +1715,7 @@ async function gerarRascunhoComIA(id) {
 
     // 3) Navegar e preencher
     navegar("noticias", null);
-    document.getElementById("noticiaTitle").value = p.titulo || "";
+    document.getElementById("noticiaTitle").value = p.titulo || (p.fonte ? "Noticia via " + p.fonte : "Noticia do link");
     document.getElementById("noticiaBody").innerHTML = esc(corpo).replace(/\n/g, "<br>");
     if (p.esporte) document.getElementById("noticiaCategoria").value = p.esporte;
     var form = document.getElementById("adminNoticia");
@@ -1727,8 +1730,9 @@ async function gerarRascunhoComIA(id) {
 
     try {
         var prompt = "Voce e um jornalista esportivo do portal Esporte Sao Pedro, que cobre esportes amadores e profissionais na cidade de Sao Pedro, Brasil.\n";
-        prompt += "Com base nas informacoes abaixo, escreva uma noticia esportiva completa em portugues brasileiro.\n\n";
-        prompt += "--- INFORMACOES DA PAUTA ---\n";
+        prompt += "Sua tarefa e ESCREVER UMA NOTICIA completa em portugues brasileiro.\n\n";
+        prompt += "--- INFORMACOES DISPONIVEIS ---\n";
+        if (p.url) prompt += "Link para acessar o conteudo original: " + p.url + "\n\n";
         if (p.titulo) prompt += "Titulo/Assunto: " + p.titulo + "\n";
         if (p.times) prompt += "Times/Equipes: " + p.times + "\n";
         if (p.local) prompt += "Local: " + p.local + "\n";
@@ -1738,16 +1742,17 @@ async function gerarRascunhoComIA(id) {
             prompt += "Esporte: " + (esporteNome ? esporteNome.nome : p.esporte) + "\n";
         }
         if (p.fonte) prompt += "Fonte original: " + p.fonte + "\n";
-        if (p.url) prompt += "Link de referencia: " + p.url + "\n";
         if (p.texto) prompt += "\nTexto/referencia do autor:\n" + p.texto + "\n";
         prompt += "\n--- INSTRUCOES ---\n";
-        prompt += "Escreva uma noticia jornalistica com:\n";
-        prompt += "1. Um titulo chamativo (comece com TITULO: na primeira linha)\n";
-        prompt += "2. Lead respondendo: quem, o que, quando, onde, por que\n";
-        prompt += "3. Desenvolvimento com detalhes do evento\n";
-        prompt += "4. Conclusao ou expectativas\n";
+        if (p.url) prompt += "IMPORTANTE: Acesse o link acima e EXTRAIA o conteudo da noticia original para reescrever com suas palavras.\n";
+        prompt += "Escreva uma noticia jornalistica completa com:\n";
+        prompt += "1. Um titulo chamativo (comece a linha com TITULO:)\n";
+        prompt += "2. Lead (quem, o que, quando, onde, por que)\n";
+        prompt += "3. Desenvolvimento com detalhes\n";
+        prompt += "4. Conclusao\n";
         prompt += "Use tom imparcial, linguagem clara e adequada para internet.";
-        prompt += "Retorne APENAS o conteudo da noticia (titulo + corpo), sem meta-informacoes.";
+        if (p.url) prompt += "\nNao copie o link original no corpo da noticia. Escreva como se fosse uma materia propria do portal.";
+        prompt += "\nRetorne APENAS o conteudo (titulo + corpo), sem meta-informacoes.";
 
         var resposta = await chamarGeminiAPI(prompt, apiKey);
 
@@ -1796,9 +1801,10 @@ async function chamarGeminiAPI(prompt, apiKey) {
             contents: [{
                 parts: [{ text: prompt }]
             }],
+            tools: [{ googleSearch: {} }],
             generationConfig: {
                 temperature: 0.7,
-                maxOutputTokens: 2048,
+                maxOutputTokens: 4096,
                 topP: 0.9
             }
         };
