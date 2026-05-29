@@ -966,6 +966,54 @@
                 <div id="adminResumoList" style="margin-top:16px;"></div>
             </div>
 
+            <!-- ADMIN: DASHBOARD FINANCEIRO -->
+            <div class="card-panel admin-only" style="margin-top:40px;">
+                <div class="card-panel-header">
+                    <h3>Dashboard Financeiro</h3>
+                    <span class="badge">ADMIN</span>
+                </div>
+                <p style="color:#8892a4;margin-bottom:16px;">
+                    Gerencie espacos publicitarios e produtos digitais para venda na plataforma.
+                    Tudo editavel e persistido no banco de dados.
+                </p>
+
+                <!-- TIPOS DE PRODUTO -->
+                <div class="fin-tipos-grid" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
+                    <span class="fin-tipo" style="background:#e4ecf7;padding:3px 10px;border-radius:4px;font-size:0.72rem;color:#1a3f7a;">Banner</span>
+                    <span class="fin-tipo" style="background:#fef3c7;padding:3px 10px;border-radius:4px;font-size:0.72rem;color:#92400e;">Narrador</span>
+                    <span class="fin-tipo" style="background:#dcfce7;padding:3px 10px;border-radius:4px;font-size:0.72rem;color:#16a34a;">Video</span>
+                    <span class="fin-tipo" style="background:#fdeef0;padding:3px 10px;border-radius:4px;font-size:0.72rem;color:#c41e3a;">Post Patrocinado</span>
+                    <span class="fin-tipo" style="background:#f3e8ff;padding:3px 10px;border-radius:4px;font-size:0.72rem;color:#7c3aed;">Patrocinio</span>
+                </div>
+
+                <div class="admin-form" style="display:block;margin-top:0;border-color:var(--cinza-200);">
+                    <h3 id="finFormTitle">Novo Produto / Espaco</h3>
+                    <input type="hidden" id="finEditId">
+                    <div style="display:grid;gap:10px;grid-template-columns:1fr 1fr;">
+                        <input type="text" id="finNome" placeholder="Nome (ex: Banner 728x90)">
+                        <select id="finTipo">
+                            <option value="banner">Banner</option>
+                            <option value="narrador">Narrador</option>
+                            <option value="video">Video</option>
+                            <option value="post-patrocinado">Post Patrocinado</option>
+                            <option value="patrocinio">Patrocinio Geral</option>
+                            <option value="outro">Outro</option>
+                        </select>
+                        <input type="text" id="finDescricao" placeholder="Descricao (ex: Topo do site, 728x90)" style="grid-column:1/-1;">
+                        <input type="text" id="finMetricas" placeholder="Metricas / detalhes (ex: 30 dias no ar)">
+                        <input type="number" id="finValor" placeholder="Valor R$" step="0.01" min="0">
+                    </div>
+                    <div style="display:flex;gap:8px;margin-top:12px;">
+                        <button class="btn btn-primary" onclick="salvarProdutoFinanceiro()">Cadastrar Produto</button>
+                        <button class="btn btn-secondary" onclick="limparFormFinanceiro()" style="display:none;" id="finCancelarBtn">Cancelar Edicao</button>
+                    </div>
+                </div>
+
+                <h3 style="margin-top:24px;font-size:0.95rem;">Produtos cadastrados</h3>
+                <div class="fin-resumo" id="finResumo" style="margin-top:8px;"></div>
+                <div id="adminFinList" style="margin-top:12px;"></div>
+            </div>
+
             <!-- ADMIN: TIMES / EQUIPES -->
             <div class="card-panel admin-only" style="margin-top:40px;">
                 <div class="card-panel-header">

@@ -617,7 +617,7 @@ function navegar(secao, e) {
         case "opiniao": renderOpinioes(); break;
         case "conquistas": renderConquistas(); break;
         case "redacao": if (!isAdmin()) { navegar("inicio", null); return; } renderTemplatesPauta(); renderAdminPautas(); renderEditorialDashboard(); renderAdminNewsList(); renderCalendario(); break;
-        case "sobre": atualizarStorageInfo(); renderDashboardUsoPortal(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminTimes(); renderNewsletterAdmin(); renderMonitorPautas(); renderConfigIA(); break;
+        case "sobre": atualizarStorageInfo(); renderDashboardUsoPortal(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminTimes(); renderNewsletterAdmin(); renderMonitorPautas(); renderConfigIA(); renderAdminFinanceiro(); break;
     }
 
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -4056,4 +4056,155 @@ function _doExportCard(n) {
         hideLoading();
         showToastErro("Erro ao exportar. Tente novamente.");
     });
+}
+
+// ===== DASHBOARD FINANCEIRO =====
+function getProdutosFinanceiros() { return getData("financeiro"); }
+
+function renderAdminFinanceiro() {
+    var lista = getProdutosFinanceiros();
+    var container = document.getElementById("adminFinList");
+    var resumo = document.getElementById("finResumo");
+    if (!container) return;
+
+    var total = 0;
+    var tipos = {};
+
+    container.innerHTML = "";
+    if (lista.length === 0) {
+        container.innerHTML = '<p style="color:#94a3b8;font-size:0.85rem;">Nenhum produto cadastrado. Crie o primeiro acima.</p>';
+        if (resumo) resumo.innerHTML = "";
+        return;
+    }
+
+    lista.forEach(function (p) {
+        total += parseFloat(p.valor) || 0;
+        var t = p.tipo || "outro";
+        tipos[t] = (tipos[t] || 0) + 1;
+
+        var tipoLabel = t.charAt(0).toUpperCase() + t.slice(1).replace(/-/g, " ");
+        var valorFormat = "R$ " + ((parseFloat(p.valor) || 0).toFixed(2).replace(".", ","));
+
+        container.innerHTML +=
+            '<div class="fin-item">' +
+                '<span class="fin-item-tipo tipo-' + esc(t) + '">' + esc(tipoLabel) + '</span>' +
+                '<div class="fin-item-info">' +
+                    '<strong>' + esc(p.nome) + '</strong>' +
+                    '<small>' + esc(p.descricao || "") + (p.metricas ? " &middot; " + esc(p.metricas) : "") + '</small>' +
+                '</div>' +
+                '<div class="fin-item-valor">' + valorFormat + '</div>' +
+                '<div class="fin-item-actions">' +
+                    '<button class="btn-editar" onclick="editarProdutoFinanceiro(\'' + p.id + '\')">Editar</button>' +
+                    '<button class="btn-excluir" onclick="deletarProdutoFinanceiro(\'' + p.id + '\')">Excluir</button>' +
+                '</div>' +
+            '</div>';
+    });
+
+    if (resumo) {
+        var qtdTipos = Object.keys(tipos).length;
+        resumo.innerHTML =
+            '<div class="fin-resumo-item">' +
+                '<span class="fin-resumo-label">Total de Produtos</span>' +
+                '<span class="fin-resumo-valor">' + lista.length + '</span>' +
+            '</div>' +
+            '<div class="fin-resumo-item">' +
+                '<span class="fin-resumo-label">Tipos</span>' +
+                '<span class="fin-resumo-valor">' + qtdTipos + '</span>' +
+            '</div>' +
+            '<div class="fin-resumo-item">' +
+                '<span class="fin-resumo-label">Valor Total</span>' +
+                '<span class="fin-resumo-valor total-positivo">R$ ' + (total.toFixed(2).replace(".", ",")) + '</span>' +
+            '</div>';
+    }
+}
+
+function salvarProdutoFinanceiro() {
+    if (!requireAdmin()) return;
+    var id = document.getElementById("finEditId");
+    var nome = document.getElementById("finNome").value.trim();
+    var tipo = document.getElementById("finTipo").value;
+    var descricao = document.getElementById("finDescricao").value.trim();
+    var metricas = document.getElementById("finMetricas").value.trim();
+    var valor = parseFloat(document.getElementById("finValor").value) || 0;
+
+    if (!nome) return showToastAviso("Preencha o nome do produto.");
+    if (valor <= 0) return showToastAviso("Defina um valor valido (maior que zero).");
+
+    var editando = id && id.value;
+    var lista = getProdutosFinanceiros();
+
+    if (editando) {
+        var p = lista.find(function (x) { return x.id === id.value; });
+        if (p) {
+            p.nome = nome;
+            p.tipo = tipo;
+            p.descricao = descricao;
+            p.metricas = metricas;
+            p.valor = valor;
+        }
+        id.value = "";
+        document.getElementById("finCancelarBtn").style.display = "none";
+        document.getElementById("finFormTitle").textContent = "Novo Produto / Espaco";
+    } else {
+        lista.push({
+            id: gerarId(),
+            nome: nome,
+            tipo: tipo,
+            descricao: descricao,
+            metricas: metricas,
+            valor: valor,
+            data: new Date().toISOString().split("T")[0]
+        });
+    }
+
+    setData("financeiro", lista);
+
+    document.getElementById("finNome").value = "";
+    document.getElementById("finTipo").value = "banner";
+    document.getElementById("finDescricao").value = "";
+    document.getElementById("finMetricas").value = "";
+    document.getElementById("finValor").value = "";
+
+    renderAdminFinanceiro();
+    showToastSave(editando ? "Produto atualizado!" : "Produto cadastrado!");
+}
+
+function editarProdutoFinanceiro(id) {
+    if (!requireAdmin()) return;
+    var lista = getProdutosFinanceiros();
+    var p = lista.find(function (x) { return x.id === id; });
+    if (!p) return;
+
+    document.getElementById("finEditId").value = p.id;
+    document.getElementById("finNome").value = p.nome || "";
+    document.getElementById("finTipo").value = p.tipo || "banner";
+    document.getElementById("finDescricao").value = p.descricao || "";
+    document.getElementById("finMetricas").value = p.metricas || "";
+    document.getElementById("finValor").value = p.valor || "";
+
+    document.getElementById("finCancelarBtn").style.display = "inline-block";
+    document.getElementById("finFormTitle").textContent = "Editando Produto";
+
+    window.scrollTo({ top: document.getElementById("finNome").offsetTop - 120, behavior: "smooth" });
+    document.getElementById("finNome").focus();
+}
+
+function limparFormFinanceiro() {
+    document.getElementById("finEditId").value = "";
+    document.getElementById("finNome").value = "";
+    document.getElementById("finTipo").value = "banner";
+    document.getElementById("finDescricao").value = "";
+    document.getElementById("finMetricas").value = "";
+    document.getElementById("finValor").value = "";
+    document.getElementById("finCancelarBtn").style.display = "none";
+    document.getElementById("finFormTitle").textContent = "Novo Produto / Espaco";
+}
+
+async function deletarProdutoFinanceiro(id) {
+    if (!requireAdmin()) return;
+    if (!await showConfirm("Excluir este produto financeiro?")) return;
+    var lista = getProdutosFinanceiros().filter(function (p) { return p.id !== id; });
+    setData("financeiro", lista);
+    renderAdminFinanceiro();
+    showToastSave("Produto excluido.");
 }
