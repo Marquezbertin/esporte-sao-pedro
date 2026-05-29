@@ -1591,7 +1591,7 @@ function renderMonitorPautas() {
 
         var fonteNomes = { instagram: "Instagram", facebook: "Facebook", youtube: "YouTube", whatsapp: "WhatsApp", site: "Site", texto: "Texto", outro: "Outro" };
         var fonteNome = fonteNomes[p.fonte] || "Outro";
-        var fonteIcone = { instagram: "<>", facebook: "f", youtube: ">", whatsapp: "wa", site: "WWW", texto: "Tx", outro: "?" };
+        var fonteIcone = { instagram: "IG", facebook: "fb", youtube: "YT", whatsapp: "WA", site: "WWW", texto: "Tx", outro: "?" };
 
         var corPrioridade = { alta: "prio-alta", media: "prio-media", baixa: "prio-baixa" };
         var classeCard = "monitor-pauta-card";
@@ -1633,7 +1633,7 @@ function renderMonitorPautas() {
         container.innerHTML +=
             '<div class="' + classeCard + '">' +
                 '<div style="display:flex;flex-direction:column;gap:4px;min-width:46px;">' +
-                    '<span class="monitor-pauta-fonte ' + esc(p.fonte) + '" style="text-align:center;justify-content:center;">' + fonteIcone[p.fonte] || "?" + '</span>' +
+                    '<span class="monitor-pauta-fonte ' + esc(p.fonte) + '" style="text-align:center;justify-content:center;">' + (fonteIcone[p.fonte] || "?") + '</span>' +
                     '<span class="monitor-pauta-badge ' + (corPrioridade[p.prioridade] || "") + '" style="text-align:center;justify-content:center;font-size:0.55rem;">' + esc(p.prioridade) + '</span>' +
                 '</div>' +
                 '<div class="monitor-pauta-body">' +
