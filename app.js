@@ -1670,8 +1670,18 @@ async function gerarRascunhoComIA(id) {
         var resposta = await chamarGeminiAPI(prompt, apiKey);
         console.log("[IA] Gemini resposta:", resposta ? resposta.substring(0, 100) : "null");
 
+        if (resposta === "QUOTA_EXCEDIDA") {
+            hideLoading();
+            showToastErro("Limite da API Gemini excedido. Crie uma chave nova em https://aistudio.google.com/apikey ou aguarde o reset diario.");
+            if (btn) { btn.disabled = false; btn.innerHTML = "&#129302; IA"; }
+            preencherFormPauta(p);
+            return;
+        }
+
         if (!resposta) {
+            hideLoading();
             showToastErro("IA nao retornou conteudo. Os dados da pauta ja estao no editor.");
+            if (btn) { btn.disabled = false; btn.innerHTML = "&#129302; IA"; }
             preencherFormPauta(p);
             return;
         }
@@ -1756,6 +1766,9 @@ async function chamarGeminiAPI(prompt, apiKey) {
 
         var data = await resp.json();
         console.log("[IA] chamarGeminiAPI raw response:", JSON.stringify(data).substring(0, 300));
+        if (data.error && data.error.code === 429) {
+            return "QUOTA_EXCEDIDA";
+        }
         if (data.text) {
             return data.text;
         }
