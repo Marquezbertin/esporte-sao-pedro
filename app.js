@@ -1049,6 +1049,7 @@ function salvarNoticia() {
     var fonte = document.getElementById("noticiaFonte").value.trim();
     if (!titulo) return showToastAviso("Preencha o titulo.");
 
+    var ehRascunho = document.getElementById("noticiaRascunho").checked;
     var dataAgendada = document.getElementById("noticiaDataAgendada").value || "";
 
     var noticias = getData("noticias");
