@@ -565,6 +565,26 @@ function renderSobreEditavel() {
     }
 }
 
+// ===== TEMA CLARO/ESCURO =====
+
+function toggleTema() {
+    var body = document.body;
+    var btn = document.getElementById("themeToggleBtn");
+    body.classList.toggle("light-theme");
+    var isLight = body.classList.contains("light-theme");
+    localStorage.setItem("esp_tema", isLight ? "light" : "dark");
+    if (btn) btn.innerHTML = isLight ? "&#9790;" : "&#9788;";
+}
+
+function carregarTema() {
+    var tema = localStorage.getItem("esp_tema") || "dark";
+    if (tema === "light") {
+        document.body.classList.add("light-theme");
+        var btn = document.getElementById("themeToggleBtn");
+        if (btn) btn.innerHTML = "&#9790;";
+    }
+}
+
 // ===== NOTIFICACOES PUSH =====
 
 function urlBase64ToUint8Array(base64String) {
@@ -1185,6 +1205,7 @@ function fecharBanner() {
 
 document.addEventListener("DOMContentLoaded", function () {
     limparDadosDemo();
+    carregarTema();
 
     checkAdminSession().then(function () {
         return SupaDB.loadAll();

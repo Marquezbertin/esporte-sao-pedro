@@ -13,6 +13,11 @@
     --azul-claro: #2d5fa0;
     --azul-light: #e4ecf7;
     --azul-bg: #edf2f9;
+    --header-bg: #0a1628;
+    --header-text: #94a3b8;
+    --card-bg: #ffffff;
+    --body-bg: #edf2f9;
+    --body-text: #475569;
     --vermelho: #c41e3a;
     --vermelho-hover: #a01830;
     --vermelho-light: #fdeef0;
@@ -43,13 +48,41 @@
     --transition: 0.2s ease;
 }
 
+/* ===== TEMA CLARO ===== */
+.light-theme {
+    --azul-escuro: #1a3a6b;
+    --azul-medio: #2563eb;
+    --azul-claro: #3b82f6;
+    --azul-light: #dbeafe;
+    --azul-bg: #f0f4f8;
+    --header-bg: #ffffff;
+    --header-text: #334155;
+    --card-bg: #ffffff;
+    --body-bg: #f0f4f8;
+    --body-text: #334155;
+    --cinza-50: #ffffff;
+    --cinza-100: #f1f5f9;
+    --cinza-200: #e2e8f0;
+    --cinza-300: #cbd5e1;
+    --cinza-400: #94a3b8;
+    --cinza-500: #64748b;
+    --cinza-600: #475569;
+    --cinza-700: #1e293b;
+    --cinza-800: #0f172a;
+    --cinza-900: #020617;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 30px rgba(0,0,0,0.1);
+}
+
 html { scroll-behavior: smooth; }
 
 body {
     font-family: var(--font-main);
-    background: var(--azul-bg);
-    color: var(--cinza-700);
+    background: var(--body-bg);
+    color: var(--body-text);
     -webkit-font-smoothing: antialiased;
+    transition: background 0.3s, color 0.3s;
 }
 
 .container {
@@ -74,6 +107,7 @@ img { max-width: 100%; display: block; }
     background: var(--azul-escuro);
     padding: 6px 0;
     font-size: 0.75rem;
+    transition: background 0.3s;
     color: var(--cinza-300);
 }
 
@@ -2232,6 +2266,27 @@ body.admin-mode .gallery-item:hover .gallery-item-actions { display: flex; }
 .admin-login-btn:hover { color: var(--dourado); border-color: var(--dourado); }
 body.admin-mode .admin-login-btn { display: none; }
 .admin-logout-btn { color: var(--dourado); border-color: var(--dourado); }
+
+.theme-toggle {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.6);
+    font-size: 1rem;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    line-height: 1;
+    padding: 0;
+    vertical-align: middle;
+}
+.theme-toggle:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.light-theme .theme-toggle { border-color: rgba(0,0,0,0.15); color: #64748b; }
+.light-theme .theme-toggle:hover { background: rgba(0,0,0,0.05); color: var(--azul-escuro); }
 
 /* ===== VIDEO EMBED ===== */
 .news-card-video {
