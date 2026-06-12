@@ -4872,3 +4872,33 @@ body:not(.admin-mode) .upload-camera-wrapper {
     .mapa-card-grid { grid-template-columns: 1fr 1fr; }
     .linktree-modal { margin: 10px; padding: 24px 16px 20px; }
 }
+
+/* ===== COPA DO MUNDO 2026 ===== */
+.copa-badge {
+    display: none;
+    background: rgba(0,151,57,0.2);
+    color: #FEDD00;
+    padding: 4px 14px;
+    border-radius: 30px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    border: 1px solid rgba(254,221,0,0.25);
+    margin-left: 8px;
+    vertical-align: middle;
+}
+html.copa-mode .copa-badge { display: inline-block; }
+
+html.copa-mode .hero-pattern {
+    opacity: 0.06;
+    background-image:
+        repeating-linear-gradient(45deg, #FEDD00 0, #FEDD00 2px, transparent 2px, transparent 20px),
+        repeating-linear-gradient(-45deg, #009739 0, #009739 2px, transparent 2px, transparent 20px);
+}
+html.copa-mode .hero::before {
+    background: linear-gradient(135deg, #FEDD00 0%, #FEDD00 50%, transparent 50%);
+}
+html.copa-mode .hero::after {
+    background: linear-gradient(225deg, #009739 0%, #009739 50%, transparent 50%);
+}
+/* ===== FIM COPA ===== */
