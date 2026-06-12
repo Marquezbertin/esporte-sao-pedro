@@ -122,36 +122,38 @@
     <section class="hero" id="heroSection">
         <div class="container">
             <div class="hero-content">
-                <div class="hero-badge">PORTAL ESPORTIVO</div>
-                <h1 class="hero-title">O Esporte de<br><span class="hero-city">Sao Pedro</span></h1>
-                <p class="hero-desc">Resultados, tabelas, artilheiros, calendario e tudo sobre o esporte da nossa cidade. Feito por quem vive o esporte local.</p>
-                <div class="hero-stats" style="display:none">
-                    <div class="hero-stat">
-                        <span class="hero-stat-num" id="statTimes">0</span>
-                        <span class="hero-stat-label">Times</span>
+                <img src="img/brasao-sao-pedro.png" alt="Brasão de São Pedro" class="hero-brasao">
+                <div class="hero-text">
+                    <div class="hero-badge">PORTAL ESPORTIVO</div>
+                    <h1 class="hero-title">O Esporte de<br><span class="hero-city">Sao Pedro</span></h1>
+                    <p class="hero-desc">Resultados, tabelas, artilheiros, calendario e tudo sobre o esporte da nossa cidade. Feito por quem vive o esporte local.</p>
+                    <div class="hero-stats" style="display:none">
+                        <div class="hero-stat">
+                            <span class="hero-stat-num" id="statTimes">0</span>
+                            <span class="hero-stat-label">Times</span>
+                        </div>
+                        <div class="hero-stat">
+                            <span class="hero-stat-num" id="statJogos">0</span>
+                            <span class="hero-stat-label">Jogos</span>
+                        </div>
+                        <div class="hero-stat">
+                            <span class="hero-stat-num" id="statGols">0</span>
+                            <span class="hero-stat-label">Gols</span>
+                        </div>
+                        <div class="hero-stat">
+                            <span class="hero-stat-num" id="statEsportes">6</span>
+                            <span class="hero-stat-label">Esportes</span>
+                        </div>
                     </div>
-                    <div class="hero-stat">
-                        <span class="hero-stat-num" id="statJogos">0</span>
-                        <span class="hero-stat-label">Jogos</span>
+                    <div class="hero-actions">
+                        <button class="btn btn-primary" onclick="navegar('campeonatos', null)">Ver Campeonatos</button>
+                        <button class="btn btn-outline" onclick="navegar('calendario', null)">Calendario de Jogos</button>
                     </div>
-                    <div class="hero-stat">
-                        <span class="hero-stat-num" id="statGols">0</span>
-                        <span class="hero-stat-label">Gols</span>
-                    </div>
-                    <div class="hero-stat">
-                        <span class="hero-stat-num" id="statEsportes">6</span>
-                        <span class="hero-stat-label">Esportes</span>
-                    </div>
-                </div>
-                <div class="hero-actions">
-                    <button class="btn btn-primary" onclick="navegar('campeonatos', null)">Ver Campeonatos</button>
-                    <button class="btn btn-outline" onclick="navegar('calendario', null)">Calendario de Jogos</button>
                 </div>
             </div>
         </div>
         <div class="hero-overlay"></div>
             <div class="hero-pattern"></div>
-            <img src="img/brasao-sao-pedro.png" alt="Brasão de São Pedro" class="hero-brasao">
     </section>
 
     <!-- SECAO: ESPORTES (CARDS) -->

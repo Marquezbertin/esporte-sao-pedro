@@ -371,26 +371,28 @@ img { max-width: 100%; display: block; }
 }
 
 .hero-brasao {
-    position: absolute;
-    top: 16px;
-    left: 16px;
-    width: 60px;
+    width: 45px;
     height: auto;
-    opacity: 0.15;
-    z-index: 2;
-    pointer-events: none;
-    filter: grayscale(100%) brightness(1.5);
+    flex-shrink: 0;
+    mix-blend-mode: multiply;
+    opacity: 0.9;
     transition: opacity 0.3s ease;
 }
 
 .hero-brasao:hover {
-    opacity: 0.4;
+    opacity: 1;
 }
 
 .hero-content {
     position: relative;
     z-index: 2;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    gap: 32px;
+}
+
+.hero-text {
+    flex: 1;
 }
 
 .hero-badge {
