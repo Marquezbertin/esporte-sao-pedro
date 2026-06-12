@@ -375,7 +375,7 @@ img { max-width: 100%; display: block; }
     left: 24px;
     top: 50%;
     transform: translateY(-50%);
-    width: 52px;
+    width: 72px;
     height: auto;
     z-index: 2;
     transition: opacity 0.3s ease;
