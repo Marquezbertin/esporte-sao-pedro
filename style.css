@@ -370,6 +370,23 @@ img { max-width: 100%; display: block; }
         repeating-linear-gradient(-45deg, var(--vermelho) 0, var(--vermelho) 2px, transparent 2px, transparent 20px);
 }
 
+.hero-brasao {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    width: 60px;
+    height: auto;
+    opacity: 0.15;
+    z-index: 2;
+    pointer-events: none;
+    filter: grayscale(100%) brightness(1.5);
+    transition: opacity 0.3s ease;
+}
+
+.hero-brasao:hover {
+    opacity: 0.4;
+}
+
 .hero-content {
     position: relative;
     z-index: 2;
