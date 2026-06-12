@@ -4533,6 +4533,30 @@ body:not(.admin-mode) .upload-camera-wrapper {
 }
 .torcedor-card-footer strong { color: var(--azul-escuro); }
 
+/* ===== GRAFICOS CAMPEONATO ===== */
+.camp-charts {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+.chart-box {
+    background: #fff;
+    border-radius: 8px;
+    padding: 16px;
+    border: 1px solid var(--cinza-100);
+}
+.chart-box h4 {
+    font-size: 0.8rem;
+    color: var(--cinza-600);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.chart-box canvas {
+    width: 100% !important;
+    max-height: 220px;
+}
+
 /* ===== MAPA ESPORTIVO ===== */
 .mapa-container { margin-bottom: 24px; }
 .mapa-container .leaflet-container { border-radius: 12px; z-index: 0; }

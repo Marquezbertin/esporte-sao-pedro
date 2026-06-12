@@ -3218,7 +3218,128 @@ function renderCampeonatoAtivo() {
     }
     html += '</div>';
 
+    // GRAFICOS
+    if (times.length > 0 || artilheiros.length > 0) {
+        html += '<div class="card-panel" style="margin-bottom:24px;">';
+        html += '<div class="card-panel-header"><h3>Graficos & Estatisticas</h3></div>';
+        html += '<div class="camp-charts">';
+        if (times.length > 0) html += '<div class="chart-box"><h4>Classificacao (pontos)</h4><canvas id="chartClassificacao"></canvas></div>';
+        if (artilheiros.length > 1) html += '<div class="chart-box"><h4>Artilheiros (gols)</h4><canvas id="chartArtilheiros"></canvas></div>';
+        if (times.length > 0) {
+            html += '<div class="chart-box"><h4>Desempenho do lider</h4><canvas id="chartLider"></canvas></div>';
+            html += '<div class="chart-box"><h4>Gols por time</h4><canvas id="chartGols"></canvas></div>';
+        }
+        html += '</div></div>';
+    }
+
     conteudo.innerHTML = html;
+
+    // Init charts apos renderizar o DOM
+    destroyCharts();
+    if (typeof Chart !== "undefined") {
+        if (times.length > 0) renderGraficoClassificacao(times);
+        if (artilheiros.length > 1) renderGraficoArtilheiros(artilheiros);
+        if (times.length > 0) {
+            renderGraficoLider(times[0]);
+            renderGraficoGols(times);
+        }
+    }
+}
+
+var _chartInstances = [];
+
+function destroyCharts() {
+    _chartInstances.forEach(function (c) { c.destroy(); });
+    _chartInstances = [];
+}
+
+function renderGraficoClassificacao(times) {
+    var ctx = document.getElementById("chartClassificacao");
+    if (!ctx) return;
+    _chartInstances.push(new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: times.map(function (t) { return t.nome.length > 12 ? t.nome.substr(0, 10) + "..." : t.nome; }),
+            datasets: [{
+                label: "Pontos",
+                data: times.map(function (t) { return t.p; }),
+                backgroundColor: times.map(function (_, i) { return i === 0 ? "#d4a017" : "#1a3f7a"; }),
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    }));
+}
+
+function renderGraficoArtilheiros(artilheiros) {
+    var ctx = document.getElementById("chartArtilheiros");
+    if (!ctx) return;
+    var top5 = artilheiros.slice(0, 10);
+    _chartInstances.push(new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: top5.map(function (a) { return a.nome.length > 14 ? a.nome.substr(0, 12) + "..." : a.nome; }),
+            datasets: [{
+                label: "Gols",
+                data: top5.map(function (a) { return a.gols; }),
+                backgroundColor: "#d97706",
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    }));
+}
+
+function renderGraficoLider(lider) {
+    var ctx = document.getElementById("chartLider");
+    if (!ctx) return;
+    _chartInstances.push(new Chart(ctx, {
+        type: "doughnut",
+        data: {
+            labels: ["Vitorias", "Empates", "Derrotas"],
+            datasets: [{
+                data: [lider.v || 0, lider.e || 0, lider.d || 0],
+                backgroundColor: ["#16a34a", "#d4a017", "#dc2626"]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: "bottom" } }
+        }
+    }));
+}
+
+function renderGraficoGols(times) {
+    var ctx = document.getElementById("chartGols");
+    if (!ctx) return;
+    var top8 = times.slice(0, 8);
+    _chartInstances.push(new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: top8.map(function (t) { return t.nome.length > 12 ? t.nome.substr(0, 10) + "..." : t.nome; }),
+            datasets: [
+                { label: "Gols Pro", data: top8.map(function (t) { return t.gp || 0; }), backgroundColor: "#16a34a", borderRadius: 4 },
+                { label: "Gols Contra", data: top8.map(function (t) { return t.gc || 0; }), backgroundColor: "#dc2626", borderRadius: 4 }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: "bottom" } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    }));
 }
 
 // --- TIMES ---
