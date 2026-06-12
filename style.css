@@ -2302,7 +2302,8 @@ body.admin-mode .gallery-item:hover .gallery-item-actions { display: flex; gap: 
 
     .nav-link.active::after { display: none; }
 
-    .hero-brasao { position: static; width: 48px; margin: 0 auto 12px; display: block; }
+    .hero-content { display: flex; flex-direction: column; align-items: center; }
+    .hero-brasao { position: static; width: 48px; margin-bottom: 12px; }
     .hero-title { font-size: 2.2rem; }
     .hero-stats { gap: 20px; }
     .hero-stat-num { font-size: 1.6rem; }
@@ -2330,7 +2331,7 @@ body.admin-mode .gallery-item:hover .gallery-item-actions { display: flex; gap: 
 
 @media (max-width: 480px) {
     .hero { padding: 50px 0 40px; }
-    .hero-brasao { position: static; width: 32px; margin: 0 auto 10px; display: block; }
+    .hero-brasao { width: 32px; }
     .hero-title { font-size: 1.8rem; }
     .hero-stats { flex-wrap: wrap; gap: 16px; }
     .sports-grid { grid-template-columns: repeat(2, 1fr); }
