@@ -4649,6 +4649,99 @@ body:not(.admin-mode) .upload-camera-wrapper {
     margin-top: 4px;
 }
 
+/* ===== REDES SOCIAIS / LINKTREE ===== */
+.redes-badge {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+.rede-icon {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    transition: opacity 0.2s;
+}
+.rede-icon:hover { opacity: 0.8; }
+.rede-insta { background: #fce4ec; color: #c2185b; }
+.rede-face { background: #e3f2fd; color: #1565c0; }
+.rede-yt { background: #ffebee; color: #c62828; }
+.rede-wpp { background: #e8f5e9; color: #2e7d32; }
+.rede-site { background: #f3e5f5; color: #6a1b9a; }
+
+.linktree-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.2s;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.linktree-modal {
+    background: #fff;
+    border-radius: 16px;
+    padding: 32px 24px 24px;
+    max-width: 380px;
+    width: 100%;
+    text-align: center;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    animation: slideUp 0.25s ease;
+}
+@keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.linktree-close {
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+}
+.linktree-close:hover { color: #334155; }
+.linktree-foto {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin: 0 auto 12px;
+    border: 3px solid var(--azul-light);
+}
+.linktree-nome { font-size: 1.3rem; color: var(--azul-escuro); margin-bottom: 4px; }
+.linktree-sub { font-size: 0.85rem; color: var(--azul-medio); margin-bottom: 2px; }
+.linktree-esporte { font-size: 0.75rem; color: var(--cinza-500); text-transform: uppercase; margin-bottom: 8px; }
+.linktree-bio { font-size: 0.82rem; color: var(--cinza-600); line-height: 1.4; margin: 8px 0 16px; }
+.linktree-links { display: flex; flex-direction: column; gap: 8px; }
+.linktree-btn {
+    display: block;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.15s, box-shadow 0.15s;
+    text-align: center;
+}
+.linktree-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.linktree-insta { background: linear-gradient(135deg,#f58529,#dd2a7b); color: #fff; }
+.linktree-face { background: #1877f2; color: #fff; }
+.linktree-yt { background: #ff0000; color: #fff; }
+.linktree-wpp { background: #25d366; color: #fff; }
+.linktree-site { background: var(--azul-escuro); color: #fff; }
+
 @media (max-width: 640px) {
     .mapa-card-grid { grid-template-columns: 1fr 1fr; }
+    .linktree-modal { margin: 10px; padding: 24px 16px 20px; }
 }

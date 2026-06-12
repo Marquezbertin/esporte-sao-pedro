@@ -872,6 +872,54 @@ function recusarTorcedor(id) {
     });
 }
 
+// ===== REDES SOCIAIS (Linktree) =====
+
+function renderRedesBadge(redes) {
+    if (!redes) return "";
+    var icons = [];
+    if (redes.instagram) icons.push('<a href="' + esc(redes.instagram) + '" target="_blank" rel="noopener" class="rede-icon rede-insta" title="Instagram" onclick="event.stopPropagation()">Instagram</a>');
+    if (redes.facebook) icons.push('<a href="' + esc(redes.facebook) + '" target="_blank" rel="noopener" class="rede-icon rede-face" title="Facebook" onclick="event.stopPropagation()">Facebook</a>');
+    if (redes.youtube) icons.push('<a href="' + esc(redes.youtube) + '" target="_blank" rel="noopener" class="rede-icon rede-yt" title="YouTube" onclick="event.stopPropagation()">YouTube</a>');
+    if (redes.whatsapp) icons.push('<a href="' + esc(redes.whatsapp) + '" target="_blank" rel="noopener" class="rede-icon rede-wpp" title="WhatsApp" onclick="event.stopPropagation()">WhatsApp</a>');
+    if (redes.site) icons.push('<a href="' + esc(redes.site) + '" target="_blank" rel="noopener" class="rede-icon rede-site" title="Site" onclick="event.stopPropagation()">Site</a>');
+    if (icons.length === 0) return "";
+    return '<div class="redes-badge">' + icons.join("") + '</div>';
+}
+
+function abrirLinktree(id, tipo) {
+    var dados = tipo === "time" ? getData("times") : getData("atletas");
+    var item = dados.find(function (x) { return x.id === id; });
+    if (!item) return;
+    var hasRedes = item.redes && (item.redes.instagram || item.redes.facebook || item.redes.youtube || item.redes.whatsapp || item.redes.site);
+    var html = '<div class="linktree-overlay" onclick="fecharLinktree()">' +
+        '<div class="linktree-modal" onclick="event.stopPropagation()">' +
+        '<button class="linktree-close" onclick="fecharLinktree()">&times;</button>' +
+        (item.imagem || item.logo ? '<img src="' + esc(item.imagem || item.logo) + '" class="linktree-foto" onerror="this.style.display=\'none\'">' : "") +
+        '<h2 class="linktree-nome">' + esc(item.nome) + '</h2>' +
+        (item.posicao ? '<p class="linktree-sub">' + esc(item.posicao) + '</p>' : "") +
+        (item.esporte ? '<p class="linktree-esporte">' + esc(item.esporte) + '</p>' : "") +
+        (item.bio || item.descricao ? '<p class="linktree-bio">' + esc(item.bio || item.descricao) + '</p>' : "");
+    if (hasRedes) {
+        html += '<div class="linktree-links">';
+        var r = item.redes;
+        if (r.instagram) html += '<a href="' + esc(r.instagram) + '" target="_blank" rel="noopener" class="linktree-btn linktree-insta">&#128247; Instagram</a>';
+        if (r.facebook) html += '<a href="' + esc(r.facebook) + '" target="_blank" rel="noopener" class="linktree-btn linktree-face">&#128250; Facebook</a>';
+        if (r.youtube) html += '<a href="' + esc(r.youtube) + '" target="_blank" rel="noopener" class="linktree-btn linktree-yt">&#9654; YouTube</a>';
+        if (r.whatsapp) html += '<a href="' + esc(r.whatsapp) + '" target="_blank" rel="noopener" class="linktree-btn linktree-wpp">&#128172; WhatsApp</a>';
+        if (r.site) html += '<a href="' + esc(r.site) + '" target="_blank" rel="noopener" class="linktree-btn linktree-site">&#127760; Site</a>';
+        html += '</div>';
+    } else {
+        html += '<p style="color:#94a3b8;font-size:0.85rem;margin-top:16px;">Nenhum link cadastrado.</p>';
+    }
+    html += '</div></div>';
+    document.body.insertAdjacentHTML("beforeend", html);
+}
+
+function fecharLinktree() {
+    var el = document.querySelector(".linktree-overlay");
+    if (el) el.remove();
+}
+
 // ===== MAPA ESPORTIVO =====
 var _mapaMap = null;
 var _mapaMarkers = [];
@@ -2871,12 +2919,13 @@ function renderTimes() {
             : '<div class="time-logo time-logo-placeholder">' + icon + '</div>';
 
         html +=
-            '<div class="time-card">' +
+            '<div class="time-card" onclick="abrirLinktree(\'' + t.id + '\',\'time\')" style="cursor:pointer;">' +
                 logo +
                 '<div class="time-info">' +
                     '<h3 class="time-nome">' + esc(t.nome) + '</h3>' +
                     '<span class="time-esporte">' + (esporte ? esporte.nome : esc(t.esporte)) + '</span>' +
                     (t.descricao ? '<p class="time-desc">' + esc(t.descricao).substring(0, 120) + '</p>' : '') +
+                    renderRedesBadge(t.redes) +
                 '</div>' +
             '</div>';
     });
@@ -2898,13 +2947,21 @@ function salvarTime() {
         nome: nome,
         esporte: esporte,
         logo: logo,
-        descricao: descricao
+        descricao: descricao,
+        redes: {
+            instagram: document.getElementById("timeInsta").value.trim(),
+            facebook: document.getElementById("timeFace").value.trim(),
+            youtube: document.getElementById("timeYoutube").value.trim(),
+            whatsapp: document.getElementById("timeWhatsapp").value.trim(),
+            site: document.getElementById("timeSite").value.trim()
+        }
     });
     saveData("times", times);
 
     document.getElementById("timeNome").value = "";
     document.getElementById("timeLogo").value = "";
     document.getElementById("timeDescricao").value = "";
+    ["timeInsta","timeFace","timeYoutube","timeWhatsapp","timeSite"].forEach(function (id) { document.getElementById(id).value = ""; });
     renderTimes();
     renderAdminTimes();
     showToastSave("Time cadastrado!");
@@ -3722,7 +3779,7 @@ function renderAtletas() {
             : '\uD83C\uDFC3';
 
         grid.innerHTML +=
-            '<div class="athlete-card">' +
+            '<div class="athlete-card" onclick="abrirLinktree(\'' + a.id + '\',\'atleta\')" style="cursor:pointer;">' +
                 '<div class="athlete-card-img">' + imgHtml +
                     '<span class="athlete-card-sport">' + (esporte ? esporte.icon + " " + esporte.nome : esc(a.esporte)) + '</span>' +
                 '</div>' +
@@ -3730,10 +3787,11 @@ function renderAtletas() {
                     '<div class="athlete-card-name">' + esc(a.nome) + '</div>' +
                     '<div class="athlete-card-detail">' + esc(a.time) + ' - ' + esc(a.posicao) + '</div>' +
                     '<div class="athlete-card-bio">' + esc(a.bio) + '</div>' +
-                    '<div class="athlete-card-actions">' +
-                        '<button onclick="editarAtleta(\'' + a.id + '\')">Editar</button>' +
-                        '<button onclick="deletarAtleta(\'' + a.id + '\')">Excluir</button>' +
-                    '</div>' +
+                    renderRedesBadge(a.redes) +
+                    (isAdmin() ? '<div class="athlete-card-actions">' +
+                        '<button onclick="event.stopPropagation();editarAtleta(\'' + a.id + '\')">Editar</button>' +
+                        '<button onclick="event.stopPropagation();deletarAtleta(\'' + a.id + '\')">Excluir</button>' +
+                    '</div>' : '') +
                 '</div>' +
             '</div>';
     });
@@ -3751,7 +3809,16 @@ function salvarAtleta() {
     if (!nome) return showToastAviso("Preencha o nome.");
 
     var atletas = getData("atletas");
-    atletas.push({ id: gerarId(), nome: nome, esporte: esporte, time: time, posicao: posicao, imagem: img, bio: bio });
+    atletas.push({
+        id: gerarId(), nome: nome, esporte: esporte, time: time, posicao: posicao, imagem: img, bio: bio,
+        redes: {
+            instagram: document.getElementById("atletaInsta").value.trim(),
+            facebook: document.getElementById("atletaFace").value.trim(),
+            youtube: document.getElementById("atletaYoutube").value.trim(),
+            whatsapp: document.getElementById("atletaWhatsapp").value.trim(),
+            site: document.getElementById("atletaSite").value.trim()
+        }
+    });
     setData("atletas", atletas);
 
     document.getElementById("atletaNome").value = "";
@@ -3759,6 +3826,7 @@ function salvarAtleta() {
     document.getElementById("atletaPosicao").value = "";
     document.getElementById("atletaImg").value = "";
     document.getElementById("atletaBio").value = "";
+    ["atletaInsta","atletaFace","atletaYoutube","atletaWhatsapp","atletaSite"].forEach(function (id) { document.getElementById(id).value = ""; });
     document.getElementById("adminAtleta").style.display = "none";
 
     renderAtletas();

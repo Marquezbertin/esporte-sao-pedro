@@ -427,6 +427,13 @@
                     <input type="text" id="atletaPosicao" placeholder="Posicao/Modalidade">
                     <input type="text" id="atletaImg" placeholder="URL da foto (opcional)" data-upload-target="atletaImg">
                     <textarea id="atletaBio" placeholder="Breve biografia / conquistas" rows="3"></textarea>
+                    <div style="display:grid;gap:8px;grid-template-columns:1fr 1fr;margin-bottom:10px;">
+                        <input type="url" id="atletaInsta" placeholder="Instagram (opcional)">
+                        <input type="url" id="atletaFace" placeholder="Facebook (opcional)">
+                        <input type="url" id="atletaYoutube" placeholder="YouTube (opcional)">
+                        <input type="url" id="atletaWhatsapp" placeholder="WhatsApp (opcional)">
+                        <input type="url" id="atletaSite" placeholder="Site (opcional)" style="grid-column:1/-1;">
+                    </div>
                     <button class="btn btn-primary" onclick="salvarAtleta()">Salvar Atleta</button>
                 </div>
             </div>
@@ -1194,6 +1201,13 @@
                     </select>
                     <input type="text" id="timeLogo" placeholder="URL do escudo/logo (opcional)" data-upload-target="timeLogo">
                     <textarea id="timeDescricao" placeholder="Descricao / historico do time" rows="3"></textarea>
+                    <div style="display:grid;gap:8px;grid-template-columns:1fr 1fr;margin-bottom:10px;">
+                        <input type="url" id="timeInsta" placeholder="Instagram (opcional)">
+                        <input type="url" id="timeFace" placeholder="Facebook (opcional)">
+                        <input type="url" id="timeYoutube" placeholder="YouTube (opcional)">
+                        <input type="url" id="timeWhatsapp" placeholder="WhatsApp (opcional)">
+                        <input type="url" id="timeSite" placeholder="Site (opcional)" style="grid-column:1/-1;">
+                    </div>
                     <button class="btn btn-primary" onclick="salvarTime()">Cadastrar Time</button>
                 </div>
                 <div id="adminTimesList" style="margin-top:16px;"></div>
