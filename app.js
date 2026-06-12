@@ -564,6 +564,177 @@ function renderSobreEditavel() {
     }
 }
 
+// ===== BANNER DO SITE =====
+
+function salvarBanner() {
+    if (!requireAdmin()) return;
+    var config = {
+        tipo: document.getElementById("bannerTipo").value,
+        titulo: document.getElementById("bannerTitulo").value.trim(),
+        url: document.getElementById("bannerUrl").value.trim(),
+        conteudo: document.getElementById("bannerConteudo").value.trim(),
+        link: document.getElementById("bannerLink").value.trim(),
+        corFundo: document.getElementById("bannerCorFundo").value,
+        ativo: document.getElementById("bannerAtivo").checked,
+        dataInicio: document.getElementById("bannerDataInicio").value,
+        dataFim: document.getElementById("bannerDataFim").value
+    };
+    SupaDB.setItem("banner", config);
+    renderBannerPreview(config);
+    carregarBanner();
+    showToastSave("Banner salvo!");
+}
+
+function removerBanner() {
+    if (!requireAdmin()) return;
+    SupaDB.removeItem("banner");
+    document.getElementById("bannerPreview").innerHTML = "";
+    document.getElementById("siteBanner").classList.add("oculto");
+    showToastSave("Banner removido!");
+}
+
+function renderBannerPreview(config) {
+    var el = document.getElementById("bannerPreview");
+    if (!el) return;
+    if (!config || !config.tipo) {
+        el.innerHTML = '<div class="site-banner-preview">Configure o banner acima</div>';
+        return;
+    }
+    var html = "<h4 style=\"margin-bottom:8px;font-size:0.85rem;color:var(--cinza-600);\">Preview:</h4>";
+    switch (config.tipo) {
+        case "imagem":
+            html += '<div style="background:' + config.corFundo + ';padding:12px;border-radius:8px;text-align:center;">' +
+                (config.link ? '<a href="' + esc(config.link) + '" target="_blank">' : "") +
+                '<img src="' + esc(config.url) + '" style="max-width:100%;max-height:200px;border-radius:6px;display:block;margin:0 auto;" onerror="this.style.display=\'none\'">' +
+                (config.link ? '</a>' : "") +
+                '</div>';
+            break;
+        case "comercial":
+            html += '<div style="background:' + config.corFundo + ';padding:20px;border-radius:8px;text-align:center;color:#fff;">' +
+                (config.titulo ? '<div style="font-size:1.1rem;font-weight:700;margin-bottom:4px;">' + esc(config.titulo) + '</div>' : "") +
+                (config.conteudo ? '<div style="font-size:0.85rem;opacity:0.9;">' + esc(config.conteudo) + '</div>' : "") +
+                (config.link ? '<div style="margin-top:8px;"><span style="display:inline-block;padding:6px 18px;background:var(--dourado);color:var(--azul-escuro);border-radius:6px;font-weight:700;font-size:0.8rem;">Saiba mais</span></div>' : "") +
+                '</div>';
+            break;
+        case "noticia":
+            html += '<div style="background:' + config.corFundo + ';padding:16px;border-radius:8px;display:flex;align-items:center;gap:16px;color:#fff;">' +
+                (config.url ? '<img src="' + esc(config.url) + '" style="width:80px;height:60px;object-fit:cover;border-radius:6px;flex-shrink:0;" onerror="this.style.display=\'none\'">' : "") +
+                '<div style="flex:1;">' +
+                (config.titulo ? '<strong style="display:block;font-size:0.9rem;">' + esc(config.titulo) + '</strong>' : "") +
+                (config.conteudo ? '<span style="font-size:0.78rem;opacity:0.75;">' + esc(config.conteudo) + '</span>' : "") +
+                '</div>' +
+                (config.link ? '<a href="' + esc(config.link) + '" style="white-space:nowrap;padding:6px 16px;background:var(--dourado);color:var(--azul-escuro);border-radius:6px;font-weight:700;font-size:0.78rem;text-decoration:none;">Leia mais</a>' : "") +
+                '</div>';
+            break;
+        case "video":
+            var videoEmbed = gerarEmbedBannerVideo(config.url);
+            html += '<div style="background:' + config.corFundo + ';padding:12px;border-radius:8px;text-align:center;">' +
+                (config.titulo ? '<div style="font-size:0.95rem;font-weight:700;color:#fff;margin-bottom:8px;">' + esc(config.titulo) + '</div>' : "") +
+                (videoEmbed || '<div style="color:var(--cinza-400);font-size:0.8rem;padding:20px;">URL de video invalida</div>') +
+                '</div>';
+            break;
+    }
+    el.innerHTML = html;
+}
+
+function gerarEmbedBannerVideo(url) {
+    if (!url) return null;
+    var ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/);
+    if (ytMatch) {
+        return '<div class="video-embed"><iframe src="https://www.youtube.com/embed/' + ytMatch[1] + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>';
+    }
+    var twitchMatch = url.match(/(?:twitch\.tv\/)([a-zA-Z0-9_]+)/i);
+    if (twitchMatch) {
+        return '<div class="video-embed"><iframe src="https://player.twitch.tv/?channel=' + twitchMatch[1] + '&parent=' + location.hostname + '" allowfullscreen loading="lazy"></iframe></div>';
+    }
+    if (/(facebook\.com|fb\.watch)\//i.test(url)) {
+        return '<div class="video-embed"><iframe src="https://www.facebook.com/plugins/video.php?href=' + encodeURIComponent(url) + '&show_text=0" allowfullscreen loading="lazy"></iframe></div>';
+    }
+    var instaMatch = url.match(/instagram\.com\/(?:p|reel)\/([a-zA-Z0-9_-]+)/i);
+    if (instaMatch) {
+        return '<div class="video-embed"><iframe src="https://www.instagram.com/p/' + instaMatch[1] + '/embed/" allowfullscreen loading="lazy"></iframe></div>';
+    }
+    return null;
+}
+
+function carregarBanner() {
+    SupaDB.getItem("banner").then(function (config) {
+        // Popula admin form se admin
+        if (isAdmin()) {
+            var bannerMap = {
+                bannerTipo: "tipo", bannerTitulo: "titulo", bannerUrl: "url",
+                bannerConteudo: "conteudo", bannerLink: "link", bannerCorFundo: "corFundo",
+                bannerDataInicio: "dataInicio", bannerDataFim: "dataFim"
+            };
+            Object.keys(bannerMap).forEach(function (id) {
+                var el = document.getElementById(id);
+                if (!el) return;
+                var key = bannerMap[id];
+                if (el.type === "color") { el.value = (config && config[key]) || "#0a1628"; return; }
+                el.value = (config && config[key]) || "";
+            });
+            var ativoEl = document.getElementById("bannerAtivo");
+            if (ativoEl) ativoEl.checked = config ? config.ativo : false;
+            renderBannerPreview(config || null);
+        }
+        var el = document.getElementById("siteBanner");
+        var content = document.getElementById("siteBannerContent");
+        if (!el || !content) return;
+        if (!config || !config.tipo || !config.ativo) {
+            el.classList.add("oculto");
+            return;
+        }
+        var hoje = new Date().toISOString().split("T")[0];
+        if (config.dataInicio && config.dataInicio > hoje) { el.classList.add("oculto"); return; }
+        if (config.dataFim && config.dataFim < hoje) { el.classList.add("oculto"); return; }
+        if (localStorage.getItem("bannerFechado") === "1") { el.classList.add("oculto"); return; }
+
+        el.style.background = config.corFundo || "#0a1628";
+        var html = "";
+
+        switch (config.tipo) {
+            case "imagem":
+                html = '<div class="site-banner-tipo-imagem">' +
+                    (config.link ? '<a href="' + esc(config.link) + '" target="_blank" rel="noopener">' : "") +
+                    '<img src="' + esc(config.url) + '" alt="' + esc(config.titulo || "Banner") + '" onerror="this.parentNode.removeChild(this)">' +
+                    (config.link ? '</a>' : "") +
+                    '</div>';
+                break;
+            case "comercial":
+                html = '<div class="site-banner-tipo-comercial">' +
+                    (config.titulo ? '<div class="banner-titulo">' + esc(config.titulo) + '</div>' : "") +
+                    (config.conteudo ? '<div class="banner-texto">' + esc(config.conteudo) + '</div>' : "") +
+                    (config.link ? '<a href="' + esc(config.link) + '" target="_blank" rel="noopener">Saiba mais</a>' : "") +
+                    '</div>';
+                break;
+            case "noticia":
+                html = '<div class="site-banner-tipo-noticia">' +
+                    (config.url ? '<img src="' + esc(config.url) + '" alt="' + esc(config.titulo || "") + '" onerror="this.style.display=\'none\'">' : "") +
+                    '<div class="banner-noticia-info">' +
+                    (config.titulo ? '<strong>' + esc(config.titulo) + '</strong>' : "") +
+                    (config.conteudo ? '<span>' + esc(config.conteudo) + '</span>' : "") +
+                    '</div>' +
+                    (config.link ? '<a href="' + esc(config.link) + '" target="_blank" rel="noopener">Leia mais</a>' : "") +
+                    '</div>';
+                break;
+            case "video":
+                var videoEmbed = gerarEmbedBannerVideo(config.url);
+                html = '<div class="site-banner-tipo-video">' +
+                    (config.titulo ? '<div class="banner-titulo">' + esc(config.titulo) + '</div>' : "") +
+                    (videoEmbed || '<p style="opacity:0.7;font-size:0.85rem;">Video nao disponivel</p>') +
+                    '</div>';
+                break;
+        }
+        content.innerHTML = html;
+        el.classList.remove("oculto");
+    });
+}
+
+function fecharBanner() {
+    document.getElementById("siteBanner").classList.add("oculto");
+    localStorage.setItem("bannerFechado", "1");
+}
+
 document.addEventListener("DOMContentLoaded", function () {
     limparDadosDemo();
 
@@ -579,6 +750,7 @@ document.addEventListener("DOMContentLoaded", function () {
         atualizarLiveNav();
         atualizarLiveStatus();
         carregarSiteLogo();
+        carregarBanner();
         renderSobreEditavel();
         renderPatrocinadoresPublico();
 
@@ -625,7 +797,7 @@ function navegar(secao, e) {
         case "opiniao": renderOpinioes(); break;
         case "conquistas": renderConquistas(); break;
         case "redacao": if (!isAdmin()) { navegar("inicio", null); return; } renderTemplatesPauta(); renderAdminPautas(); renderEditorialDashboard(); renderAdminNewsList(); renderCalendario(); break;
-        case "sobre": atualizarStorageInfo(); renderDashboardUsoPortal(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminTimes(); renderNewsletterAdmin(); renderMonitorPautas(); renderConfigIA(); renderAdminFinanceiro(); renderCalculadoraFinanceira(); renderOrcamentos(); break;
+        case "sobre": atualizarStorageInfo(); renderDashboardUsoPortal(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminTimes(); renderNewsletterAdmin(); renderMonitorPautas(); renderConfigIA(); carregarBanner(); renderAdminFinanceiro(); renderCalculadoraFinanceira(); renderOrcamentos(); break;
     }
 
     window.scrollTo({ top: 0, behavior: "smooth" });

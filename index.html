@@ -104,6 +104,14 @@
         </div>
     </header>
 
+    <!-- BANNER DO SITE (admin configurável) -->
+    <div class="site-banner" id="siteBanner" style="display:none;">
+        <div class="site-banner-inner">
+            <button class="site-banner-close" onclick="fecharBanner()" title="Fechar">&times;</button>
+            <div id="siteBannerContent"></div>
+        </div>
+    </div>
+
     <!-- HERO -->
     <section class="hero" id="heroSection">
         <div class="container">
@@ -1118,6 +1126,50 @@
                         <button class="btn btn-primary" onclick="salvarChaveIA()" style="padding:9px 20px;">Salvar Chave</button>
                     </div>
                     <div id="geminiKeyStatus" style="font-size:0.82rem;color:var(--cinza-500);"></div>
+                </div>
+            </div>
+
+            <!-- ADMIN: BANNER DO SITE -->
+            <div class="card-panel admin-only" style="margin-top:40px;">
+                <div class="card-panel-header">
+                    <h3>Banner do Site</h3>
+                    <span class="badge">ADMIN</span>
+                </div>
+                <p style="color:#8892a4;margin-bottom:16px;">
+                    Configure um banner que aparece no topo do site para todos os leitores.
+                    Ideal para avisos, promocoes, noticias em destaque ou videos incorporados.
+                </p>
+                <div class="admin-form" style="display:block;margin-top:0;border-color:var(--cinza-200);">
+                    <div style="display:grid;gap:10px;grid-template-columns:1fr 1fr;">
+                        <select id="bannerTipo">
+                            <option value="">Selecione o tipo</option>
+                            <option value="imagem">Imagem (banner grafico)</option>
+                            <option value="comercial">Texto / Comercial</option>
+                            <option value="noticia">Noticia em destaque</option>
+                            <option value="video">Video incorporado</option>
+                        </select>
+                        <input type="url" id="bannerLink" placeholder="Link ao clicar (opcional)">
+                        <input type="color" id="bannerCorFundo" value="#0a1628" style="height:42px;padding:4px;">
+                    </div>
+                    <input type="text" id="bannerTitulo" placeholder="Titulo do banner (ex: Novo patrocinador)">
+                    <input type="url" id="bannerUrl" placeholder="URL da imagem ou do video (YouTube/Twitch/Facebook/Instagram)" data-upload-target="bannerUrl">
+                    <textarea id="bannerConteudo" placeholder="Texto do banner (usado no tipo 'Texto / Comercial')" rows="3"></textarea>
+                    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+                        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;color:var(--cinza-600);cursor:pointer;">
+                            Ativo: <input type="checkbox" id="bannerAtivo" checked>
+                        </label>
+                        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;color:var(--cinza-600);cursor:pointer;">
+                            Data inicio: <input type="date" id="bannerDataInicio">
+                        </label>
+                        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;color:var(--cinza-600);cursor:pointer;">
+                            Data fim: <input type="date" id="bannerDataFim">
+                        </label>
+                    </div>
+                    <div style="display:flex;gap:12px;margin-top:12px;">
+                        <button class="btn btn-primary" onclick="salvarBanner()">Salvar Banner</button>
+                        <button class="btn btn-danger" onclick="removerBanner()">Remover Banner</button>
+                    </div>
+                    <div id="bannerPreview" style="margin-top:16px;"></div>
                 </div>
             </div>
 
