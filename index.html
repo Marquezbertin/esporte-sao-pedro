@@ -250,15 +250,23 @@
                     </div>
                     <input type="text" id="noticiaVideo" placeholder="Link do video YouTube (opcional)">
                     <input type="text" id="noticiaFonte" placeholder="URL da fonte original (ex: link da materia)">
-                    <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;">
+                    <input type="text" id="noticiaAutor" placeholder="Autor (ex: Joao Silva)">
+                    <input type="text" id="noticiaTags" placeholder="Tags separadas por virgula (ex: mercado, lesao, estreia)">
+                    <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
                         <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;color:var(--cinza-600);cursor:pointer;">
-                            <input type="checkbox" id="noticiaRascunho"> Salvar como rascunho (nao publica)
+                            Status:
+                            <select id="noticiaStatus" style="margin-left:4px;padding:4px 8px;border:1px solid var(--cinza-200);border-radius:4px;font-size:0.82rem;">
+                                <option value="publicada">Publicada</option>
+                                <option value="revisao">Em revisao</option>
+                                <option value="rascunho">Rascunho</option>
+                                <option value="agendada">Agendada</option>
+                            </select>
                         </label>
                         <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;color:var(--cinza-600);cursor:pointer;">
                             Agendar para: <input type="date" id="noticiaDataAgendada" style="margin-left:4px;padding:2px 6px;border:1px solid var(--cinza-200);border-radius:4px;font-size:0.8rem;">
                         </label>
                     </div>
-                    <button class="btn btn-primary" onclick="salvarNoticia()">Publicar</button>
+                    <button class="btn btn-primary" onclick="salvarNoticia()">Salvar</button>
                 </div>
             </div>
         </div>
@@ -1324,6 +1332,10 @@
                 <input type="text" id="editNoticiaVideo" placeholder="Link do video YouTube (opcional)">
                 <label class="admin-form-label">Fonte original</label>
                 <input type="text" id="editNoticiaFonte" placeholder="URL da fonte (http://...)">
+                <label class="admin-form-label">Autor</label>
+                <input type="text" id="editNoticiaAutor" placeholder="Autor (ex: Joao Silva)">
+                <label class="admin-form-label">Tags</label>
+                <input type="text" id="editNoticiaTags" placeholder="Tags separadas por virgula (ex: mercado, lesao, estreia)">
                 <label class="admin-form-label">Cidade</label>
                 <select id="editNoticiaCidade">
                     <option value="sao-pedro">Sao Pedro</option>
@@ -1337,7 +1349,13 @@
                 <input type="date" id="editNoticiaData">
                 <div style="display:flex;align-items:center;gap:12px;margin:8px 0;flex-wrap:wrap;">
                     <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;color:var(--cinza-600);cursor:pointer;">
-                        <input type="checkbox" id="editNoticiaRascunho"> Rascunho (nao visivel para leitores)
+                        Status:
+                        <select id="editNoticiaStatus" style="margin-left:4px;padding:4px 8px;border:1px solid var(--cinza-200);border-radius:4px;font-size:0.82rem;">
+                            <option value="publicada">Publicada</option>
+                            <option value="revisao">Em revisao</option>
+                            <option value="rascunho">Rascunho</option>
+                            <option value="agendada">Agendada</option>
+                        </select>
                     </label>
                     <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;color:var(--cinza-600);cursor:pointer;">
                         Agendar para: <input type="date" id="editNoticiaDataAgendada" style="margin-left:4px;padding:2px 6px;border:1px solid var(--cinza-200);border-radius:4px;font-size:0.8rem;">

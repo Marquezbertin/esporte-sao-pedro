@@ -347,7 +347,10 @@ function injetarNewsArticleJSONLD(noticias) {
 function gerarFeedRSS() {
     var noticias = getData("noticias");
     if (!noticias || !noticias.length) return;
-    var publicadas = noticias.filter(function (n) { return !n.rascunho; }).slice(0, 20);
+    var publicadas = noticias.filter(function (n) {
+        var st = n.status || (n.rascunho ? "rascunho" : "publicada");
+        return st !== "rascunho" && st !== "revisao";
+    }).slice(0, 20);
     var baseUrl = SITE_BASE_URL;
     var hoje = new Date().toISOString();
     var xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
@@ -765,7 +768,10 @@ function renderFinanceiroHome() {
 }
 
 function renderNoticiasHome() {
-    var noticias = getData("noticias").filter(function (n) { return !n.rascunho; }).sort(function (a, b) {
+    var noticias = getData("noticias").filter(function (n) {
+        var st = n.status || (n.rascunho ? "rascunho" : "publicada");
+        return st !== "rascunho" && st !== "revisao";
+    }).sort(function (a, b) {
         if (a.destaque && !b.destaque) return -1;
         if (!a.destaque && b.destaque) return 1;
         return b.data.localeCompare(a.data);
@@ -796,7 +802,8 @@ function renderNewsCard(n) {
         ? '<div class="news-card-fonte"><a href="' + esc(n.fonte) + '" target="_blank" rel="noopener" onclick="event.stopPropagation();">Ver fonte original &rarr;</a></div>'
         : '';
 
-    var rascunhoLabel = n.rascunho ? ' <span class="news-card-rascunho">RASCUNHO</span>' : '';
+    var rascunhoLabel = n.rascunho || n.status === "rascunho" ? ' <span class="news-card-rascunho">RASCUNHO</span>' : '';
+    var statusLabel = n.status && n.status !== "publicada" && !n.rascunho ? ' <span class="news-card-status ' + esc(n.status) + '">' + esc(n.status.toUpperCase()) + '</span>' : '';
     var destaqueLabel = n.destaque ? ' <span class="news-card-destaque">&#9733; DESTAQUE</span>' : '';
     var destaqueBtnText = n.destaque ? 'Remover Destaque' : 'Destacar';
     var cidadeNome = nomeCidade(n.cidade);
@@ -819,6 +826,7 @@ function renderNewsCard(n) {
             '<h3 class="news-card-title">' + esc(n.titulo) + '</h3>' +
             '<p class="news-card-excerpt">' + esc(stripHtml(n.corpo)) + '</p>' +
             '<div class="news-card-date">' + formatarData(n.data) +
+                (n.autor ? ' &middot; Por ' + esc(n.autor) : '') +
                 (isAdmin() ? ' &middot; ' + getViews(n.id) + ' views' : '') +
             '</div>' +
             fonteHtml +
@@ -871,15 +879,49 @@ function abrirNoticia(id) {
         '<button class="share-btn share-copy" onclick="copiarLinkNoticia(\'' + esc(n.titulo) + '\')" title="Copiar texto">Copiar</button>' +
         '</div>';
 
+    var autorHtml = n.autor ? '<div class="news-modal-autor">Por ' + esc(n.autor) + '</div>' : '';
+    var tagsHtml = '';
+    if (n.tags && n.tags.length > 0) {
+        tagsHtml = '<div class="news-modal-tags">';
+        n.tags.forEach(function (t) {
+            tagsHtml += '<span class="news-tag" onclick="filtrarPorTag(\'' + esc(t) + '\')">' + esc(t) + '</span>';
+        });
+        tagsHtml += '</div>';
+    }
+
+    var relatedHtml = '';
+    var related = noticias.filter(function (x) {
+        return x.id !== n.id && !x.rascunho && x.status !== "rascunho" && x.status !== "revisao";
+    }).filter(function (x) {
+        if (x.categoria === n.categoria) return true;
+        if (n.tags && x.tags) {
+            return n.tags.some(function (t) { return x.tags.indexOf(t) !== -1; });
+        }
+        return false;
+    }).slice(0, 3);
+    if (related.length > 0) {
+        relatedHtml = '<div class="news-modal-related"><h4>Noticias Relacionadas</h4><div class="related-grid">';
+        related.forEach(function (r) {
+            relatedHtml += '<div class="related-card" onclick="abrirNoticia(\'' + r.id + '\')">' +
+                (r.imagem ? '<img src="' + esc(r.imagem) + '" alt="">' : '') +
+                '<div class="related-info"><span class="related-cat">' + esc(r.categoria) + '</span>' +
+                '<strong>' + esc(r.titulo) + '</strong></div></div>';
+        });
+        relatedHtml += '</div></div>';
+    }
+
     var content = document.getElementById("noticiaModalContent");
     content.innerHTML =
         midiaHtml +
         '<span class="news-modal-cat news-card-cat ' + catClass + '">' + esc(n.categoria) + '</span>' +
         '<h2 class="news-modal-title">' + esc(n.titulo) + '</h2>' +
         '<div class="news-modal-date">' + formatarData(n.data) + '</div>' +
+        autorHtml +
         '<div class="news-modal-text">' + sanitizeHtml(n.corpo) + '</div>' +
+        tagsHtml +
         galeriaHtml +
         fonteHtml +
+        relatedHtml +
         shareHtml;
 
     document.getElementById("noticiaModal").classList.add("active");
@@ -996,7 +1038,12 @@ function renderNoticias() {
     var noticias = getData("noticias");
     var hoje = new Date().toISOString().split("T")[0];
     if (!isAdmin()) {
-        noticias = noticias.filter(function (n) { return !n.rascunho && (!n.dataAgendada || n.dataAgendada <= hoje); });
+        noticias = noticias.filter(function (n) {
+            var st = n.status || (n.rascunho ? "rascunho" : "publicada");
+            if (st === "rascunho" || st === "revisao") return false;
+            if (st === "agendada" && n.dataAgendada && n.dataAgendada > hoje) return false;
+            return true;
+        });
     }
     noticias.sort(function (a, b) {
         if (a.destaque && !b.destaque) return -1;
@@ -1043,6 +1090,16 @@ function filtrarNoticias(cat, btn) {
     renderNoticias();
 }
 
+function filtrarPorTag(tag) {
+    _buscaNoticia = tag.toLowerCase();
+    _filtroNoticia = "todas";
+    var searchInput = document.getElementById("newsSearchInput");
+    if (searchInput) searchInput.value = tag;
+    document.querySelectorAll(".news-filters .chip, #secao-noticias .chip").forEach(function (c) { c.classList.remove("active"); });
+    navegar("noticias", null);
+    renderNoticias();
+}
+
 function salvarNoticia() {
     if (!requireAdmin()) return;
     var titulo = document.getElementById("noticiaTitle").value.trim();
@@ -1052,10 +1109,13 @@ function salvarNoticia() {
     var img = document.getElementById("noticiaImg").value.trim();
     var video = document.getElementById("noticiaVideo").value.trim();
     var fonte = document.getElementById("noticiaFonte").value.trim();
+    var autor = document.getElementById("noticiaAutor").value.trim();
+    var tagsRaw = document.getElementById("noticiaTags").value.trim();
+    var status = document.getElementById("noticiaStatus").value;
     if (!titulo) return showToastAviso("Preencha o titulo.");
 
-    var ehRascunho = document.getElementById("noticiaRascunho").checked;
     var dataAgendada = document.getElementById("noticiaDataAgendada").value || "";
+    var tags = tagsRaw ? tagsRaw.split(",").map(function (t) { return t.trim(); }).filter(function (t) { return t; }) : [];
 
     var noticias = getData("noticias");
     noticias.push({
@@ -1068,7 +1128,10 @@ function salvarNoticia() {
         galeria: getGaleriaFotos("noticiaGaleriaItems"),
         video: video,
         fonte: fonte,
-        rascunho: ehRascunho,
+        autor: autor,
+        tags: tags,
+        rascunho: status === "rascunho",
+        status: status,
         dataAgendada: dataAgendada,
         data: new Date().toISOString().split("T")[0]
     });
@@ -1079,14 +1142,16 @@ function salvarNoticia() {
     document.getElementById("noticiaImg").value = "";
     document.getElementById("noticiaVideo").value = "";
     document.getElementById("noticiaFonte").value = "";
+    document.getElementById("noticiaAutor").value = "";
+    document.getElementById("noticiaTags").value = "";
+    document.getElementById("noticiaStatus").value = "publicada";
     setGaleriaFotos("noticiaGaleriaItems", []);
-    document.getElementById("noticiaRascunho").checked = false;
     document.getElementById("adminNoticia").style.display = "none";
 
     renderNoticias();
     renderTicker();
     gerarFeedRSS();
-    showToastSave(ehRascunho ? "Rascunho salvo!" : "Noticia publicada!");
+    showToastSave(status === "publicada" ? "Noticia publicada!" : (status === "rascunho" ? "Rascunho salvo!" : "Noticia salva como " + status + "!"));
 }
 
 function editarNoticia(id) {
@@ -1103,8 +1168,10 @@ function editarNoticia(id) {
     setGaleriaFotos("editNoticiaGaleriaItems", n.galeria || []);
     document.getElementById("editNoticiaVideo").value = n.video || "";
     document.getElementById("editNoticiaFonte").value = n.fonte || "";
+    document.getElementById("editNoticiaAutor").value = n.autor || "";
+    document.getElementById("editNoticiaTags").value = (n.tags || []).join(", ");
     document.getElementById("editNoticiaCidade").value = n.cidade || "sao-pedro";
-    document.getElementById("editNoticiaRascunho").checked = !!n.rascunho;
+    document.getElementById("editNoticiaStatus").value = n.status || (n.rascunho ? "rascunho" : "publicada");
     document.getElementById("editNoticiaDataAgendada").value = n.dataAgendada || "";
     document.getElementById("editNoticiaData").value = n.data || "";
 
@@ -1133,8 +1200,12 @@ function salvarEdicaoNoticia() {
     n.galeria = getGaleriaFotos("editNoticiaGaleriaItems");
     n.video = document.getElementById("editNoticiaVideo").value.trim();
     n.fonte = document.getElementById("editNoticiaFonte").value.trim();
+    n.autor = document.getElementById("editNoticiaAutor").value.trim();
+    var tagsRaw = document.getElementById("editNoticiaTags").value.trim();
+    n.tags = tagsRaw ? tagsRaw.split(",").map(function (t) { return t.trim(); }).filter(function (t) { return t; }) : [];
     n.cidade = document.getElementById("editNoticiaCidade").value;
-    n.rascunho = document.getElementById("editNoticiaRascunho").checked;
+    n.status = document.getElementById("editNoticiaStatus").value;
+    n.rascunho = n.status === "rascunho";
     n.dataAgendada = document.getElementById("editNoticiaDataAgendada").value || "";
     n.data = document.getElementById("editNoticiaData").value || n.data;
 
@@ -3890,14 +3961,19 @@ function renderEditorialDashboard() {
     var noticias = getData("noticias");
     var pautas = getData("pautas");
     var hoje = new Date().toISOString().split("T")[0];
-    var publicadas = noticias.filter(function (n) { return !n.rascunho && (!n.dataAgendada || n.dataAgendada <= hoje); }).length;
-    var rascunhos = noticias.filter(function (n) { return n.rascunho; }).length;
+    var publicadas = noticias.filter(function (n) {
+        var st = n.status || (n.rascunho ? "rascunho" : "publicada");
+        return st === "publicada" || (st === "agendada" && n.dataAgendada && n.dataAgendada <= hoje);
+    }).length;
+    var rascunhos = noticias.filter(function (n) { var st = n.status || "publicada"; return st === "rascunho" || n.rascunho; }).length;
     var agendadas = noticias.filter(function (n) { return n.dataAgendada && n.dataAgendada > hoje; }).length;
+    var revisao = noticias.filter(function (n) { var st = n.status || ""; return st === "revisao"; }).length;
     var pautasAbertas = pautas.filter(function (p) { return p.status !== "concluida"; }).length;
     el.innerHTML =
         '<div class="editorial-stats">' +
             '<div class="editorial-stat highlight"><div class="editorial-stat-value">' + publicadas + '</div><div class="editorial-stat-label">Publicadas</div></div>' +
             '<div class="editorial-stat"><div class="editorial-stat-value">' + rascunhos + '</div><div class="editorial-stat-label">Rascunhos</div></div>' +
+            '<div class="editorial-stat"><div class="editorial-stat-value">' + revisao + '</div><div class="editorial-stat-label">Em revisao</div></div>' +
             '<div class="editorial-stat"><div class="editorial-stat-value">' + agendadas + '</div><div class="editorial-stat-label">Agendadas</div></div>' +
             '<div class="editorial-stat"><div class="editorial-stat-value">' + pautasAbertas + '</div><div class="editorial-stat-label">Pautas Abertas</div></div>' +
         '</div>';
@@ -3939,8 +4015,9 @@ function renderAdminNewsList() {
     }
     container.innerHTML = "";
     noticias.forEach(function (n) {
-        var status = n.rascunho ? "rascunho" : (n.dataAgendada && n.dataAgendada > hoje ? "agendada" : "publicada");
-        var statusLabel = n.rascunho ? "Rascunho" : (n.dataAgendada && n.dataAgendada > hoje ? "Agendada" : "Publicada");
+        var st = n.status || (n.rascunho ? "rascunho" : "publicada");
+        var status = st;
+        var statusLabel = st === "publicada" ? "Publicada" : (st === "revisao" ? "Em revisao" : (st === "agendada" ? "Agendada" : "Rascunho"));
         var thumb = n.imagem ? '<img class="admin-news-thumb" src="' + esc(n.imagem) + '" alt="">' : '<div class="admin-news-thumb" style="background:var(--cinza-100);border-radius:4px;"></div>';
         container.innerHTML +=
             '<div class="admin-news-item">' +
