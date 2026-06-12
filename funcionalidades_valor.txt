@@ -1,0 +1,170 @@
+====================================================================
+ESPORTE SAO PEDRO - Portal Esportivo de Sao Pedro/SP
+Lista de Funcionalidades e Valor do Projeto
+====================================================================
+
+1. NOTICIAS
+   - Criar, editar e publicar noticias com titulo, corpo (rich text), imagem principal,
+     galeria de fotos, video do YouTube, fonte, autor e tags.
+   - Status: publicada, em revisao, rascunho, agendada (com data).
+   - Filtro por categoria (futebol, volei, basquete, corrida, ciclismo, artes marciais,
+     skate/radicais, geral).
+   - Noticias relacionadas por categoria ou tags.
+   - Feed RSS gerado automaticamente.
+
+2. CAMPEO NATOS
+   - Criar campeonatos com nome, esporte e ano.
+   - Cadastrar times com pontos, jogos, vitorias, empates, derrotas, gols pro e contra.
+   - Classificacao automatica (ordenada por pontos e saldo de gols).
+   - Cadastro de artilheiros.
+   - Registro de resultados (jogos) com data e local.
+   - Graficos: classificacao (barras), artilheiros, desempenho do lider, gols pro/contra.
+
+3. CALENDARIO DE JOGOS
+   - Agenda de jogos e eventos em formato calendario mensal.
+   - Adicionar jogos com times, data, horario e local.
+   - Adicionar eventos esportivos (corrida, torneio, premiacao, peneira, inscricoes).
+
+4. ATLETAS E TIMES
+   - Cadastro de atletas: nome, esporte, time, posicao, foto, biografia.
+   - Cadastro de times/equipes: nome, esporte, logo, descricao.
+   - Redes sociais nos cards (Instagram, Facebook, YouTube, WhatsApp, Site).
+   - Modal "Linktree" ao clicar: foto + nome + botoes para cada rede social.
+   - Filtro por esporte.
+
+5. GALERIA DE FOTOS
+   - Galeria com fotos, legendas e data.
+   - Filtro por esporte.
+   - Lightbox para visualizar foto em tela cheia.
+
+6. VIDEOS
+   - Incorporar videos do YouTube, organizados por esporte.
+   - Player integrado na pagina.
+
+7. PODCAST
+   - Episodios de podcast com titulo, descricao e player embutido.
+   - Organizado por data.
+
+8. OPINIAO (Colunas)
+   - Colunistas podem escrever artigos de opiniao.
+   - Card com foto do colunista, titulo e resumo.
+
+9. CONQUISTAS / MEDALHAS
+   - Registro de conquistas de atletas e times (títulos, medalhas, recordes).
+   - Exibicao em grid com iconografia por tipo (ouro, prata, bronze).
+
+10. MAPA ESPORTIVO
+    - Mapa interativo (Leaflet + OpenStreetMap) com locais esportivos de Sao Pedro.
+    - Categorias: estadio, ginasio, quadra, pista, academia, parque, outros.
+    - Admin cadastra local com nome, endereco, lat/lng, foto, descricao e redes.
+    - Filtro por categoria e lista de locais abaixo do mapa.
+
+11. "FALA, TORCEDOR!" - Conteudo do Leitor
+    - Leitor envia relato com nome, foto, esporte e texto.
+    - Admin aprova ou recusa.
+    - Aprovados aparecem em galeria publica.
+
+12. BANNER DO SITE
+    - Banner configurável pelo admin que aparece no topo para todos os leitores.
+    - Tipos: imagem, texto comercial, noticia em destaque, video incorporado.
+    - Link ao clicar, cor de fundo personalizada, agendamento (data inicio/fim).
+    - Usuario pode fechar o banner.
+
+13. NOTIFICACOES PUSH
+    - Leitores recebem notificacoes no navegador (celular/PC) mesmo com o site fechado.
+    - Admin envia notificacoes para todos os inscritos com titulo, corpo e link.
+    - Requer implantacao da Edge Function no Supabase.
+
+14. MODO CLARO / ESCURO
+    - Toggle no header para alternar entre tema escuro (padrao) e claro.
+    - Preferencia salva no navegador.
+
+15. PLACAR AO VIVO
+    - Placar em tempo real exibido na pagina inicial.
+    - Admin atualiza: time casa, gols casa, time fora, gols fora, minuto.
+
+16. TRANSMISSAO AO VIVO (Live)
+    - Incorporar live do YouTube, Twitch, Facebook ou Instagram.
+    - Botao "AO VIVO" aparece no menu para todos os leitores.
+
+17. PATROCINADORES
+    - Cadastro de patrocinadores com logo, site e plano (ouro/prata/bronze).
+    - Exibidos em faixa acima do rodape.
+    - Aprovacao manual pelo admin.
+
+18. ENQUETES / VOTACOES
+    - Criar enquetes com pergunta e opcoes para os leitores votarem.
+    - Aparece na pagina inicial.
+
+19. NEWSLETTER
+    - Cadastro de e-mail dos leitores.
+    - Admin pode exportar lista de e-mails.
+
+20. MONITOR DE PAUTAS (com IA)
+    - Admin coleta links/textos da internet (Instagram, Facebook, sites, WhatsApp).
+    - Sistema extrai automaticamente times, locais e modalidades.
+    - Integracao com Gemini AI para gerar rascunhos automaticos de noticias.
+
+21. RESUMO DA SEMANA
+    - Boletim semanal publicado pelo admin.
+    - Rich text com resultados, destaques e proximos jogos.
+
+22. DASHBOARD EDITORIAL
+    - Visao geral: noticias publicadas, rascunhos, em revisao, agendadas, pautas abertas.
+    - Lista de noticias com busca e filtro por categoria.
+    - Calendario editorial mensal.
+
+23. DASHBOARD FINANCEIRO
+    - Cadastro de produtos publicitarios (banner, narrador, video, post patrocinado).
+    - Calculadora de vendas com geracao de orcamentos.
+    - Historico de orcamentos com status (orcamento, vendido, cancelado).
+
+24. DASHBOARD DE USO
+    - Monitoramento do volume de dados do portal.
+    - Controle de limites do banco de textos e imagens.
+
+25. PAUTAS (Agenda Editorial)
+    - Planejamento de pautas com status (nova, investigando, convertida, descartada).
+    - Pautas recorrentes com template.
+
+26. SOBRE / ADMIN GERAL
+    - Pagina "Sobre" editavel pelo admin (rich text inline).
+    - Logo do site customizavel com ajuste de tamanho.
+    - Configuracao de IA (chave Gemini).
+    - Backup/export de dados em JSON.
+
+27. SEO / INTEGRACOES
+    - Dados estruturados JSON-LD (SportsOrganization).
+    - Open Graph (Facebook, WhatsApp, Telegram).
+    - Twitter Cards.
+    - Sitemap XML.
+    - Feed RSS.
+    - PWA (Service Worker + Manifest + Instalavel).
+    - Responsivo (celular, tablet, desktop).
+
+====================================================================
+CUSTO DO PROJETO
+====================================================================
+
+Hospedagem:      GitHub Pages ......................... R$ 0,00
+Banco de Dados:  Supabase Free (500 MB, 5 usuários) ... R$ 0,00
+Imagens:         Cloudinary Free (25 GB) .............. R$ 0,00
+Mapa:            OpenStreetMap + Leaflet (livre) ...... R$ 0,00
+Graficos:        Chart.js (open source) ............... R$ 0,00
+Fonte:           Google Fonts (gratuita) .............. R$ 0,00
+Bibliotecas:     CDN gratuitas ........................ R$ 0,00
+Push:            Supabase Edge Functions (gratis) ..... R$ 0,00
+IA:              Google Gemini API (gratis, 250/dia) .. R$ 0,00
+
+TOTAL MENSAL: ................................................ R$ 0,00
+TOTAL ANUAL: ................................................. R$ 0,00
+
+Custos opcionais (caso queira):
+- Dominio proprio (.com.br): ~R$ 40/ano
+- Cloudinary adicional apos 25 GB: variavel
+- Supabase Pro apos 500 MB: ~R$ 70/mes
+
+====================================================================
+Desenvolvido por Bruno Bertin Marquez
+Data: Junho/2026
+====================================================================
