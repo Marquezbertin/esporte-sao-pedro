@@ -2,6 +2,7 @@
 // Dados locais com localStorage | Zero backend | GitHub Pages
 
 var SITE_BASE_URL = "https://marquezbertin.github.io/esporte-sao-pedro/";
+var VAPID_PUBLIC_KEY = "BDqqP7TPzV7sdz9CqKa1JNNbDJQ1kFyVTRhGMWVy4gxy4_d-xGDk91PtkhpVQXAVhEjcbxhy1YCfxX4vHQpgTwA";
 
 // ===== UTILIDADES =====
 function esc(str) {
@@ -564,6 +565,142 @@ function renderSobreEditavel() {
     }
 }
 
+// ===== NOTIFICACOES PUSH =====
+
+function urlBase64ToUint8Array(base64String) {
+    var padding = "=".repeat((4 - base64String.length % 4) % 4);
+    var base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+    try {
+        var rawData = atob(base64);
+        var outputArray = new Uint8Array(rawData.length);
+        for (var i = 0; i < rawData.length; i++) outputArray[i] = rawData.charCodeAt(i);
+        return outputArray;
+    } catch (e) { return null; }
+}
+
+function inscreverPush() {
+    if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    if (Notification.permission === "denied") return;
+    if (Notification.permission === "granted") {
+        realizarInscricaoPush();
+        return;
+    }
+    Notification.requestPermission().then(function (permission) {
+        if (permission === "granted") realizarInscricaoPush();
+    });
+}
+
+function realizarInscricaoPush() {
+    navigator.serviceWorker.ready.then(function (reg) {
+        reg.pushManager.getSubscription().then(function (sub) {
+            if (sub) return sub;
+            return reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+            });
+        }).then(function (sub) {
+            if (sub) salvarInscricaoPush(sub);
+        });
+    });
+}
+
+function salvarInscricaoPush(subscription) {
+    SupaDB.getItem("push_subscriptions").then(function (lista) {
+        lista = lista || [];
+        var existe = lista.some(function (s) { return s.endpoint === subscription.endpoint; });
+        if (existe) return;
+        lista.push(JSON.parse(JSON.stringify(subscription)));
+        SupaDB.setItem("push_subscriptions", lista);
+    });
+}
+
+function desinscreverPush() {
+    navigator.serviceWorker.ready.then(function (reg) {
+        reg.pushManager.getSubscription().then(function (sub) {
+            if (!sub) return;
+            var endpoint = sub.endpoint;
+            sub.unsubscribe().then(function () {
+                SupaDB.getItem("push_subscriptions").then(function (lista) {
+                    if (!lista) return;
+                    lista = lista.filter(function (s) { return s.endpoint !== endpoint; });
+                    SupaDB.setItem("push_subscriptions", lista);
+                });
+            });
+        });
+    });
+}
+
+function enviarPushAdmin() {
+    if (!requireAdmin()) return;
+    var titulo = document.getElementById("pushTitulo").value.trim();
+    var corpo = document.getElementById("pushCorpo").value.trim();
+    var url = document.getElementById("pushUrl").value.trim() || SITE_BASE_URL;
+    var icon = document.getElementById("pushIcon").value.trim() || SITE_BASE_URL + "og-image.svg";
+    if (!titulo) { showToastAviso("Digite um titulo para a notificacao"); return; }
+    showLoading("Enviando notificacoes...");
+    var payload = JSON.stringify({ title: titulo, body: corpo, url: url, icon: icon });
+    SupaDB.getItem("push_vapid_private").then(function (privKey) {
+        // Se tiver private key salva no Supabase, usa Edge Function
+        var edgeUrl = "https://cyihlqyhefdwypkzvztj.functions.supabase.co/send-push";
+        var fnBody = {
+            vapidPublic: VAPID_PUBLIC_KEY,
+            vapidPrivate: privKey || "",
+            payload: payload,
+            contact: "mailto:contato@esportesaopedro.com.br"
+        };
+        return fetch(edgeUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(fnBody)
+        });
+    }).then(function (res) {
+        if (!res) return;
+        if (res.ok) { showToastSave("Notificacao enviada para todos os inscritos!"); }
+        else { return res.text().then(function (t) { throw new Error(t); }); }
+    }).catch(function (err) {
+        showToastAviso("Erro ao enviar: " + err.message + ". A Edge Function precisa ser implantada (veja supabase/functions/send-push/)");
+        hideLoading();
+    }).then(function () {
+        hideLoading();
+        document.getElementById("pushTitulo").value = "";
+        document.getElementById("pushCorpo").value = "";
+    });
+}
+
+function atualizarStatusPush() {
+    SupaDB.getItem("push_subscriptions").then(function (lista) {
+        var el = document.getElementById("pushStatus");
+        if (!el) return;
+        var total = (lista && Array.isArray(lista)) ? lista.length : 0;
+        el.innerHTML = "Inscritos para receber notificacoes: <strong>" + total + "</strong> leitores" +
+            (total > 0 && isAdmin() ? ' | <a href="#" onclick="testarPush()" style="color:var(--azul-medio);">Enviar teste</a>' : "") +
+            ' | <a href="#" onclick="desinscreverPush();atualizarStatusPush();" style="color:var(--cinza-500);">Remover inscricoes expiradas</a>';
+    });
+}
+
+function testarPush() {
+    if (!requireAdmin()) return;
+    var titulo = "Teste - Esporte Sao Pedro";
+    var corpo = "Esta e uma notificacao de teste do admin";
+    var url = SITE_BASE_URL;
+    var icon = SITE_BASE_URL + "og-image.svg";
+    showLoading("Enviando teste...");
+    var payload = JSON.stringify({ title: titulo, body: corpo, url: url, icon: icon });
+    SupaDB.getItem("push_vapid_private").then(function (privKey) {
+        var edgeUrl = "https://cyihlqyhefdwypkzvztj.functions.supabase.co/send-push";
+        return fetch(edgeUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ vapidPublic: VAPID_PUBLIC_KEY, vapidPrivate: privKey || "", payload: payload, contact: "mailto:contato@esportesaopedro.com.br" })
+        });
+    }).then(function (res) {
+        if (!res) return;
+        if (res.ok) { showToastSave("Teste enviado!"); } else { return res.text().then(function (t) { throw new Error(t); }); }
+    }).catch(function (err) {
+        showToastAviso("Edge Function nao implantada: " + err.message);
+    }).then(function () { hideLoading(); });
+}
+
 // ===== BANNER DO SITE =====
 
 function salvarBanner() {
@@ -751,6 +888,7 @@ document.addEventListener("DOMContentLoaded", function () {
         atualizarLiveStatus();
         carregarSiteLogo();
         carregarBanner();
+        inscreverPush();
         renderSobreEditavel();
         renderPatrocinadoresPublico();
 
@@ -797,7 +935,7 @@ function navegar(secao, e) {
         case "opiniao": renderOpinioes(); break;
         case "conquistas": renderConquistas(); break;
         case "redacao": if (!isAdmin()) { navegar("inicio", null); return; } renderTemplatesPauta(); renderAdminPautas(); renderEditorialDashboard(); renderAdminNewsList(); renderCalendario(); break;
-        case "sobre": atualizarStorageInfo(); renderDashboardUsoPortal(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminTimes(); renderNewsletterAdmin(); renderMonitorPautas(); renderConfigIA(); carregarBanner(); renderAdminFinanceiro(); renderCalculadoraFinanceira(); renderOrcamentos(); break;
+        case "sobre": atualizarStorageInfo(); renderDashboardUsoPortal(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminTimes(); renderNewsletterAdmin(); renderMonitorPautas(); renderConfigIA(); carregarBanner(); atualizarStatusPush(); renderAdminFinanceiro(); renderCalculadoraFinanceira(); renderOrcamentos(); break;
     }
 
     window.scrollTo({ top: 0, behavior: "smooth" });

@@ -32,6 +32,32 @@ self.addEventListener('activate', function (e) {
     self.clients.claim();
 });
 
+self.addEventListener('push', function (e) {
+    var data = {};
+    try { data = e.data ? e.data.json() : {}; } catch (x) { data = { title: 'Esporte Sao Pedro' }; }
+    var title = data.title || 'Esporte Sao Pedro';
+    var options = {
+        body: data.body || 'Nova atualizacao no portal esportivo',
+        icon: data.icon || '/og-image.svg',
+        badge: '/og-image.svg',
+        vibrate: [200, 100, 200],
+        data: { url: data.url || '/' }
+    };
+    e.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', function (e) {
+    e.notification.close();
+    var url = e.notification.data && e.notification.data.url ? e.notification.data.url : '/';
+    e.waitUntil(clients.matchAll({ type: 'window' }).then(function (clientList) {
+        for (var i = 0; i < clientList.length; i++) {
+            var c = clientList[i];
+            if (c.url.indexOf(self.location.origin) === 0 && 'focus' in c) return c.focus();
+        }
+        if (clients.openWindow) return clients.openWindow(url);
+    }));
+});
+
 self.addEventListener('fetch', function (e) {
     if (e.request.method !== 'GET') return;
     e.respondWith(

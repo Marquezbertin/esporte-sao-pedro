@@ -1173,6 +1173,28 @@
                 </div>
             </div>
 
+            <!-- ADMIN: NOTIFICACOES PUSH -->
+            <div class="card-panel admin-only" style="margin-top:40px;">
+                <div class="card-panel-header">
+                    <h3>&#128276; Notificacoes Push</h3>
+                    <span class="badge">ADMIN</span>
+                </div>
+                <p style="color:#8892a4;margin-bottom:16px;">
+                    Envie notificacoes para todos os leitores com o navegador aberto.
+                    Eles aparecem como alerta no celular/PC mesmo com o site fechado.
+                </p>
+                <div class="admin-form" style="display:block;margin-top:0;border-color:var(--cinza-200);">
+                    <div style="display:grid;gap:10px;grid-template-columns:1fr 1fr;">
+                        <input type="text" id="pushTitulo" placeholder="Titulo da notificacao (obrigatorio)" style="grid-column:1/-1;">
+                        <textarea id="pushCorpo" placeholder="Texto da notificacao (opcional)" rows="2" style="grid-column:1/-1;padding:9px 12px;border:1px solid var(--cinza-200);border-radius:6px;font-size:0.85rem;resize:vertical;font-family:inherit;"></textarea>
+                        <input type="url" id="pushUrl" placeholder="Link ao clicar (opcional, padrao: home)">
+                        <input type="url" id="pushIcon" placeholder="URL do icone (opcional, padrao: logo)">
+                    </div>
+                    <button class="btn btn-primary" onclick="enviarPushAdmin()" style="margin-top:12px;">Enviar Notificacao</button>
+                </div>
+                <p style="color:#64748b;margin-top:12px;font-size:0.8rem;" id="pushStatus">Requer implantacao da Edge Function no Supabase (instrucoes em supabase/functions/send-push/)</p>
+            </div>
+
             <!-- ADMIN: DASHBOARD DE USO -->
             <div class="card-panel admin-only portal-usage-panel" style="margin-top:40px;">
                 <div class="card-panel-header">
