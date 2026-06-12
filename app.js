@@ -701,6 +701,157 @@ function testarPush() {
     }).then(function () { hideLoading(); });
 }
 
+// ===== FALA, TORCEDOR! =====
+
+function enviarTorcedor() {
+    var nome = document.getElementById("torcedorNome").value.trim();
+    var texto = document.getElementById("torcedorTexto").value.trim();
+    if (!nome || !texto) { showToastAviso("Preencha seu nome e o relato"); return; }
+    var item = {
+        id: Date.now().toString(36) + Math.random().toString(36).substr(2, 4),
+        nome: nome,
+        texto: texto,
+        foto: document.getElementById("torcedorFoto").value.trim(),
+        esporte: document.getElementById("torcedorEsporte").value,
+        data: document.getElementById("torcedorData").value || new Date().toISOString().split("T")[0],
+        enviadoEm: new Date().toISOString(),
+        status: "pendente"
+    };
+    // Tenta salvar no Supabase (pode falhar se nao for admin - RLS)
+    var supabaseOk = false;
+    SupaDB.getItem("torcedor_submissoes").then(function (lista) {
+        lista = lista || [];
+        lista.push(item);
+        return SupaDB.setItem("torcedor_submissoes", lista);
+    }).then(function (ok) { supabaseOk = ok; }).catch(function () {});
+
+    // Fallback: localStorage
+    try {
+        var local = JSON.parse(localStorage.getItem("esp_torcedor_submissoes") || "[]");
+        local.push(item);
+        localStorage.setItem("esp_torcedor_submissoes", JSON.stringify(local));
+    } catch (e) {}
+
+    var msg = document.getElementById("torcedorMsg");
+    if (msg) {
+        msg.style.display = "block";
+        msg.innerHTML = "Obrigado, " + esc(nome) + "! Seu relato foi enviado para aprovacao.";
+        msg.style.color = "#16a34a";
+    }
+    document.getElementById("torcedorNome").value = "";
+    document.getElementById("torcedorTexto").value = "";
+    document.getElementById("torcedorFoto").value = "";
+    document.getElementById("torcedorEsporte").value = "";
+    document.getElementById("torcedorData").value = "";
+}
+
+function renderTorcedorGaleria() {
+    var el = document.getElementById("torcedorContent");
+    if (!el) return;
+    SupaDB.getItem("torcedor_conteudo").then(function (aprovados) {
+        aprovados = aprovados || [];
+        var locais = [];
+        try { locais = JSON.parse(localStorage.getItem("esp_torcedor_conteudo") || "[]"); } catch (e) {}
+        var todos = aprovados.concat(locais);
+        if (todos.length === 0) {
+            el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">&#128172;</div><div class="empty-state-text">Nenhum relato da torcida ainda. Seja o primeiro a enviar!</div></div>';
+            return;
+        }
+        el.innerHTML = '<div class="torcedor-grid">' +
+            todos.sort(function (a, b) { return b.enviadoEm.localeCompare(a.enviadoEm); }).map(function (r) {
+                return '<div class="torcedor-card">' +
+                    (r.foto ? '<img src="' + esc(r.foto) + '" onerror="this.style.display=\'none\'">' : "") +
+                    '<div class="torcedor-card-body">' +
+                    '<p class="torcedor-card-texto">"' + esc(r.texto) + '"</p>' +
+                    '<div class="torcedor-card-footer">' +
+                    '<strong>' + esc(r.nome) + '</strong>' +
+                    (r.esporte ? '<span>' + esc(r.esporte) + '</span>' : "") +
+                    '<span>' + formatarDataCurta(r.data || r.enviadoEm) + '</span>' +
+                    '</div></div></div>';
+            }).join("") +
+            '</div>';
+    });
+}
+
+function formatarDataCurta(d) {
+    if (!d) return "";
+    var p = d.split("T")[0].split("-");
+    if (p.length < 3) return d;
+    return p[2] + "/" + p[1] + "/" + p[0];
+}
+
+function renderAdminTorcedor() {
+    var el = document.getElementById("adminTorcedorList");
+    if (!el) return;
+    SupaDB.getItem("torcedor_submissoes").then(function (lista) {
+        lista = lista || [];
+        // Merge com localStorage
+        try {
+            var local = JSON.parse(localStorage.getItem("esp_torcedor_submissoes") || "[]");
+            local.forEach(function (l) {
+                if (!lista.some(function (x) { return x.id === l.id; })) lista.push(l);
+            });
+        } catch (e) {}
+        var pendentes = lista.filter(function (r) { return r.status === "pendente"; });
+        if (pendentes.length === 0) {
+            el.innerHTML = '<p style="color:#94a3b8;font-size:0.85rem;">Nenhum relato pendente de moderacao.</p>';
+            return;
+        }
+        el.innerHTML = pendentes.map(function (r) {
+            return '<div style="padding:14px;background:var(--cinza-50);border-radius:8px;margin-bottom:10px;border:1px solid var(--cinza-100);">' +
+                '<div style="display:flex;gap:12px;align-items:flex-start;">' +
+                (r.foto ? '<img src="' + esc(r.foto) + '" style="width:60px;height:60px;object-fit:cover;border-radius:6px;flex-shrink:0;" onerror="this.style.display=\'none\'">' : "") +
+                '<div style="flex:1;min-width:0;">' +
+                '<strong>' + esc(r.nome) + '</strong>' +
+                (r.esporte ? ' <span style="font-size:0.72rem;color:#64748b;">(' + esc(r.esporte) + ')</span>' : "") +
+                '<p style="font-size:0.82rem;color:#475569;margin:4px 0;font-style:italic;">"' + esc(r.texto) + '"</p>' +
+                '<span style="font-size:0.72rem;color:#94a3b8;">' + formatarDataCurta(r.enviadoEm) + '</span>' +
+                '</div>' +
+                '<div style="display:flex;gap:6px;flex-shrink:0;">' +
+                '<button class="btn btn-primary btn-sm" onclick="aprovarTorcedor(\'' + r.id + '\')" style="padding:4px 12px;font-size:0.75rem;">Aprovar</button>' +
+                '<button class="btn btn-danger btn-sm" onclick="recusarTorcedor(\'' + r.id + '\')" style="padding:4px 12px;font-size:0.75rem;">Recusar</button>' +
+                '</div></div></div>';
+        }).join("");
+    });
+}
+
+function aprovarTorcedor(id) {
+    if (!requireAdmin()) return;
+    SupaDB.getItem("torcedor_submissoes").then(function (lista) {
+        lista = lista || [];
+        var item = null;
+        lista = lista.filter(function (r) {
+            if (r.id === id) { item = r; return false; }
+            return true;
+        });
+        if (!item) return;
+        item.status = "aprovado";
+        return SupaDB.setItem("torcedor_submissoes", lista).then(function () {
+            return SupaDB.getItem("torcedor_conteudo");
+        }).then(function (aprovados) {
+            aprovados = aprovados || [];
+            aprovados.push(item);
+            return SupaDB.setItem("torcedor_conteudo", aprovados);
+        }).then(function () {
+            renderAdminTorcedor();
+            renderTorcedorGaleria();
+            showToastSave("Relato aprovado e publicado!");
+        });
+    });
+}
+
+function recusarTorcedor(id) {
+    if (!requireAdmin()) return;
+    SupaDB.getItem("torcedor_submissoes").then(function (lista) {
+        lista = lista || [];
+        lista = lista.filter(function (r) { return r.id !== id; });
+        return SupaDB.setItem("torcedor_submissoes", lista);
+    }).then(function () {
+        renderAdminTorcedor();
+        showToastSave("Relato recusado e removido.");
+    });
+}
+
 // ===== MAPA ESPORTIVO =====
 var _mapaMap = null;
 var _mapaMarkers = [];
@@ -1094,9 +1245,10 @@ function navegar(secao, e) {
         case "podcast": renderEpisodios(); break;
         case "opiniao": renderOpinioes(); break;
         case "conquistas": renderConquistas(); break;
+        case "torcedor": renderTorcedorGaleria(); break;
         case "mapa": renderMapa(); renderAdminLocaisList(); break;
         case "redacao": if (!isAdmin()) { navegar("inicio", null); return; } renderTemplatesPauta(); renderAdminPautas(); renderEditorialDashboard(); renderAdminNewsList(); renderCalendario(); break;
-        case "sobre": atualizarStorageInfo(); renderDashboardUsoPortal(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminTimes(); renderNewsletterAdmin(); renderMonitorPautas(); renderConfigIA(); carregarBanner(); atualizarStatusPush(); renderAdminFinanceiro(); renderCalculadoraFinanceira(); renderOrcamentos(); break;
+        case "sobre": atualizarStorageInfo(); renderDashboardUsoPortal(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminTimes(); renderNewsletterAdmin(); renderMonitorPautas(); renderConfigIA(); carregarBanner(); atualizarStatusPush(); renderAdminTorcedor(); renderAdminFinanceiro(); renderCalculadoraFinanceira(); renderOrcamentos(); break;
     }
 
     window.scrollTo({ top: 0, behavior: "smooth" });

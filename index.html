@@ -89,6 +89,7 @@
                     <a href="#" class="nav-link" onclick="navegar('podcast', event)">Podcast</a>
                     <a href="#" class="nav-link" onclick="navegar('opiniao', event)">Opiniao</a>
                     <a href="#" class="nav-link" onclick="navegar('conquistas', event)">Conquistas</a>
+                    <a href="#" class="nav-link" onclick="navegar('torcedor', event)">Fala, Torcedor!</a>
                     <a href="#" class="nav-link" onclick="navegar('mapa', event)">Mapa Esportivo</a>
                     <a href="#" class="nav-link nav-live" onclick="abrirLive(event)" id="navLive" style="display:none;">&#128308; AO VIVO</a>
                     <a href="#" class="nav-link admin-only nav-redacao" onclick="navegar('redacao', event)">Redacao</a>
@@ -756,6 +757,44 @@
         </div>
     </section>
 
+    <!-- SECAO: FALA, TORCEDOR! -->
+    <section class="section secao-page" id="secao-torcedor">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Fala, Torcedor!</h2>
+                <p class="section-sub">O espaco do leitor - envie sua historia, foto ou relato de jogo</p>
+            </div>
+
+            <!-- FORMULARIO DE ENVIO -->
+            <div class="torcedor-form" id="torcedorForm">
+                <h3>Envie sua contribuicao</h3>
+                <input type="text" id="torcedorNome" placeholder="Seu nome (ex: Joao Silva)">
+                <select id="torcedorEsporte">
+                    <option value="">Selecione o esporte</option>
+                    <option value="futebol">Futebol</option>
+                    <option value="volei">Volei</option>
+                    <option value="basquete">Basquete</option>
+                    <option value="corrida">Corrida</option>
+                    <option value="ciclismo">Ciclismo</option>
+                    <option value="artes-marciais">Artes Marciais</option>
+                    <option value="skate-radicais">Skate e Radicais</option>
+                    <option value="geral">Geral</option>
+                </select>
+                <input type="url" id="torcedorFoto" placeholder="URL da foto (Instagram, Google Fotos, etc.)">
+                <textarea id="torcedorTexto" placeholder="Conte sua historia! O que voce viu, o que achou do jogo, um momento marcante..." rows="4"></textarea>
+                <input type="date" id="torcedorData">
+                <button class="btn btn-primary" onclick="enviarTorcedor()">Enviar relato</button>
+                <p class="torcedor-msg" id="torcedorMsg" style="display:none;"></p>
+            </div>
+
+            <!-- GALERIA DE RELATOS APROVADOS -->
+            <div class="torcedor-galeria" id="torcedorGaleria" style="margin-top:40px;">
+                <h3>Relatos da torcida</h3>
+                <div id="torcedorContent"></div>
+            </div>
+        </div>
+    </section>
+
     <!-- SECAO: MAPA ESPORTIVO -->
     <section class="section secao-page" id="secao-mapa">
         <div class="container">
@@ -1231,6 +1270,20 @@
                         <button class="btn btn-danger" onclick="removerBanner()">Remover Banner</button>
                     </div>
                     <div id="bannerPreview" style="margin-top:16px;"></div>
+                </div>
+            </div>
+
+            <!-- ADMIN: FALA, TORCEDOR! -->
+            <div class="card-panel admin-only" style="margin-top:40px;">
+                <div class="card-panel-header">
+                    <h3>&#128172; Fala, Torcedor! - Moderacao</h3>
+                    <span class="badge">ADMIN</span>
+                </div>
+                <p style="color:#8892a4;margin-bottom:16px;">
+                    Aprove ou recuse os relatos enviados pelos leitores. Os aprovados aparecem na pagina "Fala, Torcedor!".
+                </p>
+                <div id="adminTorcedorList">
+                    <p style="color:#94a3b8;font-size:0.85rem;">Nenhum relato pendente.</p>
                 </div>
             </div>
 
