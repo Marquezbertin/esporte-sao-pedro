@@ -372,10 +372,10 @@ img { max-width: 100%; display: block; }
 
 .hero-brasao {
     position: absolute;
-    left: 16px;
+    left: 24px;
     top: 50%;
     transform: translateY(-50%);
-    width: 42px;
+    width: 52px;
     height: auto;
     z-index: 2;
     transition: opacity 0.3s ease;
