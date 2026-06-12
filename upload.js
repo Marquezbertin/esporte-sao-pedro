@@ -310,12 +310,8 @@ var CloudUpload = (function () {
         modal.innerHTML =
             '<div class="camera-modal-content">' +
                 '<button class="camera-close" onclick="this.closest(\'.camera-modal\').remove()">&times;</button>' +
-                '<div class="camera-preview-container" id="cameraPreviewContainerMobile" style="display:none;">' +
-                    '<img id="cameraPreviewImgMobile" class="camera-preview-img" alt="Preview">' +
-                '</div>' +
                 '<div class="camera-actions">' +
                     '<button class="btn btn-primary" id="cameraCaptureBtnMobile">Abrir Câmera</button>' +
-                    '<button class="btn btn-secondary" id="cameraRetryBtnMobile" style="display:none;">Tirar Outra</button>' +
                     '<button class="btn btn-outline-cancel" id="cameraCancelBtnMobile">Cancelar</button>' +
                 '</div>' +
                 '<div class="camera-status" id="cameraStatusMobile"></div>' +
@@ -323,10 +319,7 @@ var CloudUpload = (function () {
 
         document.body.appendChild(modal);
 
-        var previewContainer = document.getElementById("cameraPreviewContainerMobile");
-        var previewImg = document.getElementById("cameraPreviewImgMobile");
         var captureBtn = document.getElementById("cameraCaptureBtnMobile");
-        var retryBtn = document.getElementById("cameraRetryBtnMobile");
         var cancelBtn = document.getElementById("cameraCancelBtnMobile");
         var statusEl = document.getElementById("cameraStatusMobile");
 
@@ -336,8 +329,6 @@ var CloudUpload = (function () {
         fileInput.capture = "environment";
         fileInput.style.display = "none";
         document.body.appendChild(fileInput);
-
-        var currentBlob = null;
 
         function fecharModal() {
             if (modal.parentNode) modal.parentNode.removeChild(modal);
@@ -350,7 +341,6 @@ var CloudUpload = (function () {
                 statusEl.textContent = "Imagem muito grande! Maximo 10MB.";
                 statusEl.style.color = "#dc2626";
                 captureBtn.disabled = false;
-                retryBtn.disabled = false;
                 cancelBtn.disabled = false;
                 return;
             }
@@ -358,7 +348,6 @@ var CloudUpload = (function () {
             statusEl.textContent = "Enviando... 0%";
             statusEl.style.color = "#d4a017";
             captureBtn.disabled = true;
-            retryBtn.disabled = true;
             cancelBtn.disabled = true;
 
             uploadFile(file, function (pct) {
@@ -376,52 +365,30 @@ var CloudUpload = (function () {
 
                 statusEl.textContent = "Foto enviada com sucesso!";
                 statusEl.style.color = "#16a34a";
-
                 setTimeout(fecharModal, 1200);
             }).catch(function (err) {
                 statusEl.textContent = "Erro no upload: " + err.message;
                 statusEl.style.color = "#dc2626";
                 captureBtn.disabled = false;
-                retryBtn.disabled = false;
                 cancelBtn.disabled = false;
             });
         }
+
+        fileInput.onchange = function () {
+            var file = fileInput.files[0];
+            if (!file) {
+                statusEl.textContent = "Nenhuma foto selecionada.";
+                statusEl.style.color = "#dc2626";
+                return;
+            }
+            fazerUpload(file);
+        };
 
         captureBtn.onclick = function () {
             fileInput.click();
         };
 
-        fileInput.onchange = function () {
-            var file = fileInput.files[0];
-            if (!file) return;
-
-            currentBlob = file;
-
-            var reader = new FileReader();
-            reader.onload = function (e) {
-                previewImg.src = e.target.result;
-                previewContainer.style.display = "block";
-                captureBtn.style.display = "none";
-                retryBtn.style.display = "";
-                captureBtn.textContent = "Usar esta foto";
-                captureBtn.disabled = false;
-
-                retryBtn.onclick = function () {
-                    previewContainer.style.display = "none";
-                    captureBtn.style.display = "";
-                    retryBtn.style.display = "none";
-                    captureBtn.textContent = "Abrir Câmera";
-                    fileInput.value = "";
-                };
-
-                captureBtn.onclick = function () { fazerUpload(currentBlob); };
-                captureBtn.textContent = "Usar esta foto";
-                captureBtn.style.display = "";
-            };
-            reader.readAsDataURL(file);
-        };
-
-        fileInput.click();
+        captureBtn.onclick();
     }
 
     // Inicializa botoes de upload em todos os campos marcados
