@@ -1,10 +1,18 @@
-# Sessão 12/06/2026 — Brasão alinhado à esquerda do hero, sem fundo branco
+# Sessão 12/06/2026 — Brasão responsivo: desktop à esquerda, mobile centralizado acima
 
-## Resumo
-O brasão foi reposicionado do canto superior esquerdo (watermark) para alinhado à esquerda do texto "PORTAL ESPORTIVO / O Esporte de Sao Pedro" no hero, usando flexbox. O tamanho reduziu de 60px para 45px. O fundo branco é removido via `mix-blend-mode: multiply` contra o gradiente azul escuro do hero. Commit `4e4db4a` enviado para `origin/main`.
+## Problema resolvido
+O brasão ficava sobreposto ao texto em telas mobile porque a regra `.hero-brasao{position:absolute}` apendada manualmente no `style.min.css` estava FORA de media query, sobrescrevendo as regras mobile.
 
-## Arquivos alterados
-- `index.html` — `<img class="hero-brasao">` movido para dentro de `.hero-content`, texto envolvido em `<div class="hero-text">`
-- `style.css` — `.hero-content` agora flex (display:flex + gap), `.hero-brasao` sem absolute/grayscale/opacity baixa, com mix-blend-mode:multiply e 45px. Adicionado `.hero-text { flex: 1 }`
-- `style.min.css` — mesmas alterações minificadas (hero-content + hero-brasao + hero-text)
-- `.opencode/summary.md` — este arquivo
+## Solução
+- **Desktop (≥769px)**: `.hero-brasao` com `position:absolute; left:24px; top:50%; transform:translateY(-50%); width:118px`
+- **Tablet (≤768px)**: `.hero-content` vira `flex-direction:column; align-items:center`, brasão `position:static; width:48px; margin-bottom:12px`
+- **Celular (≤480px)**: `.hero-brasao{width:32px}`
+- **`style.min.css`**: regra desktop do brasão envolvida em `@media(min-width:769px)` para não vazar para mobile
+
+## Commits
+- `25bfc64` — brasão 118px desktop
+- `1c2b85c`, `1847100`, `d1f859d` — tentativas de responsivo (falhas porque regra apendada sem media query sobrescrevia)
+- `2bcb922` — FIX: desktop rule wrapped in `@media(min-width:769px)` no minificado
+
+## PNG com fundo transparente
+`img/brasao-sao-pedro.png` processado via .NET (pixels >240 convertidos para alpha 0) para remover fundo branco.
