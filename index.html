@@ -28,6 +28,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
     <!-- RSS Feed -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link rel="alternate" type="application/rss+xml" title="Esporte Sao Pedro - Feed de Noticias" href="https://cyihlqyhefdwypkzvztj.supabase.co/storage/v1/object/public/rss/feed.xml">
     <!-- Sitemap -->
     <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml">
@@ -87,6 +89,7 @@
                     <a href="#" class="nav-link" onclick="navegar('podcast', event)">Podcast</a>
                     <a href="#" class="nav-link" onclick="navegar('opiniao', event)">Opiniao</a>
                     <a href="#" class="nav-link" onclick="navegar('conquistas', event)">Conquistas</a>
+                    <a href="#" class="nav-link" onclick="navegar('mapa', event)">Mapa Esportivo</a>
                     <a href="#" class="nav-link nav-live" onclick="abrirLive(event)" id="navLive" style="display:none;">&#128308; AO VIVO</a>
                     <a href="#" class="nav-link admin-only nav-redacao" onclick="navegar('redacao', event)">Redacao</a>
                     <a href="#" class="nav-link" onclick="navegar('sobre', event)">Sobre</a>
@@ -749,6 +752,64 @@
                     </div>
                 </div>
                 <div id="calendarioGrid" style="margin-top:12px;"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECAO: MAPA ESPORTIVO -->
+    <section class="section secao-page" id="secao-mapa">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Mapa Esportivo de Sao Pedro</h2>
+                <p class="section-sub">Lugares onde o esporte acontece na cidade</p>
+            </div>
+            <div class="mapa-filtros" id="mapaFiltros">
+                <button class="chip active" onclick="filtrarMapa('todas',this)">Todas</button>
+                <button class="chip" onclick="filtrarMapa('estadio',this)">Estadios</button>
+                <button class="chip" onclick="filtrarMapa('ginasio',this)">Ginasios</button>
+                <button class="chip" onclick="filtrarMapa('quadra',this)">Quadras</button>
+                <button class="chip" onclick="filtrarMapa('pista',this)">Pistas</button>
+                <button class="chip" onclick="filtrarMapa('academia',this)">Academias</button>
+                <button class="chip" onclick="filtrarMapa('parque',this)">Parques</button>
+                <button class="chip" onclick="filtrarMapa('outro',this)">Outros</button>
+            </div>
+            <div class="mapa-container" id="mapaContainer">
+                <div class="empty-state">
+                    <div class="empty-state-icon">&#128205;</div>
+                    <div class="empty-state-text">Carregando mapa...</div>
+                </div>
+            </div>
+            <div class="mapa-lista" id="mapaLista"></div>
+
+            <!-- ADMIN: ADICIONAR LOCAL -->
+            <div class="admin-section admin-only" style="margin-top:30px;">
+                <button class="btn btn-secondary" onclick="toggleAdmin('adminLocal')">+ Adicionar Local</button>
+                <div class="admin-form" id="adminLocal" style="display:none;">
+                    <h3>Novo Local Esportivo</h3>
+                    <input type="text" id="localNome" placeholder="Nome do local (ex: Estadio Municipal)">
+                    <select id="localCategoria">
+                        <option value="estadio">Estadio</option>
+                        <option value="ginasio">Ginasio</option>
+                        <option value="quadra">Quadra</option>
+                        <option value="pista">Pista</option>
+                        <option value="academia">Academia</option>
+                        <option value="parque">Parque</option>
+                        <option value="outro">Outro</option>
+                    </select>
+                    <input type="text" id="localEndereco" placeholder="Endereco">
+                    <div style="display:flex;gap:8px;">
+                        <input type="text" id="localLat" placeholder="Latitude (ex: -22.5483)" style="flex:1;">
+                        <input type="text" id="localLng" placeholder="Longitude (ex: -47.9140)" style="flex:1;">
+                    </div>
+                    <input type="text" id="localFoto" placeholder="URL da foto (opcional)" data-upload-target="localFoto">
+                    <textarea id="localDescricao" placeholder="Descricao do local" rows="3"></textarea>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+                        <input type="url" id="localInsta" placeholder="Instagram (opcional)" style="flex:1;">
+                        <input type="url" id="localSite" placeholder="Site (opcional)" style="flex:1;">
+                    </div>
+                    <button class="btn btn-primary" onclick="salvarLocal()">Salvar Local</button>
+                </div>
+                <div id="adminLocaisList" style="margin-top:16px;"></div>
             </div>
         </div>
     </section>

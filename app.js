@@ -701,6 +701,166 @@ function testarPush() {
     }).then(function () { hideLoading(); });
 }
 
+// ===== MAPA ESPORTIVO =====
+var _mapaMap = null;
+var _mapaMarkers = [];
+var _mapaCategoria = "todas";
+
+function renderMapa() {
+    var locais = getData("locais_esportivos") || [];
+    var container = document.getElementById("mapaContainer");
+    var lista = document.getElementById("mapaLista");
+    if (!container) return;
+
+    // Init map
+    if (typeof L === "undefined") {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">&#128205;</div><div class="empty-state-text">Mapa nao disponivel (Leaflet nao carregou).</div></div>';
+        return;
+    }
+    if (!_mapaMap) {
+        container.innerHTML = '<div id="leafletMap" style="width:100%;height:400px;border-radius:12px;"></div>';
+        _mapaMap = L.map("leafletMap", { zoomControl: true }).setView([-22.5483, -47.9140], 13);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>',
+            maxZoom: 18
+        }).addTo(_mapaMap);
+        setTimeout(function () { _mapaMap.invalidateSize(); }, 300);
+    }
+    _mapaMap.invalidateSize();
+
+    // Clear old markers
+    _mapaMarkers.forEach(function (m) { _mapaMap.removeLayer(m); });
+    _mapaMarkers = [];
+
+    // Filter
+    var filtradas = _mapaCategoria === "todas" ? locais : locais.filter(function (l) { return l.categoria === _mapaCategoria; });
+
+    // Add markers
+    filtradas.forEach(function (l) {
+        if (!l.lat || !l.lng) return;
+        var cor = "#1a3f7a";
+        switch (l.categoria) {
+            case "estadio": cor = "#16a34a"; break;
+            case "ginasio": cor = "#2563eb"; break;
+            case "quadra": cor = "#d97706"; break;
+            case "pista": cor = "#dc2626"; break;
+            case "academia": cor = "#7c3aed"; break;
+            case "parque": cor = "#059669"; break;
+        }
+        var icone = L.divIcon({
+            className: "mapa-marcador",
+            html: '<div style="background:' + cor + ';width:16px;height:16px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>',
+            iconSize: [16, 16],
+            iconAnchor: [8, 8]
+        });
+        var popupHtml = '<div style="min-width:180px;">' +
+            (l.foto ? '<img src="' + esc(l.foto) + '" style="width:100%;height:100px;object-fit:cover;border-radius:6px;margin-bottom:8px;" onerror="this.style.display=\'none\'">' : "") +
+            '<strong style="font-size:0.95rem;">' + esc(l.nome) + '</strong>' +
+            (l.categoria ? '<br><span style="font-size:0.75rem;color:#64748b;text-transform:uppercase;">' + esc(l.categoria) + '</span>' : "") +
+            (l.endereco ? '<br><span style="font-size:0.8rem;color:#475569;">' + esc(l.endereco) + '</span>' : "") +
+            (l.descricao ? '<br><span style="font-size:0.78rem;color:#64748b;">' + esc(l.descricao) + '</span>' : "") +
+            (l.instagram ? '<br><a href="' + esc(l.instagram) + '" target="_blank" style="font-size:0.78rem;color:var(--azul-medio);">Instagram</a>' : "") +
+            (l.site ? ' | <a href="' + esc(l.site) + '" target="_blank" style="font-size:0.78rem;color:var(--azul-medio);">Site</a>' : "") +
+            '</div>';
+        var marker = L.marker([l.lat, l.lng], { icon: icone }).addTo(_mapaMap);
+        marker.bindPopup(popupHtml);
+        _mapaMarkers.push(marker);
+    });
+
+    // Fit bounds
+    if (_mapaMarkers.length > 0) {
+        var group = L.featureGroup(_mapaMarkers);
+        _mapaMap.fitBounds(group.getBounds().pad(0.15));
+    }
+
+    // Render list
+    if (lista) {
+        if (filtradas.length === 0) {
+            lista.innerHTML = '<div class="empty-state"><div class="empty-state-icon">&#128205;</div><div class="empty-state-text">Nenhum local cadastrado nesta categoria.</div></div>';
+        } else {
+            lista.innerHTML = '<h3 style="margin-top:20px;font-size:1rem;">Locais encontrados: ' + filtradas.length + '</h3>' +
+                '<div class="mapa-card-grid">' +
+                filtradas.map(function (l) {
+                    return '<div class="mapa-card">' +
+                        (l.foto ? '<img src="' + esc(l.foto) + '" onerror="this.style.display=\'none\'">' : "") +
+                        '<div class="mapa-card-info">' +
+                        '<strong>' + esc(l.nome) + '</strong>' +
+                        '<span class="mapa-card-cat">' + esc(l.categoria) + '</span>' +
+                        (l.endereco ? '<span>' + esc(l.endereco) + '</span>' : "") +
+                        '</div></div>';
+                }).join("") +
+                '</div>';
+        }
+    }
+}
+
+function filtrarMapa(cat, btn) {
+    _mapaCategoria = cat;
+    document.querySelectorAll("#mapaFiltros .chip").forEach(function (c) { c.classList.remove("active"); });
+    if (btn) btn.classList.add("active");
+    renderMapa();
+}
+
+function salvarLocal() {
+    if (!requireAdmin()) return;
+    var locais = getData("locais_esportivos") || [];
+    var id = Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
+    var item = {
+        id: id,
+        nome: document.getElementById("localNome").value.trim(),
+        categoria: document.getElementById("localCategoria").value,
+        endereco: document.getElementById("localEndereco").value.trim(),
+        lat: parseFloat(document.getElementById("localLat").value) || null,
+        lng: parseFloat(document.getElementById("localLng").value) || null,
+        foto: document.getElementById("localFoto").value.trim(),
+        descricao: document.getElementById("localDescricao").value.trim(),
+        instagram: document.getElementById("localInsta").value.trim(),
+        site: document.getElementById("localSite").value.trim()
+    };
+    if (!item.nome) { showToastAviso("Digite o nome do local"); return; }
+    if (!item.lat || !item.lng) { showToastAviso("Informe latitude e longitude"); return; }
+    locais.push(item);
+    setData("locais_esportivos", locais);
+    renderAdminLocaisList();
+    renderMapa();
+    showToastSave("Local adicionado!");
+    document.getElementById("adminLocal").style.display = "none";
+    ["localNome","localEndereco","localLat","localLng","localFoto","localDescricao","localInsta","localSite"].forEach(function (id) {
+        document.getElementById(id).value = "";
+    });
+}
+
+function removerLocal(id) {
+    if (!requireAdmin()) return;
+    var locais = getData("locais_esportivos") || [];
+    locais = locais.filter(function (l) { return l.id !== id; });
+    setData("locais_esportivos", locais);
+    renderAdminLocaisList();
+    renderMapa();
+    showToastSave("Local removido!");
+}
+
+function renderAdminLocaisList() {
+    var el = document.getElementById("adminLocaisList");
+    if (!el) return;
+    var locais = getData("locais_esportivos") || [];
+    if (locais.length === 0) {
+        el.innerHTML = '<p style="color:#94a3b8;font-size:0.85rem;">Nenhum local cadastrado.</p>';
+        return;
+    }
+    el.innerHTML = '<h4 style="font-size:0.95rem;margin-bottom:8px;">Locais cadastrados (' + locais.length + ')</h4>' +
+        locais.map(function (l) {
+            return '<div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--cinza-50);border-radius:6px;margin-bottom:6px;border:1px solid var(--cinza-100);">' +
+                '<div style="flex:1;min-width:0;">' +
+                '<strong style="font-size:0.85rem;">' + esc(l.nome) + '</strong>' +
+                '<span style="font-size:0.72rem;color:#64748b;margin-left:8px;">' + esc(l.categoria) + '</span>' +
+                (l.endereco ? '<br><span style="font-size:0.75rem;color:#94a3b8;">' + esc(l.endereco) + '</span>' : "") +
+                '</div>' +
+                '<button class="btn btn-danger btn-sm" onclick="removerLocal(\'' + l.id + '\')" style="padding:4px 10px;font-size:0.75rem;">Remover</button>' +
+                '</div>';
+        }).join("");
+}
+
 // ===== BANNER DO SITE =====
 
 function salvarBanner() {
@@ -934,6 +1094,7 @@ function navegar(secao, e) {
         case "podcast": renderEpisodios(); break;
         case "opiniao": renderOpinioes(); break;
         case "conquistas": renderConquistas(); break;
+        case "mapa": renderMapa(); renderAdminLocaisList(); break;
         case "redacao": if (!isAdmin()) { navegar("inicio", null); return; } renderTemplatesPauta(); renderAdminPautas(); renderEditorialDashboard(); renderAdminNewsList(); renderCalendario(); break;
         case "sobre": atualizarStorageInfo(); renderDashboardUsoPortal(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminTimes(); renderNewsletterAdmin(); renderMonitorPautas(); renderConfigIA(); carregarBanner(); atualizarStatusPush(); renderAdminFinanceiro(); renderCalculadoraFinanceira(); renderOrcamentos(); break;
     }
