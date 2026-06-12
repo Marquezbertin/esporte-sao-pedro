@@ -3,8 +3,8 @@ var CACHE_NAME = 'esporte-sp-v2';
 var urlsToCache = [
     './',
     './index.html',
-    './style.css',
-    './app.js',
+    './style.min.css',
+    './app.min.js',
     './supabase.js',
     './upload.js',
     './manifest.json',

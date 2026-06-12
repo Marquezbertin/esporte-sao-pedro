@@ -1,6 +1,8 @@
 // ===== ESPORTE SAO PEDRO - Portal Esportivo =====
 // Dados locais com localStorage | Zero backend | GitHub Pages
 
+var SITE_BASE_URL = "https://marquezbertin.github.io/esporte-sao-pedro/";
+
 // ===== UTILIDADES =====
 function esc(str) {
     if (!str) return "";
@@ -60,14 +62,17 @@ function sanitizeHtml(html) {
     if (!html) return "";
     var tmp = document.createElement("div");
     tmp.innerHTML = html;
-    // Remove scripts and event handlers
-    var scripts = tmp.querySelectorAll("script,style,iframe,object,embed");
+    var scripts = tmp.querySelectorAll("script,style,iframe,object,embed,svg");
     for (var i = 0; i < scripts.length; i++) scripts[i].remove();
     var all = tmp.querySelectorAll("*");
     for (var j = 0; j < all.length; j++) {
         var attrs = all[j].attributes;
         for (var k = attrs.length - 1; k >= 0; k--) {
             if (attrs[k].name.indexOf("on") === 0) all[j].removeAttribute(attrs[k].name);
+            if (attrs[k].name === "href" || attrs[k].name === "xlink:href") {
+                var val = (attrs[k].value || "").trim().toLowerCase();
+                if (val.indexOf("javascript:") === 0) all[j].removeAttribute(attrs[k].name);
+            }
         }
     }
     return tmp.innerHTML;
@@ -313,7 +318,7 @@ function confirmarLoginAdmin() {
 // ===== SEO: JSON-LD NewsArticle dinamico =====
 function injetarNewsArticleJSONLD(noticias) {
     var items = [];
-    var baseUrl = "https://marquezbertin.github.io/esporte-sao-pedro/";
+    var baseUrl = SITE_BASE_URL;
     noticias.forEach(function (n) {
         items.push({
             "@context": "https://schema.org",
@@ -343,7 +348,7 @@ function gerarFeedRSS() {
     var noticias = getData("noticias");
     if (!noticias || !noticias.length) return;
     var publicadas = noticias.filter(function (n) { return !n.rascunho; }).slice(0, 20);
-    var baseUrl = "https://marquezbertin.github.io/esporte-sao-pedro/";
+    var baseUrl = SITE_BASE_URL;
     var hoje = new Date().toISOString();
     var xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
     xml += '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">\n';
@@ -1638,7 +1643,6 @@ async function gerarRascunhoComIA(id) {
     showLoading();
 
     try {
-        console.log("[IA] Step 1: buscando conteudo do link via Edge Function...");
         var conteudoLink = "";
         if (p.url) {
             try {
@@ -1648,38 +1652,34 @@ async function gerarRascunhoComIA(id) {
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ url: p.url })
                 });
-                console.log("[IA] Edge response status:", edgeResp.status);
+
                 if (edgeResp.ok) {
                     var edgeData = await edgeResp.json();
-                    console.log("[IA] Edge content length:", edgeData.content ? edgeData.content.length : 0);
+
                     if (edgeData.content) {
                         var raw = edgeData.content;
                         if (/instagram\.com\/(p|reel|tv)\//i.test(p.url)) {
-                            console.log("[IA] Instagram detected, extracting OG tags...");
+
                             var igTitle = raw.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i);
                             var igDesc = raw.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i);
                             var igImg = raw.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i);
-                            console.log("[IA] OG title:", igTitle ? igTitle[1].substring(0, 80) : "null");
-                            console.log("[IA] OG desc:", igDesc ? igDesc[1].substring(0, 80) : "null");
+
                             var parts = [];
                             if (igTitle) parts.push(decodeHtmlEntities(igTitle[1]));
                             if (igDesc) parts.push(decodeHtmlEntities(igDesc[1]));
                             if (igImg) parts.push("Imagem: " + igImg[1]);
                             conteudoLink = parts.join("\n\n").substring(0, 5000);
                         } else {
-                            console.log("[IA] Non-Instagram, stripHtml...");
+
                             conteudoLink = stripHtml(raw).substring(0, 5000);
                         }
                     }
                 }
             } catch (e) {
-                console.log("[IA] Edge function fetch failed:", e.message);
+
             }
         }
-        console.log("[IA] conteudoLink length:", conteudoLink.length);
-
         // 2) Constroi prompt
-        console.log("[IA] Step 2: construindo prompt...");
         var prompt = "Voce e um jornalista esportivo do portal Esporte Sao Pedro.\n";
         prompt += "Escreva uma noticia esportiva completa em portugues brasileiro.\n\n";
         prompt += "--- DADOS DA PAUTA ---\n";
@@ -1704,9 +1704,9 @@ async function gerarRascunhoComIA(id) {
         prompt += "Retorne APENAS o conteudo (titulo + corpo).";
 
         // 3) Chama Gemini via Edge Function
-        console.log("[IA] Step 3: chamando Gemini...");
+
         var resposta = await chamarGeminiAPI(prompt, apiKey);
-        console.log("[IA] Gemini resposta:", resposta ? resposta.substring(0, 100) : "null");
+
 
         if (resposta === "QUOTA_EXCEDIDA") {
             hideLoading();
@@ -1741,7 +1741,7 @@ async function gerarRascunhoComIA(id) {
         p.status = "convertida";
         setData("monitor_pautas", lista);
 
-        console.log("[IA] Step 4: preenchendo form...");
+
         try {
             navegar("noticias", null);
             document.getElementById("noticiaTitle").value = tituloIA || "";
@@ -1752,14 +1752,14 @@ async function gerarRascunhoComIA(id) {
             window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
             showToastSave("Rascunho gerado por IA! Revise e publique.");
         } catch (innerErr) {
-            console.log("[IA] Erro ao preencher form:", innerErr.message);
+
             preencherFormPauta(p);
         }
     } catch (err) {
-        console.log("[IA] ERRO GERAL:", err.message);
+
         showToastErro("IA falhou: " + err.message);
         try { preencherFormPauta(p); } catch (e2) {
-            console.log("[IA] Fallback preencherFormPauta tb falhou:", e2.message);
+
             alert("Erro ao navegar para Noticias: " + e2.message + ". Recarregue a pagina e tente novamente.");
         }
     } finally {
@@ -1803,7 +1803,7 @@ async function chamarGeminiAPI(prompt, apiKey) {
         }
 
         var data = await resp.json();
-        console.log("[IA] chamarGeminiAPI raw response:", JSON.stringify(data).substring(0, 300));
+
         if (data.error && data.error.code === 429) {
             return "QUOTA_EXCEDIDA";
         }
