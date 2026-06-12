@@ -345,8 +345,15 @@ var CloudUpload = (function () {
 
         cancelBtn.onclick = fecharModal;
 
-        function fazerUpload(blob) {
-            var file = new File([blob], "camera_" + Date.now() + ".jpg", { type: "image/jpeg" });
+        function fazerUpload(file) {
+            if (file.size > 10 * 1024 * 1024) {
+                statusEl.textContent = "Imagem muito grande! Maximo 10MB.";
+                statusEl.style.color = "#dc2626";
+                captureBtn.disabled = false;
+                retryBtn.disabled = false;
+                cancelBtn.disabled = false;
+                return;
+            }
 
             statusEl.textContent = "Enviando... 0%";
             statusEl.style.color = "#d4a017";
