@@ -147,6 +147,158 @@ var CloudUpload = (function () {
         return wrapper;
     }
 
+    // ===== CAMERA CAPTURE =====
+    function criarBotaoCamera(targetInputId) {
+        var wrapper = document.createElement("span");
+        wrapper.className = "upload-camera-wrapper";
+
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "btn btn-secondary upload-camera-btn";
+        btn.innerHTML = "&#128248; Tirar Foto";
+        btn.onclick = function () { capturarFoto(targetInputId); };
+
+        wrapper.appendChild(btn);
+        return wrapper;
+    }
+
+    function capturarFoto(targetInputId) {
+        if (typeof isAdmin === "function" && !isAdmin()) {
+            alert("Apenas administradores podem usar a camera.");
+            return;
+        }
+
+        var modal = document.createElement("div");
+        modal.className = "camera-modal";
+        modal.innerHTML =
+            '<div class="camera-modal-content">' +
+                '<button class="camera-close" onclick="this.closest(\'.camera-modal\').remove()">&times;</button>' +
+                '<div class="camera-viewfinder">' +
+                    '<video id="cameraVideo" autoplay playsinline></video>' +
+                    '<canvas id="cameraCanvas" style="display:none;"></canvas>' +
+                '</div>' +
+                '<div class="camera-preview-container" id="cameraPreviewContainer" style="display:none;">' +
+                    '<img id="cameraPreviewImg" class="camera-preview-img" alt="Preview">' +
+                '</div>' +
+                '<div class="camera-actions">' +
+                    '<button class="btn btn-primary" id="cameraCaptureBtn">Capturar Foto</button>' +
+                    '<button class="btn btn-secondary" id="cameraRetryBtn" style="display:none;">Tirar Outra</button>' +
+                    '<button class="btn btn-outline-cancel" id="cameraCancelBtn">Cancelar</button>' +
+                '</div>' +
+                '<div class="camera-status" id="cameraStatus"></div>' +
+            '</div>';
+
+        document.body.appendChild(modal);
+
+        var video = document.getElementById("cameraVideo");
+        var canvas = document.getElementById("cameraCanvas");
+        var previewContainer = document.getElementById("cameraPreviewContainer");
+        var previewImg = document.getElementById("cameraPreviewImg");
+        var captureBtn = document.getElementById("cameraCaptureBtn");
+        var retryBtn = document.getElementById("cameraRetryBtn");
+        var cancelBtn = document.getElementById("cameraCancelBtn");
+        var statusEl = document.getElementById("cameraStatus");
+        var stream = null;
+
+        function pararCamera() {
+            if (stream) {
+                stream.getTracks().forEach(function (t) { t.stop(); });
+                stream = null;
+            }
+        }
+
+        function fecharModal() {
+            pararCamera();
+            if (modal.parentNode) modal.parentNode.removeChild(modal);
+        }
+
+        function fazerUpload(blob) {
+            var file = new File([blob], "camera_" + Date.now() + ".jpg", { type: "image/jpeg" });
+
+            statusEl.textContent = "Enviando... 0%";
+            statusEl.style.color = "#d4a017";
+            captureBtn.disabled = true;
+            retryBtn.disabled = true;
+            cancelBtn.disabled = true;
+
+            uploadFile(file, function (pct) {
+                statusEl.textContent = "Enviando... " + pct + "%";
+            }).then(function (url) {
+                var targetInput = document.getElementById(targetInputId);
+                if (targetInput) targetInput.value = url;
+                recordUpload(file, url, targetInputId);
+
+                var preview = document.getElementById("upload_preview_" + targetInputId);
+                if (preview) {
+                    preview.src = url;
+                    preview.style.display = "block";
+                }
+
+                statusEl.textContent = "Foto enviada com sucesso!";
+                statusEl.style.color = "#16a34a";
+
+                setTimeout(fecharModal, 1200);
+            }).catch(function (err) {
+                statusEl.textContent = "Erro no upload: " + err.message;
+                statusEl.style.color = "#dc2626";
+                captureBtn.disabled = false;
+                retryBtn.disabled = false;
+                cancelBtn.disabled = false;
+            });
+        }
+
+        cancelBtn.onclick = fecharModal;
+
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } } })
+            .then(function (s) {
+                stream = s;
+                video.srcObject = stream;
+
+                captureBtn.onclick = function () {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    canvas.getContext("2d").drawImage(video, 0, 0);
+
+                    pararCamera();
+                    video.style.display = "none";
+
+                    canvas.toBlob(function (blob) {
+                        var url = URL.createObjectURL(blob);
+                        previewImg.src = url;
+                        previewContainer.style.display = "block";
+
+                        captureBtn.style.display = "none";
+                        retryBtn.style.display = "";
+                        captureBtn.textContent = "Usar esta foto";
+                        captureBtn.disabled = false;
+
+                        retryBtn.onclick = function () {
+                            previewContainer.style.display = "none";
+                            video.style.display = "";
+                            captureBtn.style.display = "";
+                            retryBtn.style.display = "none";
+                            captureBtn.textContent = "Capturar Foto";
+
+                            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } } })
+                                .then(function (s2) {
+                                    stream = s2;
+                                    video.srcObject = s2;
+                                }).catch(function () { fecharModal(); });
+                        };
+
+                        captureBtn.onclick = function () { fazerUpload(blob); };
+                        captureBtn.textContent = "Usar esta foto";
+                        captureBtn.style.display = "";
+                    }, "image/jpeg", 0.92);
+                };
+            })
+            .catch(function (err) {
+                statusEl.textContent = "Erro ao acessar camera: " + (err.message || "Permissao negada");
+                statusEl.style.color = "#dc2626";
+                captureBtn.disabled = true;
+            });
+    }
+
     // Inicializa botoes de upload em todos os campos marcados
     function init() {
         var campos = document.querySelectorAll("[data-upload-target]");
@@ -157,12 +309,16 @@ var CloudUpload = (function () {
             var targetId = campo.getAttribute("data-upload-target");
             var wrapper = criarBotaoUpload(targetId);
             campo.parentNode.insertBefore(wrapper, campo.nextSibling);
+
+            var cameraBtn = criarBotaoCamera(targetId);
+            wrapper.appendChild(cameraBtn);
         });
     }
 
     return {
         uploadFile: uploadFile,
         criarBotaoUpload: criarBotaoUpload,
+        capturarFoto: capturarFoto,
         init: init,
         getUploadStats: getUploadStats
     };

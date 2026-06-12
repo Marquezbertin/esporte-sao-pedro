@@ -4101,3 +4101,120 @@ body.admin-mode .episodio-card-actions { display: flex; }
     .fin-calc-total > div:last-child { flex-direction: column; }
     .fin-orc-top { flex-direction: column; align-items: flex-start; }
 }
+
+/* ===== CAMERA MODAL ===== */
+.camera-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.9);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.camera-modal-content {
+    background: var(--azul-escuro);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    max-width: 600px;
+    width: 90%;
+    text-align: center;
+    position: relative;
+    border: 1px solid var(--dourado);
+}
+
+.camera-close {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    background: none;
+    border: none;
+    color: var(--branco);
+    font-size: 1.8rem;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: var(--transition);
+    line-height: 1;
+}
+
+.camera-close:hover { opacity: 1; }
+
+.camera-viewfinder {
+    background: #000;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    margin-bottom: 16px;
+    aspect-ratio: 4/3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.camera-viewfinder video,
+.camera-viewfinder canvas {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.camera-preview-container {
+    margin-bottom: 16px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    max-height: 360px;
+}
+
+.camera-preview-img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: var(--radius-md);
+}
+
+.camera-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.camera-actions .btn-outline-cancel {
+    padding: 10px 24px;
+    border-radius: var(--radius-md);
+    font-family: var(--font-main);
+    font-size: 0.85rem;
+    font-weight: 700;
+    border: 2px solid rgba(255,255,255,0.3);
+    background: transparent;
+    color: var(--cinza-300);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.camera-actions .btn-outline-cancel:hover {
+    border-color: var(--vermelho);
+    color: var(--vermelho);
+    background: rgba(196,30,58,0.1);
+}
+
+.camera-status {
+    margin-top: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--cinza-300);
+}
+
+.upload-camera-wrapper {
+    display: inline-flex;
+    margin-left: 6px;
+}
+
+.upload-camera-btn {
+    font-size: 0.78rem;
+    padding: 6px 14px;
+}
+
+body:not(.admin-mode) .upload-camera-wrapper {
+    display: none;
+}
