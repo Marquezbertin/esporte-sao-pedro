@@ -4787,6 +4787,31 @@ function renderPatrocinadoresPublico() {
     });
 }
 
+// ===== AVISO DE COOKIES (LGPD) =====
+var COOKIE_CONSENT_KEY = "esp_cookie_consent";
+
+function initCookieConsent() {
+    var banner = document.getElementById("cookieConsent");
+    if (!banner) return;
+    var consent = localStorage.getItem(COOKIE_CONSENT_KEY);
+    if (consent === "aceito" || consent === "recusado") return;
+    setTimeout(function () { banner.classList.add("show"); }, 800);
+}
+
+function aceitarCookies() {
+    localStorage.setItem(COOKIE_CONSENT_KEY, "aceito");
+    document.getElementById("cookieConsent").classList.remove("show");
+}
+
+function recusarCookies() {
+    localStorage.setItem(COOKIE_CONSENT_KEY, "recusado");
+    document.getElementById("cookieConsent").classList.remove("show");
+}
+
+function fecharCookieConsent() {
+    document.getElementById("cookieConsent").classList.remove("show");
+}
+
 // ===== DASHBOARD EDITORIAL =====
 function renderEditorialDashboard() {
     var el = document.getElementById("editorialDashboard");
