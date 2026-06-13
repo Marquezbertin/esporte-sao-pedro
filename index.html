@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Esporte Sao Pedro - Portal Esportivo de Sao Pedro/SP</title>
-    <link rel="stylesheet" href="style.min.css?v=2">
+    <link rel="stylesheet" href="style.min.css?v=3">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0a1628">
     <meta name="description" content="Portal esportivo de Sao Pedro/SP. Resultados, tabelas, artilheiros, calendario e noticias do esporte local.">
@@ -1720,49 +1720,49 @@
         <div class="cookie-consent-content">
             <div class="cookie-consent-text">
                 <strong>&#127850; Cookies e Privacidade</strong>
-                <p>Usamos cookies e tecnologias semelhantes para melhorar sua experiencia, analisar o trafego e oferecer conteudo relevante. Ao continuar navegando, voce concorda com nossa <a href="#" onclick="navegar('sobre', event);fecharCookieConsent();setTimeout(function(){var e=document.getElementById('politica-privacidade');if(e)e.scrollIntoView({behavior:'smooth',block:'start'});},300);return false;">Politica de Privacidade</a>.</p>
+                <p>Usamos cookies e tecnologias semelhantes para melhorar sua experiencia, analisar o trafego e oferecer conteudo relevante. Ao continuar navegando, voce concorda com nossa <a href="#" onclick="navegar('sobre', event);document.getElementById('cookieConsent').classList.remove('show');setTimeout(function(){var e=document.getElementById('politica-privacidade');if(e)e.scrollIntoView({behavior:'smooth',block:'start'});},300);return false;">Politica de Privacidade</a>.</p>
             </div>
             <div class="cookie-consent-actions">
-                <button class="btn btn-sm" onclick="recusarCookies()" id="cookieRecusarBtn">Recusar</button>
-                <button class="btn btn-primary btn-sm" onclick="aceitarCookies()" id="cookieAceitarBtn">Aceitar</button>
+                <button class="btn btn-sm" id="cookieRecusarBtn">Recusar</button>
+                <button class="btn btn-primary btn-sm" id="cookieAceitarBtn">Aceitar</button>
             </div>
         </div>
     </div>
 
-    <script>
-    // ===== AVISO DE COOKIES (LGPD) =====
-    (function() {
-        var COOKIE_CONSENT_KEY = "esp_cookie_consent";
-        function initCookieConsent() {
-            var banner = document.getElementById("cookieConsent");
-            if (!banner) return;
-            var consent = localStorage.getItem(COOKIE_CONSENT_KEY);
-            if (consent === "aceito" || consent === "recusado") return;
-            setTimeout(function() { banner.classList.add("show"); }, 800);
-        }
-        window.aceitarCookies = function() {
-            localStorage.setItem(COOKIE_CONSENT_KEY, "aceito");
-            document.getElementById("cookieConsent").classList.remove("show");
-        };
-        window.recusarCookies = function() {
-            localStorage.setItem(COOKIE_CONSENT_KEY, "recusado");
-            document.getElementById("cookieConsent").classList.remove("show");
-        };
-        window.fecharCookieConsent = function() {
-            document.getElementById("cookieConsent").classList.remove("show");
-        };
-        initCookieConsent();
-    })();
-    </script>
-
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase.js"></script>
     <script src="upload.js"></script>
-    <script src="app.min.js"></script>
+    <script src="app.min.js?v=2"></script>
     <script>
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js').catch(function(){});
     }
+    </script>
+
+    <!-- AVISO DE COOKIES (carregado por ultimo para garantir) -->
+    <script>
+    (function() {
+        var KEY = "esp_cookie_consent";
+        function init() {
+            var banner = document.getElementById("cookieConsent");
+            if (!banner) return;
+            if (localStorage.getItem(KEY) === "aceito" || localStorage.getItem(KEY) === "recusado") return;
+            setTimeout(function() { banner.classList.add("show"); }, 800);
+            document.getElementById("cookieAceitarBtn").addEventListener("click", function() {
+                localStorage.setItem(KEY, "aceito");
+                banner.classList.remove("show");
+            });
+            document.getElementById("cookieRecusarBtn").addEventListener("click", function() {
+                localStorage.setItem(KEY, "recusado");
+                banner.classList.remove("show");
+            });
+        }
+        if (document.readyState === "complete" || document.readyState === "interactive") {
+            init();
+        } else {
+            document.addEventListener("DOMContentLoaded", init);
+        }
+    })();
     </script>
 </body>
 </html>

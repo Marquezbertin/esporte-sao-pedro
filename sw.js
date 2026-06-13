@@ -1,5 +1,5 @@
 // Service Worker - Esporte Sao Pedro
-var CACHE_NAME = 'esporte-sp-v2';
+var CACHE_NAME = 'esporte-sp-v3';
 var urlsToCache = [
     './',
     './index.html',
