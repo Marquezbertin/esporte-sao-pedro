@@ -418,7 +418,7 @@ function renderPaginaAtual() {
 // ===== YOUTUBE EMBED HELPER =====
 function extrairYoutubeId(url) {
     if (!url) return null;
-    var match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/);
+    var match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/))([a-zA-Z0-9_-]{11})/);
     return match ? match[1] : null;
 }
 
@@ -4561,24 +4561,31 @@ function iniciarLive() {
     if (/instagram\.com\//i.test(url)) {
         tipo = "redirect";
         embedUrl = url;
+        showToastSave("Link do Instagram detectado. A live abrira em nova aba.");
     } else {
-        // YouTube Live
+        // YouTube Live (inclui /live/, /watch?v=, youtu.be/, /embed/, /shorts/)
         var ytId = extrairYoutubeId(url);
         if (ytId) {
             embedUrl = "https://www.youtube.com/embed/" + ytId + "?autoplay=1";
+            showToastSave("YouTube detectado! Incorporando transmissao...");
         }
-        // Twitch
-        var twitchMatch = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
-        if (twitchMatch) {
-            embedUrl = "https://player.twitch.tv/?channel=" + twitchMatch[1] + "&parent=" + location.hostname;
+        // Twitch (so testa se ainda nao identificou)
+        if (!embedUrl) {
+            var twitchMatch = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
+            if (twitchMatch) {
+                embedUrl = "https://player.twitch.tv/?channel=" + twitchMatch[1] + "&parent=" + location.hostname;
+                showToastSave("Twitch detectado! Incorporando transmissao...");
+            }
         }
-        // Facebook Live (plugin oficial de video, permite iframe)
+        // Facebook Live (plugin oficial)
         if (!embedUrl && /(facebook\.com|fb\.watch)\//i.test(url)) {
             embedUrl = "https://www.facebook.com/plugins/video.php?href=" + encodeURIComponent(url) + "&show_text=0&autoplay=1";
+            showToastSave("Facebook Live detectado! Incorporando transmissao...");
         }
 
         if (!embedUrl) {
-            embedUrl = url; // URL direta como fallback
+            embedUrl = url;
+            showToastAviso("Plataforma nao reconhecida. Tentando incorporar URL direta...");
         }
     }
 
