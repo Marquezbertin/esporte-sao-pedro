@@ -1345,6 +1345,14 @@ document.addEventListener("DOMContentLoaded", function () {
         var loadEl = document.getElementById("supaLoading");
         if (loadEl) loadEl.style.display = "none";
     });
+
+    // Timer: verifica programacao a cada 15s para auto-play no horario
+    setInterval(function () {
+        var secao = document.querySelector(".secao-page.active");
+        if (secao && secao.id === "secao-inicio") {
+            renderProgramacaoHome();
+        }
+    }, 15000);
 });
 
 function atualizarData() {
