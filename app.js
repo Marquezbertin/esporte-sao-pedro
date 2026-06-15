@@ -2992,6 +2992,19 @@ function renderAdminTimes() {
     });
 }
 
+function popularSelectTimes() {
+    var select = document.getElementById("atletaTime");
+    if (!select) return;
+    var times = getData("times");
+    select.innerHTML = '<option value="">Selecione um time</option>';
+    times.forEach(function (t) {
+        var opt = document.createElement("option");
+        opt.value = t.nome;
+        opt.textContent = t.nome + " (" + t.esporte + ")";
+        select.appendChild(opt);
+    });
+}
+
 // ===== OPINIAO / COLUNAS =====
 function renderOpinioes() {
     var opinioes = getData("opinioes").sort(function (a, b) { return b.data.localeCompare(a.data); });

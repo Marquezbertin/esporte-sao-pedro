@@ -415,7 +415,7 @@
 
             <!-- ADMIN: ADICIONAR ATLETA -->
             <div class="admin-section admin-only">
-                <button class="btn btn-secondary" onclick="toggleAdmin('adminAtleta')">+ Adicionar Atleta</button>
+                <button class="btn btn-secondary" onclick="toggleAdmin('adminAtleta');popularSelectTimes();">+ Adicionar Atleta</button>
                 <div class="admin-form" id="adminAtleta" style="display:none;">
                     <h3>Novo Atleta</h3>
                     <input type="text" id="atletaNome" placeholder="Nome completo">
@@ -428,7 +428,7 @@
                         <option value="artes-marciais">Artes Marciais</option>
                         <option value="skate-radicais">Skate e Radicais</option>
                     </select>
-                    <input type="text" id="atletaTime" placeholder="Time/Equipe">
+                    <select id="atletaTime"><option value="">Selecione um time</option></select>
                     <input type="text" id="atletaPosicao" placeholder="Posicao/Modalidade">
                     <input type="text" id="atletaImg" placeholder="URL da foto (opcional)" data-upload-target="atletaImg">
                     <textarea id="atletaBio" placeholder="Breve biografia / conquistas" rows="3"></textarea>
@@ -1302,7 +1302,7 @@
                         <option value="skate-radicais">Skate e Radicais</option>
                     </select>
                     <input type="text" id="timeLogo" placeholder="URL do escudo/logo (opcional)" data-upload-target="timeLogo">
-                    <textarea id="timeDescricao" placeholder="Descricao / historico do time" rows="3"></textarea>
+                    <textarea id="timeDescricao" placeholder="Descricao / historico do time" rows="8"></textarea>
                     <div style="display:grid;gap:8px;grid-template-columns:1fr 1fr;margin-bottom:10px;">
                         <input type="url" id="timeInsta" placeholder="Instagram (opcional)">
                         <input type="url" id="timeFace" placeholder="Facebook (opcional)">
