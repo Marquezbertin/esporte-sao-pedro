@@ -4804,14 +4804,25 @@ function salvarProgramacao() {
     var duracao = parseInt(document.getElementById("progDuracao").value) || 60;
 
     var lista = getProgramacao();
-    lista.push({
-        id: gerarId(),
-        titulo: titulo,
-        url: url,
-        data: data,
-        hora: hora,
-        duracao: duracao
-    });
+
+    var editando = _editandoProgramacaoId;
+    if (editando) {
+        var idx = lista.findIndex(function (p) { return p.id === editando; });
+        if (idx !== -1) {
+            lista[idx] = { id: editando, titulo: titulo, url: url, data: data, hora: hora, duracao: duracao };
+        }
+        _editandoProgramacaoId = null;
+        document.getElementById("btnSalvarProgramacao").textContent = "Agendar";
+    } else {
+        lista.push({
+            id: gerarId(),
+            titulo: titulo,
+            url: url,
+            data: data,
+            hora: hora,
+            duracao: duracao
+        });
+    }
     saveData("programacao", lista);
 
     document.getElementById("progTitulo").value = "";
@@ -4820,9 +4831,10 @@ function salvarProgramacao() {
     document.getElementById("progHora").value = "";
     renderAdminProgramacao();
     renderProgramacaoHome();
-    showToastSave("Programacao agendada!");
+    showToastSave(editando ? "Programa atualizado!" : "Programacao agendada!");
 }
 
+var _editandoProgramacaoId = null;
 var programacaoViewsContadas = {};
 
 function contarViewProgramacao(progId) {
@@ -4870,8 +4882,10 @@ function editarProgramacao(id) {
     document.getElementById("progData").value = p.data;
     document.getElementById("progHora").value = p.hora;
     document.getElementById("progDuracao").value = p.duracao || 60;
-    deletarProgramacao(id);
-    showToastAviso("Edite os dados e clique em Agendar.");
+
+    _editandoProgramacaoId = id;
+    document.getElementById("btnSalvarProgramacao").textContent = "Salvar Alteracoes";
+    document.getElementById("progTitulo").scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 async function deletarProgramacao(id) {
