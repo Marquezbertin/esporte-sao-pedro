@@ -4897,6 +4897,12 @@ async function deletarProgramacao(id) {
     renderProgramacaoHome();
 }
 
+function fecharProgramacaoWidget() {
+    var el = document.getElementById("programacaoHome");
+    if (el) el.innerHTML = "";
+    sessionStorage.setItem("prog_fechado_" + (window._progAtualId || ""), "1");
+}
+
 function renderProgramacaoHome() {
     var container = document.getElementById("programacaoHome");
     if (!container) return;
@@ -4944,7 +4950,10 @@ function renderProgramacaoHome() {
         var embedInfo = extrairEmbedUrl(atual.url);
         html += '<div class="prog-card ' + (tocando ? 'prog-tocando' : 'prog-proximo') + '">';
         if (tocando) {
+            window._progAtualId = atual.id;
+            if (sessionStorage.getItem("prog_fechado_" + atual.id)) { container.innerHTML = ""; return; }
             contarViewProgramacao(atual.id);
+            html += '<button class="prog-close" onclick="fecharProgramacaoWidget()" aria-label="Fechar" style="float:right;background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--cinza-400);line-height:1;">&times;</button>';
             html += '<div class="prog-badge tocando">&#9679; Tocando Agora</div>';
             if (embedInfo.tipo === "redirect") {
                 html += '<div style="padding:20px;text-align:center;background:var(--cinza-50);border-radius:8px;margin:10px 0;">' +
