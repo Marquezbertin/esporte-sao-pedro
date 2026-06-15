@@ -2933,6 +2933,8 @@ function renderTimes() {
     container.innerHTML = html;
 }
 
+var _editandoTimeId = null;
+
 function salvarTime() {
     if (!requireAdmin()) return;
     var nome = document.getElementById("timeNome").value.trim();
@@ -2942,29 +2944,45 @@ function salvarTime() {
     if (!nome) return showToastAviso("Preencha o nome do time.");
 
     var times = getData("times");
-    times.push({
-        id: gerarId(),
-        nome: nome,
-        esporte: esporte,
-        logo: logo,
-        descricao: descricao,
-        redes: {
-            instagram: document.getElementById("timeInsta").value.trim(),
-            facebook: document.getElementById("timeFace").value.trim(),
-            youtube: document.getElementById("timeYoutube").value.trim(),
-            whatsapp: document.getElementById("timeWhatsapp").value.trim(),
-            site: document.getElementById("timeSite").value.trim()
+    var redes = {
+        instagram: document.getElementById("timeInsta").value.trim(),
+        facebook: document.getElementById("timeFace").value.trim(),
+        youtube: document.getElementById("timeYoutube").value.trim(),
+        whatsapp: document.getElementById("timeWhatsapp").value.trim(),
+        site: document.getElementById("timeSite").value.trim()
+    };
+
+    if (_editandoTimeId) {
+        var idx = times.findIndex(function (t) { return t.id === _editandoTimeId; });
+        if (idx !== -1) {
+            times[idx].nome = nome;
+            times[idx].esporte = esporte;
+            times[idx].logo = logo;
+            times[idx].descricao = descricao;
+            times[idx].redes = redes;
         }
-    });
+        _editandoTimeId = null;
+    } else {
+        times.push({
+            id: gerarId(),
+            nome: nome,
+            esporte: esporte,
+            logo: logo,
+            descricao: descricao,
+            redes: redes
+        });
+    }
     saveData("times", times);
 
     document.getElementById("timeNome").value = "";
     document.getElementById("timeLogo").value = "";
     document.getElementById("timeDescricao").value = "";
+    document.getElementById("timeEsporte").value = "futebol";
     ["timeInsta","timeFace","timeYoutube","timeWhatsapp","timeSite"].forEach(function (id) { document.getElementById(id).value = ""; });
+    document.getElementById("btnSalvarTime").textContent = "Cadastrar Time";
     renderTimes();
     renderAdminTimes();
-    showToastSave("Time cadastrado!");
+    showToastSave(_editandoTimeId ? "Time atualizado!" : "Time cadastrado!");
 }
 
 async function deletarTime(id) {
@@ -2974,6 +2992,29 @@ async function deletarTime(id) {
     setData("times", times);
     renderTimes();
     renderAdminTimes();
+}
+
+function editarTime(id) {
+    if (!requireAdmin()) return;
+    var times = getData("times");
+    var t = times.find(function (x) { return x.id === id; });
+    if (!t) return;
+
+    document.getElementById("timeNome").value = t.nome;
+    document.getElementById("timeEsporte").value = t.esporte || "futebol";
+    document.getElementById("timeLogo").value = t.logo || "";
+    document.getElementById("timeDescricao").value = t.descricao || "";
+    document.getElementById("timeInsta").value = (t.redes && t.redes.instagram) || "";
+    document.getElementById("timeFace").value = (t.redes && t.redes.facebook) || "";
+    document.getElementById("timeYoutube").value = (t.redes && t.redes.youtube) || "";
+    document.getElementById("timeWhatsapp").value = (t.redes && t.redes.whatsapp) || "";
+    document.getElementById("timeSite").value = (t.redes && t.redes.site) || "";
+
+    _editandoTimeId = id;
+    document.getElementById("btnSalvarTime").textContent = "Salvar Alteracoes";
+
+    var form = document.getElementById("adminTimesForm");
+    if (form) form.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 function renderAdminTimes() {
@@ -2987,7 +3028,10 @@ function renderAdminTimes() {
         container.innerHTML +=
             '<div style="padding:8px 12px;border:1px solid var(--cinza-200);border-radius:6px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">' +
                 '<span style="font-size:0.85rem;"><strong>' + esc(t.nome) + '</strong> - ' + esc(t.esporte) + '</span>' +
-                '<button class="btn btn-sm" onclick="deletarTime(\'' + t.id + '\')">Excluir</button>' +
+                '<div style="display:flex;gap:6px;">' +
+                    '<button class="btn btn-sm" onclick="editarTime(\'' + t.id + '\')">Editar</button>' +
+                    '<button class="btn btn-sm" onclick="deletarTime(\'' + t.id + '\')">Excluir</button>' +
+                '</div>' +
             '</div>';
     });
 }

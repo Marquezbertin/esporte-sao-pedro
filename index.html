@@ -1290,7 +1290,7 @@
                     <span class="badge">ADMIN</span>
                 </div>
                 <p style="color:#8892a4;margin-bottom:16px;">Cadastre perfis de times. Aparecem na secao Atletas.</p>
-                <div class="admin-form" style="display:block;margin-top:0;border-color:var(--cinza-200);">
+                <div class="admin-form" id="adminTimesForm" style="display:block;margin-top:0;border-color:var(--cinza-200);">
                     <input type="text" id="timeNome" placeholder="Nome do time/equipe">
                     <select id="timeEsporte">
                         <option value="futebol">Futebol</option>
@@ -1304,13 +1304,13 @@
                     <input type="text" id="timeLogo" placeholder="URL do escudo/logo (opcional)" data-upload-target="timeLogo">
                     <textarea id="timeDescricao" placeholder="Descricao / historico do time" rows="8"></textarea>
                     <div style="display:grid;gap:8px;grid-template-columns:1fr 1fr;margin-bottom:10px;">
-                        <input type="url" id="timeInsta" placeholder="Instagram (opcional)">
-                        <input type="url" id="timeFace" placeholder="Facebook (opcional)">
-                        <input type="url" id="timeYoutube" placeholder="YouTube (opcional)">
-                        <input type="url" id="timeWhatsapp" placeholder="WhatsApp (opcional)">
-                        <input type="url" id="timeSite" placeholder="Site (opcional)" style="grid-column:1/-1;">
+                        <input type="text" id="timeInsta" placeholder="Instagram (opcional)">
+                        <input type="text" id="timeFace" placeholder="Facebook (opcional)">
+                        <input type="text" id="timeYoutube" placeholder="YouTube (opcional)">
+                        <input type="text" id="timeWhatsapp" placeholder="WhatsApp (opcional)">
+                        <input type="text" id="timeSite" placeholder="Site (opcional)" style="grid-column:1/-1;">
                     </div>
-                    <button class="btn btn-primary" onclick="salvarTime()">Cadastrar Time</button>
+                    <button class="btn btn-primary" id="btnSalvarTime" onclick="salvarTime()">Cadastrar Time</button>
                 </div>
                 <div id="adminTimesList" style="margin-top:16px;"></div>
             </div>
