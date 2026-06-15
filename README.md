@@ -27,7 +27,7 @@ Portal esportivo regional de São Pedro/SP. Resultados, tabelas, artilheiros, ca
 ### Ao Vivo e Programação
 - **Transmissão ao Vivo** — Suporte a YouTube, Twitch, Facebook (embed) e Instagram (nova aba). Botão "AO VIVO" no menu
 - **Placar ao Vivo** — Atualização em tempo real com timer regressivo, exibido em destaque na página inicial
-- **Programação** — Agendamento de reprises com data, horário e duração. Auto-play no horário (timer de 15s no navegador). Suporte a YouTube, Twitch, Facebook e Instagram. Widget "Tocando Agora" + "Próximos Programas" na página inicial. Contador de views por programa (visível no admin)
+- **Programação** — Agendamento de reprises com data, horário e duração. Auto-play no horário agendado (timer de 15s no navegador). Suporte a YouTube, Twitch, Facebook e Instagram. Widget "Tocando Agora" (com vídeo + botão dispensar) + "Próximos Programas" informativo na página inicial. Bloqueio de reprodução antes do horário. Contador de views por programa (visível no admin)
 
 ### Engajamento
 - **Fala, Torcedor!** — Leitores enviam relatos; admin aprova e publica na página dedicada
