@@ -1111,6 +1111,10 @@
                             <label style="font-size:0.78rem;color:#64748b;font-weight:600;display:block;margin-bottom:4px;">Horario</label>
                             <input type="time" id="progHora" style="width:100%;padding:10px 14px;border:1px solid var(--cinza-200);border-radius:6px;font-size:0.9rem;">
                         </div>
+                        <div style="flex:1;min-width:80px;">
+                            <label style="font-size:0.78rem;color:#64748b;font-weight:600;display:block;margin-bottom:4px;">Duracao (min)</label>
+                            <input type="number" id="progDuracao" value="60" min="1" max="480" style="width:100%;padding:10px 14px;border:1px solid var(--cinza-200);border-radius:6px;font-size:0.9rem;">
+                        </div>
                     </div>
                     <div style="display:flex;gap:12px;flex-wrap:wrap;">
                         <button class="btn btn-primary" onclick="salvarProgramacao()">Agendar</button>

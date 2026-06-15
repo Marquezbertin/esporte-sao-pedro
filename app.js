@@ -4801,13 +4801,16 @@ function salvarProgramacao() {
     var hora = document.getElementById("progHora").value;
     if (!titulo || !url || !data || !hora) return showToastAviso("Preencha todos os campos.");
 
+    var duracao = parseInt(document.getElementById("progDuracao").value) || 60;
+
     var lista = getProgramacao();
     lista.push({
         id: gerarId(),
         titulo: titulo,
         url: url,
         data: data,
-        hora: hora
+        hora: hora,
+        duracao: duracao
     });
     saveData("programacao", lista);
 
@@ -4851,6 +4854,7 @@ function editarProgramacao(id) {
     document.getElementById("progUrl").value = p.url;
     document.getElementById("progData").value = p.data;
     document.getElementById("progHora").value = p.hora;
+    document.getElementById("progDuracao").value = p.duracao || 60;
     deletarProgramacao(id);
     showToastAviso("Edite os dados e clique em Agendar.");
 }
@@ -4886,7 +4890,8 @@ function renderProgramacaoHome() {
         if (p.data < hoje) return;
         if (p.data === hoje) {
             var minAte = difMinutos(p.data, p.hora);
-            if (minAte <= 0 && minAte > -120) {
+            var duracao = p.duracao || 60;
+            if (minAte <= 0 && minAte > -duracao) {
                 atual = p;
             } else if (minAte > 0 && !atual) {
                 futuros.push(p);
@@ -4905,7 +4910,8 @@ function renderProgramacaoHome() {
     // Item atual (no ar agora)
     if (atual) {
         var minutosAte = difMinutos(atual.data, atual.hora);
-        var tocando = minutosAte <= 0 && minutosAte > -120;
+        var duracaoAtual = atual.duracao || 60;
+        var tocando = minutosAte <= 0 && minutosAte > -duracaoAtual;
         var embedInfo = extrairEmbedUrl(atual.url);
         html += '<div class="prog-card ' + (tocando ? 'prog-tocando' : 'prog-proximo') + '">';
         if (tocando) {
