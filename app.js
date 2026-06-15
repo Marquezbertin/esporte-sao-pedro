@@ -1387,7 +1387,7 @@ function navegar(secao, e) {
         case "torcedor": renderTorcedorGaleria(); break;
         case "mapa": renderMapa(); renderAdminLocaisList(); break;
         case "redacao": if (!isAdmin()) { navegar("inicio", null); return; } renderTemplatesPauta(); renderAdminPautas(); renderEditorialDashboard(); renderAdminNewsList(); renderCalendarioEditorial(); break;
-        case "sobre": atualizarStorageInfo(); renderDashboardUsoPortal(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminTimes(); renderNewsletterAdmin(); renderMonitorPautas(); renderConfigIA(); carregarBanner(); atualizarStatusPush(); renderAdminTorcedor(); renderAdminFinanceiro(); renderCalculadoraFinanceira(); renderOrcamentos(); break;
+        case "sobre": atualizarStorageInfo(); renderDashboardUsoPortal(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminTimes(); renderNewsletterAdmin(); renderMonitorPautas(); renderConfigIA(); carregarBanner(); atualizarStatusPush(); renderAdminTorcedor(); renderAdminFinanceiro(); renderCalculadoraFinanceira(); renderOrcamentos(); renderAdminProgramacao(); break;
     }
 
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1491,6 +1491,7 @@ function renderInicio() {
     renderEnqueteHome();
     renderResumoSemana();
     renderFinanceiroHome();
+    renderProgramacaoHome();
 }
 
 function renderFinanceiroHome() {
@@ -4675,55 +4676,38 @@ function getLive() {
     catch (e) { return null; }
 }
 
+function extrairEmbedUrl(url) {
+    if (!url) return { embedUrl: "", tipo: "embed" };
+    // Instagram: nao permite iframe, abre em nova aba
+    if (/instagram\.com\//i.test(url)) return { embedUrl: url, tipo: "redirect" };
+    // YouTube
+    var ytId = extrairYoutubeId(url);
+    if (ytId) return { embedUrl: "https://www.youtube.com/embed/" + ytId + "?autoplay=1", tipo: "embed" };
+    // Twitch
+    var twitchMatch = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
+    if (twitchMatch) return { embedUrl: "https://player.twitch.tv/?channel=" + twitchMatch[1] + "&parent=" + location.hostname, tipo: "embed" };
+    // Facebook
+    if (/(facebook\.com|fb\.watch)\//i.test(url)) return { embedUrl: "https://www.facebook.com/plugins/video.php?href=" + encodeURIComponent(url) + "&show_text=0&autoplay=1", tipo: "embed" };
+    return { embedUrl: url, tipo: "embed" };
+}
+
 function iniciarLive() {
     if (!requireAdmin()) return;
     var url = document.getElementById("liveUrl").value.trim();
     var titulo = document.getElementById("liveTitulo").value.trim();
     if (!url) return showToastAviso("Cole o link da live.");
 
-    var embedUrl = "";
-    var tipo = "embed";
-
-    // Instagram Live: nao permite iframe (X-Frame-Options: DENY), abre em nova aba
-    if (/instagram\.com\//i.test(url)) {
-        tipo = "redirect";
-        embedUrl = url;
-        showToastSave("Link do Instagram detectado. A live abrira em nova aba.");
-    } else {
-        // YouTube Live (inclui /live/, /watch?v=, youtu.be/, /embed/, /shorts/)
-        var ytId = extrairYoutubeId(url);
-        if (ytId) {
-            embedUrl = "https://www.youtube.com/embed/" + ytId + "?autoplay=1";
-            showToastSave("YouTube detectado! Incorporando transmissao...");
-        }
-        // Twitch (so testa se ainda nao identificou)
-        if (!embedUrl) {
-            var twitchMatch = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
-            if (twitchMatch) {
-                embedUrl = "https://player.twitch.tv/?channel=" + twitchMatch[1] + "&parent=" + location.hostname;
-                showToastSave("Twitch detectado! Incorporando transmissao...");
-            }
-        }
-        // Facebook Live (plugin oficial)
-        if (!embedUrl && /(facebook\.com|fb\.watch)\//i.test(url)) {
-            embedUrl = "https://www.facebook.com/plugins/video.php?href=" + encodeURIComponent(url) + "&show_text=0&autoplay=1";
-            showToastSave("Facebook Live detectado! Incorporando transmissao...");
-        }
-
-        if (!embedUrl) {
-            embedUrl = url;
-            showToastAviso("Plataforma nao reconhecida. Tentando incorporar URL direta...");
-        }
-    }
-
-    var live = { url: embedUrl, titulo: titulo || "Transmissao ao Vivo", ativa: true, tipo: tipo };
+    var result = extrairEmbedUrl(url);
+    var live = { url: result.embedUrl, titulo: titulo || "Transmissao ao Vivo", ativa: true, tipo: result.tipo };
     SupaDB.setItem("live", live);
 
     document.getElementById("liveUrl").value = "";
     document.getElementById("liveTitulo").value = "";
     atualizarLiveStatus();
     atualizarLiveNav();
-    showToastSave("Live iniciada! O botao AO VIVO aparecera no menu.");
+
+    if (result.tipo === "redirect") showToastSave("Link do Instagram detectado. A live abrira em nova aba.");
+    else showToastSave("Live iniciada! O botao AO VIVO aparecera no menu.");
 }
 
 function encerrarLive() {
@@ -4796,6 +4780,231 @@ function toggleFullscreenLive() {
         else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
         else if (document.msExitFullscreen) document.msExitFullscreen();
     }
+}
+
+// ===== PROGRAMACAO (REPRISES AGENDADAS) =====
+function getProgramacao() { return getData("programacao"); }
+
+function salvarProgramacao() {
+    if (!requireAdmin()) return;
+    var titulo = document.getElementById("progTitulo").value.trim();
+    var url = document.getElementById("progUrl").value.trim();
+    var data = document.getElementById("progData").value;
+    var hora = document.getElementById("progHora").value;
+    if (!titulo || !url || !data || !hora) return showToastAviso("Preencha todos os campos.");
+
+    var lista = getProgramacao();
+    lista.push({
+        id: gerarId(),
+        titulo: titulo,
+        url: url,
+        data: data,
+        hora: hora
+    });
+    saveData("programacao", lista);
+
+    document.getElementById("progTitulo").value = "";
+    document.getElementById("progUrl").value = "";
+    document.getElementById("progData").value = "";
+    document.getElementById("progHora").value = "";
+    renderAdminProgramacao();
+    renderProgramacaoHome();
+    showToastSave("Programacao agendada!");
+}
+
+function renderAdminProgramacao() {
+    var container = document.getElementById("adminProgList");
+    if (!container) return;
+    var lista = getProgramacao();
+    if (lista.length === 0) { container.innerHTML = "<p style='color:#8892a4;font-size:0.85rem;'>Nenhum programa agendado.</p>"; return; }
+    lista.sort(function (a, b) { return a.data.localeCompare(b.data) || a.hora.localeCompare(b.hora); });
+    container.innerHTML = "";
+    lista.forEach(function (p) {
+        container.innerHTML +=
+            '<div style="padding:10px 14px;border:1px solid var(--cinza-200);border-radius:8px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">' +
+                '<div style="flex:1;min-width:0;">' +
+                    '<strong style="font-size:0.85rem;color:var(--azul-escuro);display:block;">' + esc(p.titulo) + '</strong>' +
+                    '<span style="font-size:0.75rem;color:#94a3b8;">' + formatarDataCurtaStr(p.data) + " as " + p.hora + '</span>' +
+                '</div>' +
+                '<div style="display:flex;gap:6px;flex-shrink:0;">' +
+                    '<button class="btn btn-sm" onclick="editarProgramacao(\'' + p.id + '\')">Editar</button>' +
+                    '<button class="btn btn-sm" onclick="deletarProgramacao(\'' + p.id + '\')">Excluir</button>' +
+                '</div>' +
+            '</div>';
+    });
+}
+
+function editarProgramacao(id) {
+    if (!requireAdmin()) return;
+    var lista = getProgramacao();
+    var p = lista.find(function (x) { return x.id === id; });
+    if (!p) return;
+    document.getElementById("progTitulo").value = p.titulo;
+    document.getElementById("progUrl").value = p.url;
+    document.getElementById("progData").value = p.data;
+    document.getElementById("progHora").value = p.hora;
+    deletarProgramacao(id);
+    showToastAviso("Edite os dados e clique em Agendar.");
+}
+
+async function deletarProgramacao(id) {
+    if (!requireAdmin()) return;
+    if (!await showConfirm("Excluir este programa?")) return;
+    var lista = getProgramacao().filter(function (p) { return p.id !== id; });
+    saveData("programacao", lista);
+    renderAdminProgramacao();
+    renderProgramacaoHome();
+}
+
+function renderProgramacaoHome() {
+    var container = document.getElementById("programacaoHome");
+    if (!container) return;
+
+    var live = getLive();
+    if (live && live.ativa) { container.innerHTML = ""; return; }
+
+    var lista = getProgramacao();
+    if (lista.length === 0) { container.innerHTML = ""; return; }
+
+    var agora = new Date();
+    var hoje = agora.toISOString().split("T")[0];
+    var horaAtual = agora.getHours().toString().padStart(2, "0") + ":" + agora.getMinutes().toString().padStart(2, "0");
+
+    lista.sort(function (a, b) { return a.data.localeCompare(b.data) || a.hora.localeCompare(b.hora); });
+
+    var atual = null;
+    var proximo = null;
+    var passados = [];
+
+    lista.forEach(function (p) {
+        if (p.data < hoje || (p.data === hoje && p.hora < horaAtual)) {
+            passados.push(p);
+        } else if (p.data === hoje && p.hora >= horaAtual) {
+            if (!atual || p.hora < atual.hora) atual = p;
+        } else if (p.data > hoje) {
+            if (!proximo || p.data < proximo.data || (p.data === proximo.data && p.hora < proximo.hora)) proximo = p;
+        }
+    });
+
+    if (!atual && !proximo && passados.length === 0) { container.innerHTML = ""; return; }
+
+    var html = '<div class="programacao-widget">';
+
+    // Item atual (no ar agora)
+    if (atual) {
+        var minutosAte = difMinutos(atual.data, atual.hora);
+        var tocando = minutosAte <= 0 && minutosAte > -120;
+        var embedInfo = extrairEmbedUrl(atual.url);
+        html += '<div class="prog-card ' + (tocando ? 'prog-tocando' : 'prog-proximo') + '">';
+        if (tocando) {
+            html += '<div class="prog-badge tocando">&#9679; Tocando Agora</div>';
+            if (embedInfo.tipo === "redirect") {
+                html += '<div style="padding:20px;text-align:center;background:var(--cinza-50);border-radius:8px;margin:10px 0;">' +
+                    '<p style="font-size:0.85rem;color:var(--cinza-600);margin-bottom:10px;">Conteudo do Instagram</p>' +
+                    '<a href="' + esc(atual.url) + '" target="_blank" rel="noopener" class="btn btn-primary" style="background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045);color:#fff;text-decoration:none;">Abrir no Instagram</a>' +
+                '</div>';
+            } else {
+                html += '<iframe src="' + esc(embedInfo.embedUrl) + '" allowfullscreen allow="autoplay" style="width:100%;aspect-ratio:16/9;border:none;border-radius:8px;margin:10px 0;" loading="lazy"></iframe>';
+            }
+        } else {
+            html += '<div class="prog-badge proximo">&#9711; Proximo</div>';
+            if (minutosAte > 0) html += '<div class="prog-contador">Em <strong>' + minutosAte + ' min</strong></div>';
+        }
+        html += '<div class="prog-info">' +
+                '<strong class="prog-titulo">' + esc(atual.titulo) + '</strong>' +
+                '<span class="prog-horario">' + formatarDataCurtaStr(atual.data) + " as " + atual.hora + '</span>' +
+            '</div>';
+        if (!tocando) {
+            html += '<button class="prog-ver-btn" onclick="abrirProgramacao(\'' + atual.id + '\')">Abrir</button>';
+        }
+        html += '</div>';
+    }
+
+    // Proximos (ate 3)
+    var futuros = [];
+    lista.forEach(function (p) {
+        if (atual && p.id === atual.id) return;
+        if (p.data > hoje || (p.data === hoje && p.hora >= horaAtual)) futuros.push(p);
+    });
+    if (futuros.length > 0) {
+        html += '<div class="prog-section-label">Proximos Programas</div>';
+        html += '<div class="prog-list">';
+        futuros.slice(0, 3).forEach(function (p) {
+            html += '<div class="prog-item" onclick="abrirProgramacao(\'' + p.id + '\')">' +
+                '<div class="prog-item-info">' +
+                    '<strong>' + esc(p.titulo) + '</strong>' +
+                    '<span>' + formatarDataCurtaStr(p.data) + " as " + p.hora + '</span>' +
+                '</div>' +
+                '<span class="prog-item-arrow">&rsaquo;</span>' +
+            '</div>';
+        });
+        html += '</div>';
+    }
+
+    // Replays (ultimos 2 passados)
+    if (passados.length > 0) {
+        html += '<div class="prog-section-label">Replays Disponiveis</div>';
+        html += '<div class="prog-list">';
+        passados.sort(function (a, b) { return b.data.localeCompare(a.data) || b.hora.localeCompare(a.hora); });
+        passados.slice(0, 2).forEach(function (p) {
+            html += '<div class="prog-item prog-item-replay" onclick="abrirProgramacao(\'' + p.id + '\')">' +
+                '<div class="prog-item-info">' +
+                    '<strong>&#x1F4FA; ' + esc(p.titulo) + '</strong>' +
+                    '<span>Replay - ' + formatarDataCurtaStr(p.data) + "</span>" +
+                '</div>' +
+                '<span class="prog-item-arrow">&rsaquo;</span>' +
+            '</div>';
+        });
+        html += '</div>';
+    }
+
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function difMinutos(data, hora) {
+    var partes = hora.split(":");
+    var alvo = new Date(data + "T" + hora + ":00");
+    return Math.round((alvo - new Date()) / 60000);
+}
+
+function abrirProgramacao(id) {
+    var lista = getProgramacao();
+    var p = lista.find(function (x) { return x.id === id; });
+    if (!p) return;
+
+    var live = getLive();
+    if (live && live.ativa) return;
+
+    var embedInfo = extrairEmbedUrl(p.url);
+
+    var container = document.getElementById("liveContainer");
+    if (!container) return;
+
+    if (embedInfo.tipo === "redirect") {
+        container.innerHTML =
+            '<div class="empty-state" style="padding:40px 20px;">' +
+                '<div class="empty-state-icon">&#128247;</div>' +
+                '<div class="empty-state-text" style="margin-bottom:8px;font-weight:600;">' + esc(p.titulo) + '</div>' +
+                '<p style="color:#64748b;font-size:0.9rem;margin-bottom:20px;">Este conteudo e do Instagram e nao pode ser exibido dentro do portal. Clique abaixo para assistir.</p>' +
+                '<a href="' + esc(p.url) + '" target="_blank" rel="noopener" class="btn btn-primary" style="background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045);color:#fff;text-decoration:none;display:inline-block;">Abrir no Instagram</a>' +
+            '</div>';
+    } else {
+        container.innerHTML = '<iframe src="' + esc(embedInfo.embedUrl) + '" allowfullscreen allow="autoplay" style="width:100%;aspect-ratio:16/9;border:none;border-radius:8px;"></iframe>';
+    }
+
+    document.getElementById("liveTitle").textContent = p.titulo;
+    var badge = document.querySelector(".live-badge");
+    if (badge) badge.textContent = "\u25B6 REPRISE";
+    document.getElementById("liveModal").classList.add("active");
+}
+
+// Override fecharLiveModal to restore live badge
+var _origFecharLive = fecharLiveModal;
+function fecharLiveModal() {
+    _origFecharLive();
+    var badge = document.querySelector(".live-badge");
+    if (badge) badge.textContent = "AO VIVO";
 }
 
 // ===== PATROCINADORES =====
