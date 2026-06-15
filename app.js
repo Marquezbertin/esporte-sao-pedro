@@ -7,7 +7,7 @@ var VAPID_PUBLIC_KEY = "BDqqP7TPzV7sdz9CqKa1JNNbDJQ1kFyVTRhGMWVy4gxy4_d-xGDk91Pt
 // ===== UTILIDADES =====
 function esc(str) {
     if (!str) return "";
-    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
 // Galeria de fotos inline (para noticias)
@@ -786,14 +786,14 @@ function renderTorcedorGaleria() {
                     '<div class="torcedor-card-footer">' +
                     '<strong>' + esc(r.nome) + '</strong>' +
                     (r.esporte ? '<span>' + esc(r.esporte) + '</span>' : "") +
-                    '<span>' + formatarDataCurta(r.data || r.enviadoEm) + '</span>' +
+                    '<span>' + formatarDataCurtaStr(r.data || r.enviadoEm) + '</span>' +
                     '</div></div></div>';
             }).join("") +
             '</div>';
     });
 }
 
-function formatarDataCurta(d) {
+function formatarDataCurtaStr(d) {
     if (!d) return "";
     var p = d.split("T")[0].split("-");
     if (p.length < 3) return d;
@@ -825,7 +825,7 @@ function renderAdminTorcedor() {
                 '<strong>' + esc(r.nome) + '</strong>' +
                 (r.esporte ? ' <span style="font-size:0.72rem;color:#64748b;">(' + esc(r.esporte) + ')</span>' : "") +
                 '<p style="font-size:0.82rem;color:#475569;margin:4px 0;font-style:italic;">"' + esc(r.texto) + '"</p>' +
-                '<span style="font-size:0.72rem;color:#94a3b8;">' + formatarDataCurta(r.enviadoEm) + '</span>' +
+                '<span style="font-size:0.72rem;color:#94a3b8;">' + formatarDataCurtaStr(r.enviadoEm) + '</span>' +
                 '</div>' +
                 '<div style="display:flex;gap:6px;flex-shrink:0;">' +
                 '<button class="btn btn-primary btn-sm" onclick="aprovarTorcedor(\'' + r.id + '\')" style="padding:4px 12px;font-size:0.75rem;">Aprovar</button>' +
@@ -1386,7 +1386,7 @@ function navegar(secao, e) {
         case "conquistas": renderConquistas(); break;
         case "torcedor": renderTorcedorGaleria(); break;
         case "mapa": renderMapa(); renderAdminLocaisList(); break;
-        case "redacao": if (!isAdmin()) { navegar("inicio", null); return; } renderTemplatesPauta(); renderAdminPautas(); renderEditorialDashboard(); renderAdminNewsList(); renderCalendario(); break;
+        case "redacao": if (!isAdmin()) { navegar("inicio", null); return; } renderTemplatesPauta(); renderAdminPautas(); renderEditorialDashboard(); renderAdminNewsList(); renderCalendarioEditorial(); break;
         case "sobre": atualizarStorageInfo(); renderDashboardUsoPortal(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminTimes(); renderNewsletterAdmin(); renderMonitorPautas(); renderConfigIA(); carregarBanner(); atualizarStatusPush(); renderAdminTorcedor(); renderAdminFinanceiro(); renderCalculadoraFinanceira(); renderOrcamentos(); break;
     }
 
@@ -5006,10 +5006,10 @@ var _calEditorialDate = new Date();
 
 function navegarCalendario(delta) {
     _calEditorialDate.setMonth(_calEditorialDate.getMonth() + delta);
-    renderCalendario();
+    renderCalendarioEditorial();
 }
 
-function renderCalendario() {
+function renderCalendarioEditorial() {
     var container = document.getElementById("calendarioGrid");
     if (!container) return;
     var ano = _calEditorialDate.getFullYear();
