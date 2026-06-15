@@ -4876,25 +4876,29 @@ function renderProgramacaoHome() {
 
     var agora = new Date();
     var hoje = agora.toISOString().split("T")[0];
-    var horaAtual = agora.getHours().toString().padStart(2, "0") + ":" + agora.getMinutes().toString().padStart(2, "0");
 
     lista.sort(function (a, b) { return a.data.localeCompare(b.data) || a.hora.localeCompare(b.hora); });
 
     var atual = null;
-    var proximo = null;
-    var passados = [];
+    var futuros = [];
 
     lista.forEach(function (p) {
-        if (p.data < hoje || (p.data === hoje && p.hora < horaAtual)) {
-            passados.push(p);
-        } else if (p.data === hoje && p.hora >= horaAtual) {
-            if (!atual || p.hora < atual.hora) atual = p;
+        if (p.data < hoje) return;
+        if (p.data === hoje) {
+            var minAte = difMinutos(p.data, p.hora);
+            if (minAte <= 0 && minAte > -120) {
+                atual = p;
+            } else if (minAte > 0 && !atual) {
+                futuros.push(p);
+            } else if (minAte > 0 && atual) {
+                futuros.push(p);
+            }
         } else if (p.data > hoje) {
-            if (!proximo || p.data < proximo.data || (p.data === proximo.data && p.hora < proximo.hora)) proximo = p;
+            futuros.push(p);
         }
     });
 
-    if (!atual && !proximo && passados.length === 0) { container.innerHTML = ""; return; }
+    if (!atual && futuros.length === 0) { container.innerHTML = ""; return; }
 
     var html = '<div class="programacao-widget">';
 
@@ -4929,11 +4933,6 @@ function renderProgramacaoHome() {
     }
 
     // Proximos (ate 3)
-    var futuros = [];
-    lista.forEach(function (p) {
-        if (atual && p.id === atual.id) return;
-        if (p.data > hoje || (p.data === hoje && p.hora >= horaAtual)) futuros.push(p);
-    });
     if (futuros.length > 0) {
         html += '<div class="prog-section-label">Proximos Programas</div>';
         html += '<div class="prog-list">';
@@ -4942,23 +4941,6 @@ function renderProgramacaoHome() {
                 '<div class="prog-item-info">' +
                     '<strong>' + esc(p.titulo) + '</strong>' +
                     '<span>' + formatarDataCurtaStr(p.data) + " as " + p.hora + '</span>' +
-                '</div>' +
-                '<span class="prog-item-arrow">&rsaquo;</span>' +
-            '</div>';
-        });
-        html += '</div>';
-    }
-
-    // Replays (ultimos 2 passados)
-    if (passados.length > 0) {
-        html += '<div class="prog-section-label">Replays Disponiveis</div>';
-        html += '<div class="prog-list">';
-        passados.sort(function (a, b) { return b.data.localeCompare(a.data) || b.hora.localeCompare(a.hora); });
-        passados.slice(0, 2).forEach(function (p) {
-            html += '<div class="prog-item prog-item-replay" onclick="abrirProgramacao(\'' + p.id + '\')">' +
-                '<div class="prog-item-info">' +
-                    '<strong>&#x1F4FA; ' + esc(p.titulo) + '</strong>' +
-                    '<span>Replay - ' + formatarDataCurtaStr(p.data) + "</span>" +
                 '</div>' +
                 '<span class="prog-item-arrow">&rsaquo;</span>' +
             '</div>';
