@@ -5039,170 +5039,202 @@ html.copa-mode .hero::after {
     }
 }
 
-/* ===== PAGINA DO TIME (FULLSCREEN) ===== */
+/* ===== PAGINA DO TIME (PAGE DEDICADA) ===== */
 .pagina-time-overlay {
     position: fixed;
     inset: 0;
     z-index: 10000;
-    background: rgba(0,0,0,0.6);
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
+    background: var(--cinza-50);
     overflow-y: auto;
-    padding: 20px;
-    backdrop-filter: blur(4px);
+    -webkit-overflow-scrolling: touch;
 }
-.pagina-time-modal {
+.pagina-time-wrapper {
+    max-width: 960px;
+    margin: 0 auto;
+    min-height: 100vh;
     background: var(--branco);
-    max-width: 720px;
-    width: 100%;
-    border-radius: var(--radius-lg);
-    padding: 32px;
-    margin: 20px auto;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    position: relative;
-    animation: paginaTimeIn 0.3s ease;
+    box-shadow: 0 0 60px rgba(0,0,0,0.08);
+    animation: paginaTimeIn 0.35s ease;
 }
 @keyframes paginaTimeIn {
-    from { opacity: 0; transform: translateY(30px); }
+    from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 }
-.pagina-time-close {
-    background: none;
-    border: none;
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--azul-escuro);
-    cursor: pointer;
-    padding: 8px 0;
-    margin-bottom: 20px;
-    display: inline-block;
-    font-family: var(--font-main);
+.pagina-time-hero {
+    padding: 40px 48px 32px;
+    position: relative;
+    border-bottom: 1px solid var(--cinza-100);
 }
-.pagina-time-close:hover { opacity: 0.7; }
-.pagina-time-header {
-    display: flex;
+.pagina-time-voltar {
+    display: inline-flex;
     align-items: center;
-    gap: 20px;
+    gap: 6px;
+    background: var(--cinza-100);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--cinza-600);
+    cursor: pointer;
+    font-family: var(--font-main);
+    transition: all 0.2s;
     margin-bottom: 24px;
 }
+.pagina-time-voltar:hover {
+    background: var(--cinza-200);
+    color: var(--cinza-800);
+}
+.pagina-time-hero-inner {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+}
 .pagina-time-logo {
-    width: 90px;
-    height: 90px;
+    width: 100px;
+    height: 100px;
     border-radius: 50%;
     object-fit: cover;
     flex-shrink: 0;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
 }
 .pagina-time-logo-placeholder {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--cinza-100);
-    font-size: 2.5rem;
+    font-size: 2.8rem;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
 }
-.pagina-time-titulos { flex: 1; }
+.pagina-time-hero-texto { flex: 1; }
 .pagina-time-nome {
     font-family: var(--font-display);
-    font-size: 1.5rem;
-    font-weight: 800;
+    font-size: 2rem;
+    font-weight: 900;
     color: var(--azul-escuro);
-    margin-bottom: 4px;
+    margin-bottom: 8px;
+    line-height: 1.2;
 }
-.pagina-time-esporte {
-    font-size: 0.8rem;
-    color: var(--cinza-400);
+.pagina-time-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    border-radius: 100px;
+    font-size: 0.82rem;
+    font-weight: 700;
     text-transform: uppercase;
-    font-weight: 600;
     letter-spacing: 0.5px;
 }
+.pagina-time-corpo {
+    padding: 32px 48px 48px;
+}
 .pagina-time-descricao {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     color: var(--cinza-600);
-    line-height: 1.7;
-    margin-bottom: 24px;
+    line-height: 1.8;
+    margin-bottom: 32px;
     white-space: pre-wrap;
 }
 .pagina-time-redes {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-    margin-bottom: 28px;
+    margin-bottom: 40px;
 }
-.pagina-time-redes .linktree-btn {
-    padding: 10px 20px;
-    font-size: 0.85rem;
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: 700;
-    transition: all 0.2s;
+.pagina-time-rede {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
+    padding: 10px 22px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+.pagina-time-rede:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.pagina-time-atletas {
+    border-top: 2px solid var(--cinza-100);
+    padding-top: 28px;
 }
 .pagina-time-atletas-titulo {
     font-family: var(--font-display);
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     font-weight: 800;
     color: var(--azul-escuro);
-    margin-bottom: 16px;
-    padding-top: 24px;
-    border-top: 2px solid var(--cinza-100);
+    margin-bottom: 6px;
+}
+.pagina-time-atletas-sub {
+    font-size: 0.82rem;
+    color: var(--cinza-400);
+    margin-bottom: 20px;
 }
 .pagina-time-atletas-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 14px;
 }
 .pagina-time-atleta-card {
     background: var(--cinza-50);
-    border-radius: var(--radius-md);
+    border-radius: 12px;
     overflow: hidden;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.25s;
     border: 1px solid var(--cinza-100);
 }
 .pagina-time-atleta-card:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-md);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
 }
 .pagina-time-atleta-foto {
     width: 100%;
-    height: 120px;
+    aspect-ratio: 1;
     object-fit: cover;
     display: block;
+    background: var(--cinza-100);
 }
 .pagina-time-atleta-foto-placeholder {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2rem;
-    height: 120px;
+    font-size: 2.5rem;
+    aspect-ratio: 1;
     background: var(--cinza-100);
     color: var(--cinza-400);
 }
 .pagina-time-atleta-info {
-    padding: 10px 12px;
+    padding: 10px 12px 12px;
 }
 .pagina-time-atleta-info strong {
     display: block;
-    font-size: 0.8rem;
+    font-size: 0.82rem;
     color: var(--azul-escuro);
     margin-bottom: 2px;
+    line-height: 1.3;
 }
 .pagina-time-atleta-info span {
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     color: var(--cinza-400);
 }
-.pagina-time-atletas-vazio {
-    text-align: center;
-    color: var(--cinza-400);
-    font-size: 0.85rem;
-    padding: 32px 0;
-    border-top: 2px solid var(--cinza-100);
+@media (max-width: 768px) {
+    .pagina-time-hero { padding: 24px 20px 20px; }
+    .pagina-time-hero-inner { gap: 16px; }
+    .pagina-time-logo { width: 72px; height: 72px; }
+    .pagina-time-logo-placeholder { width: 72px; height: 72px; font-size: 2rem; }
+    .pagina-time-nome { font-size: 1.4rem; }
+    .pagina-time-corpo { padding: 20px 20px 32px; }
+    .pagina-time-atletas-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
 }
-@media (max-width: 600px) {
-    .pagina-time-modal { padding: 20px 16px; margin: 10px; }
-    .pagina-time-logo { width: 64px; height: 64px; }
-    .pagina-time-nome { font-size: 1.2rem; }
-    .pagina-time-atletas-grid { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 480px) {
+    .pagina-time-logo { width: 56px; height: 56px; }
+    .pagina-time-logo-placeholder { width: 56px; height: 56px; font-size: 1.5rem; }
+    .pagina-time-nome { font-size: 1.15rem; }
+    .pagina-time-hero { padding: 16px 14px 16px; }
+    .pagina-time-corpo { padding: 16px 14px 24px; }
+    .pagina-time-voltar { font-size: 0.75rem; padding: 6px 12px; margin-bottom: 16px; }
 }

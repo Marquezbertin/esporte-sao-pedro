@@ -920,38 +920,53 @@ function abrirPaginaTime(id) {
     if (!time) return;
 
     var esporte = ESPORTES.find(function (e) { return e.id === time.esporte; });
+    var cor = esporte ? esporte.cor : "#1a3a6b";
+    var icon = esporte ? esporte.icon : "&#9917;";
     var hasRedes = time.redes && (time.redes.instagram || time.redes.facebook || time.redes.youtube || time.redes.whatsapp || time.redes.site);
 
     var atletas = getData("atletas").filter(function (a) { return a.time === time.nome; });
 
+    document.body.style.overflow = "hidden";
+
     var html = '<div class="pagina-time-overlay" onclick="fecharPaginaTime()">' +
-        '<div class="pagina-time-modal" onclick="event.stopPropagation()">' +
-        '<button class="pagina-time-close" onclick="fecharPaginaTime()">&larr; Voltar</button>' +
-        '<div class="pagina-time-header">' +
-            (time.logo ? '<img src="' + esc(time.logo) + '" alt="' + esc(time.nome) + '" class="pagina-time-logo">' : '<div class="pagina-time-logo pagina-time-logo-placeholder">' + (esporte ? esporte.icon : "&#9917;") + '</div>') +
-            '<div class="pagina-time-titulos">' +
-                '<h2 class="pagina-time-nome">' + esc(time.nome) + '</h2>' +
-                '<span class="pagina-time-esporte">' + (esporte ? esporte.nome : esc(time.esporte)) + '</span>' +
+        '<div class="pagina-time-wrapper" onclick="event.stopPropagation()">' +
+            '<div class="pagina-time-hero" style="background:linear-gradient(135deg,' + cor + '15,' + cor + '05)">' +
+                '<button class="pagina-time-voltar" onclick="fecharPaginaTime()">' +
+                    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>' +
+                    ' Todos os Times' +
+                '</button>' +
+                '<div class="pagina-time-hero-inner">' +
+                    (time.logo
+                        ? '<img src="' + esc(time.logo) + '" alt="' + esc(time.nome) + '" class="pagina-time-logo">'
+                        : '<div class="pagina-time-logo pagina-time-logo-placeholder" style="background:' + cor + '20;color:' + cor + '">' + icon + '</div>') +
+                    '<div class="pagina-time-hero-texto">' +
+                        '<h2 class="pagina-time-nome">' + esc(time.nome) + '</h2>' +
+                        '<span class="pagina-time-badge" style="background:' + cor + '20;color:' + cor + '">' + icon + ' ' + (esporte ? esporte.nome : esc(time.esporte)) + '</span>' +
+                    '</div>' +
+                '</div>' +
             '</div>' +
-        '</div>' +
-        (time.descricao ? '<div class="pagina-time-descricao">' + esc(time.descricao) + '</div>' : '');
+            '<div class="pagina-time-corpo">' +
+                (time.descricao ? '<div class="pagina-time-descricao">' + esc(time.descricao) + '</div>' : '');
     if (hasRedes) {
         html += '<div class="pagina-time-redes">';
         var r = time.redes;
-        if (r.instagram) html += '<a href="' + esc(r.instagram) + '" target="_blank" rel="noopener" class="linktree-btn linktree-insta">&#128247; Instagram</a>';
-        if (r.facebook) html += '<a href="' + esc(r.facebook) + '" target="_blank" rel="noopener" class="linktree-btn linktree-face">&#128250; Facebook</a>';
-        if (r.youtube) html += '<a href="' + esc(r.youtube) + '" target="_blank" rel="noopener" class="linktree-btn linktree-yt">&#9654; YouTube</a>';
-        if (r.whatsapp) html += '<a href="' + esc(r.whatsapp) + '" target="_blank" rel="noopener" class="linktree-btn linktree-wpp">&#128172; WhatsApp</a>';
-        if (r.site) html += '<a href="' + esc(r.site) + '" target="_blank" rel="noopener" class="linktree-btn linktree-site">&#127760; Site</a>';
+        if (r.instagram) html += '<a href="' + esc(r.instagram) + '" target="_blank" rel="noopener" class="pagina-time-rede" style="background:#fce4ec;color:#c2185b">&#128247; Instagram</a>';
+        if (r.facebook) html += '<a href="' + esc(r.facebook) + '" target="_blank" rel="noopener" class="pagina-time-rede" style="background:#e3f2fd;color:#1565c0">&#128250; Facebook</a>';
+        if (r.youtube) html += '<a href="' + esc(r.youtube) + '" target="_blank" rel="noopener" class="pagina-time-rede" style="background:#ffebee;color:#c62828">&#9654; YouTube</a>';
+        if (r.whatsapp) html += '<a href="' + esc(r.whatsapp) + '" target="_blank" rel="noopener" class="pagina-time-rede" style="background:#e8f5e9;color:#2e7d32">&#128172; WhatsApp</a>';
+        if (r.site) html += '<a href="' + esc(r.site) + '" target="_blank" rel="noopener" class="pagina-time-rede" style="background:' + cor + '15;color:' + cor + '">&#127760; Site</a>';
         html += '</div>';
     }
     if (atletas.length > 0) {
         html += '<div class="pagina-time-atletas">' +
-            '<h3 class="pagina-time-atletas-titulo">Atletas do Time</h3>' +
+            '<h3 class="pagina-time-atletas-titulo">Atletas</h3>' +
+            '<p class="pagina-time-atletas-sub">Jogadores vinculados a este time</p>' +
             '<div class="pagina-time-atletas-grid">';
         atletas.forEach(function (a) {
             html += '<div class="pagina-time-atleta-card" onclick="fecharPaginaTime();setTimeout(function(){abrirLinktree(\'' + a.id + '\',\'atleta\')},50)">' +
-                (a.imagem ? '<img src="' + esc(a.imagem) + '" alt="' + esc(a.nome) + '" class="pagina-time-atleta-foto">' : '<div class="pagina-time-atleta-foto pagina-time-atleta-foto-placeholder">&#x1F3C3;</div>') +
+                (a.imagem
+                    ? '<img src="' + esc(a.imagem) + '" alt="' + esc(a.nome) + '" class="pagina-time-atleta-foto">'
+                    : '<div class="pagina-time-atleta-foto pagina-time-atleta-foto-placeholder">&#x1F3C3;</div>') +
                 '<div class="pagina-time-atleta-info">' +
                     '<strong>' + esc(a.nome) + '</strong>' +
                     (a.posicao ? '<span>' + esc(a.posicao) + '</span>' : '') +
@@ -959,16 +974,15 @@ function abrirPaginaTime(id) {
             '</div>';
         });
         html += '</div></div>';
-    } else {
-        html += '<div class="pagina-time-atletas-vazio">Nenhum atleta vinculado a este time.</div>';
     }
-    html += '</div></div>';
+    html += '</div></div></div>';
     document.body.insertAdjacentHTML("beforeend", html);
 }
 
 function fecharPaginaTime() {
     var el = document.querySelector(".pagina-time-overlay");
     if (el) el.remove();
+    document.body.style.overflow = "";
 }
 
 function fecharLinktree() {
