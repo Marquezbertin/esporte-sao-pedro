@@ -4823,6 +4823,20 @@ function salvarProgramacao() {
     showToastSave("Programacao agendada!");
 }
 
+var programacaoViewsContadas = {};
+
+function contarViewProgramacao(progId) {
+    if (programacaoViewsContadas[progId]) return;
+    programacaoViewsContadas[progId] = true;
+    delete SupaDB.getCache()["views"];
+    SupaDB.getItem("views").then(function (freshViews) {
+        if (!freshViews || Array.isArray(freshViews) || typeof freshViews !== "object") freshViews = {};
+        var key = "prog_" + progId;
+        freshViews[key] = (freshViews[key] || 0) + 1;
+        setData("views", freshViews);
+    });
+}
+
 function renderAdminProgramacao() {
     var container = document.getElementById("adminProgList");
     if (!container) return;
@@ -4831,11 +4845,12 @@ function renderAdminProgramacao() {
     lista.sort(function (a, b) { return a.data.localeCompare(b.data) || a.hora.localeCompare(b.hora); });
     container.innerHTML = "";
     lista.forEach(function (p) {
+        var views = getViews("prog_" + p.id);
         container.innerHTML +=
             '<div style="padding:10px 14px;border:1px solid var(--cinza-200);border-radius:8px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">' +
                 '<div style="flex:1;min-width:0;">' +
                     '<strong style="font-size:0.85rem;color:var(--azul-escuro);display:block;">' + esc(p.titulo) + '</strong>' +
-                    '<span style="font-size:0.75rem;color:#94a3b8;">' + formatarDataCurtaStr(p.data) + " as " + p.hora + '</span>' +
+                    '<span style="font-size:0.75rem;color:#94a3b8;">' + formatarDataCurtaStr(p.data) + " as " + p.hora + ' &middot; ' + views + ' views</span>' +
                 '</div>' +
                 '<div style="display:flex;gap:6px;flex-shrink:0;">' +
                     '<button class="btn btn-sm" onclick="editarProgramacao(\'' + p.id + '\')">Editar</button>' +
@@ -4915,6 +4930,7 @@ function renderProgramacaoHome() {
         var embedInfo = extrairEmbedUrl(atual.url);
         html += '<div class="prog-card ' + (tocando ? 'prog-tocando' : 'prog-proximo') + '">';
         if (tocando) {
+            contarViewProgramacao(atual.id);
             html += '<div class="prog-badge tocando">&#9679; Tocando Agora</div>';
             if (embedInfo.tipo === "redirect") {
                 html += '<div style="padding:20px;text-align:center;background:var(--cinza-50);border-radius:8px;margin:10px 0;">' +
@@ -4971,6 +4987,8 @@ function abrirProgramacao(id) {
 
     var live = getLive();
     if (live && live.ativa) return;
+
+    contarViewProgramacao(p.id);
 
     var embedInfo = extrairEmbedUrl(p.url);
 
