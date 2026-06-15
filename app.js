@@ -4962,9 +4962,6 @@ function renderProgramacaoHome() {
                 '<strong class="prog-titulo">' + esc(atual.titulo) + '</strong>' +
                 '<span class="prog-horario">' + formatarDataCurtaStr(atual.data) + " as " + atual.hora + '</span>' +
             '</div>';
-        if (!tocando) {
-            html += '<button class="prog-ver-btn" onclick="abrirProgramacao(\'' + atual.id + '\')">Abrir</button>';
-        }
         html += '</div>';
     }
 
@@ -4973,12 +4970,11 @@ function renderProgramacaoHome() {
         html += '<div class="prog-section-label">Proximos Programas</div>';
         html += '<div class="prog-list">';
         futuros.slice(0, 3).forEach(function (p) {
-            html += '<div class="prog-item" onclick="abrirProgramacao(\'' + p.id + '\')">' +
+            html += '<div class="prog-item">' +
                 '<div class="prog-item-info">' +
                     '<strong>' + esc(p.titulo) + '</strong>' +
                     '<span>' + formatarDataCurtaStr(p.data) + " as " + p.hora + '</span>' +
                 '</div>' +
-                '<span class="prog-item-arrow">&rsaquo;</span>' +
             '</div>';
         });
         html += '</div>';
@@ -5001,6 +4997,10 @@ function abrirProgramacao(id) {
 
     var live = getLive();
     if (live && live.ativa) return;
+
+    if (difMinutos(p.data, p.hora) > 0) {
+        return showToastAviso("Este programa ainda nao comecou. Volte no horario agendado.");
+    }
 
     contarViewProgramacao(p.id);
 
