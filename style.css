@@ -4256,6 +4256,8 @@ body.admin-mode .episodio-card-actions { display: flex; }
 .fin-orc-actions button.btn-pdf:hover { background: #1d4ed8; color: #fff; }
 .fin-orc-actions button.btn-compartilhar { color: #7c3aed; border-color: #7c3aed; }
 .fin-orc-actions button.btn-compartilhar:hover { background: #7c3aed; color: #fff; }
+.fin-orc-actions button.btn-editar { color: #0891b2; border-color: #0891b2; }
+.fin-orc-actions button.btn-editar:hover { background: #0891b2; color: #fff; }
 .fin-orc-resumo {
     display: flex;
     gap: 20px;

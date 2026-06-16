@@ -6065,6 +6065,7 @@ async function deletarProdutoFinanceiro(id) {
 
 // ===== CALCULADORA DE VENDAS / ORCAMENTOS =====
 var _filtroOrcamento = "todos";
+var _editandoOrcamentoId = null;
 
 function filtrarOrcamentos(filtro, btn) {
     _filtroOrcamento = filtro;
@@ -6197,21 +6198,37 @@ function salvarOrcamento() {
     var obs = document.getElementById("finCalcObs").value.trim();
 
     var orcamentos = getOrcamentos();
-    orcamentos.push({
-        id: gerarId(),
-        data: new Date().toISOString().split("T")[0],
-        cliente: cliente,
-        observacoes: obs,
-        itens: itens,
-        total: total,
-        status: "orcamento"
-    });
+
+    if (_editandoOrcamentoId) {
+        var idx = orcamentos.findIndex(function (o) { return o.id === _editandoOrcamentoId; });
+        if (idx !== -1) {
+            orcamentos[idx].cliente = cliente;
+            orcamentos[idx].observacoes = obs;
+            orcamentos[idx].itens = itens;
+            orcamentos[idx].total = total;
+        }
+        _editandoOrcamentoId = null;
+        document.getElementById("finCalcSalvarBtn").textContent = "Salvar Orcamento";
+        var cancelBtn = document.getElementById("finCalcCancelarEditBtn");
+        if (cancelBtn) cancelBtn.style.display = "none";
+        showToastSave("Orcamento atualizado!");
+    } else {
+        orcamentos.push({
+            id: gerarId(),
+            data: new Date().toISOString().split("T")[0],
+            cliente: cliente,
+            observacoes: obs,
+            itens: itens,
+            total: total,
+            status: "orcamento"
+        });
+        showToastSave("Orcamento salvo para \"" + cliente + "\"!");
+    }
 
     setData("financeiro_orcamentos", orcamentos);
     limparCalculadora();
     renderOrcamentos();
     renderCalculadoraFinanceira();
-    showToastSave("Orcamento salvo para \"" + cliente + "\"!");
 }
 
 function getOrcamentos() { return getData("financeiro_orcamentos"); }
@@ -6275,6 +6292,7 @@ function renderOrcamentos() {
                     '<div class="fin-orc-actions">' +
                         '<button class="btn-pdf" onclick="gerarPDFOrcamento(\'' + o.id + '\')" title="Gerar PDF">PDF</button>' +
                         '<button class="btn-compartilhar" onclick="compartilharOrcamento(\'' + o.id + '\')" title="Compartilhar">Enviar</button>' +
+                        '<button class="btn-editar" onclick="editarOrcamento(\'' + o.id + '\')">Editar</button>' +
                         (o.status !== "vendido" ? '<button class="btn-vendido" onclick="mudarStatusOrcamento(\'' + o.id + '\',\'vendido\')">Vendido</button>' : '') +
                         (o.status !== "cancelado" ? '<button class="btn-cancelar" onclick="mudarStatusOrcamento(\'' + o.id + '\',\'cancelado\')">Cancelar</button>' : '') +
                         '<button class="btn-excluir" onclick="deletarOrcamento(\'' + o.id + '\')">Excluir</button>' +
@@ -6457,4 +6475,44 @@ function compartilharOrcamento(id) {
     } else {
         window.open("mailto:?subject=" + assunto + "&body=" + corpo, "_blank");
     }
+}
+
+function editarOrcamento(id) {
+    if (!requireAdmin()) return;
+    var orcamentos = getOrcamentos();
+    var orcamento = orcamentos.find(function (o) { return o.id === id; });
+    if (!orcamento) return showToastAviso("Orcamento nao encontrado.");
+
+    _editandoOrcamentoId = id;
+    document.getElementById("finCalcCliente").value = orcamento.cliente || "";
+    document.getElementById("finCalcObs").value = orcamento.observacoes || "";
+    document.getElementById("finCalcSalvarBtn").textContent = "Atualizar Orcamento";
+
+    var cancelBtn = document.getElementById("finCalcCancelarEditBtn");
+    if (cancelBtn) cancelBtn.style.display = "inline-block";
+
+    // Selecionar e carregar itens
+    orcamento.itens.forEach(function (item) {
+        var cb = document.querySelector("#finCalcProdutos input[data-produto-id='" + item.produtoId + "']");
+        if (cb) {
+            cb.checked = true;
+            var qtdInput = document.getElementById("finCalcQtd_" + item.produtoId);
+            if (qtdInput) {
+                qtdInput.value = item.quantidade;
+                qtdInput.style.display = "inline-block";
+            }
+        }
+    });
+
+    recalcularOrcamento();
+    window.scrollTo({ top: document.getElementById("finCalcProdutos").offsetTop - 100, behavior: "smooth" });
+    showToastAviso("Editando orcamento. Ajuste os itens e clique em 'Atualizar Orcamento'.");
+}
+
+function cancelarEdicaoOrcamento() {
+    _editandoOrcamentoId = null;
+    document.getElementById("finCalcSalvarBtn").textContent = "Salvar Orcamento";
+    var cancelBtn = document.getElementById("finCalcCancelarEditBtn");
+    if (cancelBtn) cancelBtn.style.display = "none";
+    limparCalculadora();
 }

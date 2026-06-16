@@ -1347,7 +1347,8 @@
                     <div style="display:flex;gap:8px;flex-wrap:wrap;">
                         <input type="text" id="finCalcCliente" placeholder="Nome do cliente (opcional)" style="padding:8px 12px;border:1px solid var(--cinza-200);border-radius:6px;font-size:0.85rem;min-width:180px;">
                         <input type="text" id="finCalcObs" placeholder="Observacoes" style="padding:8px 12px;border:1px solid var(--cinza-200);border-radius:6px;font-size:0.85rem;min-width:180px;">
-                        <button class="btn btn-primary" onclick="salvarOrcamento()">Salvar Orcamento</button>
+                        <button class="btn btn-primary" id="finCalcSalvarBtn" onclick="salvarOrcamento()">Salvar Orcamento</button>
+                        <button class="btn btn-secondary" onclick="cancelarEdicaoOrcamento()" id="finCalcCancelarEditBtn" style="display:none;">Cancelar Edicao</button>
                         <button class="btn btn-secondary" onclick="limparCalculadora()">Limpar</button>
                     </div>
                 </div>
