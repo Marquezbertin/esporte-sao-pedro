@@ -361,9 +361,10 @@
 
             <!-- ADMIN: ADICIONAR JOGO -->
             <div class="admin-section admin-only">
-                <button class="btn btn-secondary" onclick="toggleAdmin('adminJogo')">+ Agendar Jogo</button>
+                <button class="btn btn-secondary" onclick="toggleAdmin('adminJogo');cancelarEdicaoJogo()">+ Agendar Jogo</button>
                 <div class="admin-form" id="adminJogo" style="display:none;">
-                    <h3>Novo Jogo</h3>
+                    <h3 id="adminJogoTitle">Novo Jogo</h3>
+                    <input type="hidden" id="jogoEditId">
                     <select id="jogoEsporte">
                         <option value="futebol">Futebol</option>
                         <option value="volei">Volei</option>
@@ -377,8 +378,12 @@
                     <input type="text" id="jogoTimeFora" placeholder="Time visitante (se houver)">
                     <input type="date" id="jogoData">
                     <input type="time" id="jogoHora">
+                    <input type="number" id="jogoRodada" placeholder="Rodada (opcional)" min="0" style="width:120px;">
                     <input type="text" id="jogoLocal" placeholder="Local">
-                    <button class="btn btn-primary" onclick="salvarJogo()">Agendar</button>
+                    <div style="display:flex;gap:8px;">
+                        <button class="btn btn-primary" onclick="salvarJogo()" id="btnSalvarJogo">Agendar</button>
+                        <button class="btn btn-secondary" onclick="cancelarEdicaoJogo()" id="btnCancelarJogo" style="display:none;">Cancelar</button>
+                    </div>
                 </div>
             </div>
 
@@ -1374,6 +1379,25 @@
                     Ao registrar resultados, a classificacao e atualizada automaticamente.
                 </p>
                 <div id="adminClassificacaoList" style="margin-top:12px;"></div>
+            </div>
+
+            <!-- ADMIN: AGENDA DE JOGOS -->
+            <div class="card-panel admin-only" style="margin-top:40px;">
+                <div class="card-panel-header">
+                    <h3>Agenda de Jogos</h3>
+                    <span class="badge">ADMIN</span>
+                </div>
+                <p style="color:#8892a4;margin-bottom:16px;">
+                    Gerencie todos os jogos agendados. Para criar ou editar, use o formulario na pagina
+                    <a href="#" onclick="navegar('calendario', event)" style="color:var(--azul-medio);">Calendario</a>
+                    ou clique nos botoes abaixo.
+                </p>
+                <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap;">
+                    <button class="btn btn-sm" onclick="filtrarAdminJogos('todos', this)" class="chip active">Todos</button>
+                    <button class="btn btn-sm" onclick="filtrarAdminJogos('futuros', this)" class="chip">Futuros</button>
+                    <button class="btn btn-sm" onclick="filtrarAdminJogos('passados', this)" class="chip">Realizados</button>
+                </div>
+                <div id="adminJogosList" style="margin-top:12px;"></div>
             </div>
 
             <!-- ADMIN: TIMES / EQUIPES -->

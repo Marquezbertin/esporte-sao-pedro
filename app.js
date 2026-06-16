@@ -118,6 +118,7 @@ function nomeCidade(id) {
 }
 
 var MESES_FULL = ["Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+var MESES_ABR = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 var DIAS_SEMANA = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 
 // ===== HELPERS DE UX (Toast, Modal, Loading) =====
@@ -1395,7 +1396,7 @@ function navegar(secao, e) {
         case "torcedor": renderTorcedorGaleria(); break;
         case "mapa": renderMapa(); renderAdminLocaisList(); break;
         case "redacao": if (!isAdmin()) { navegar("inicio", null); return; } renderTemplatesPauta(); renderAdminPautas(); renderEditorialDashboard(); renderAdminNewsList(); renderCalendarioEditorial(); break;
-        case "sobre": atualizarStorageInfo(); renderDashboardUsoPortal(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminClassificacao(); renderAdminTimes(); renderNewsletterAdmin(); renderMonitorPautas(); renderConfigIA(); carregarBanner(); atualizarStatusPush(); renderAdminTorcedor(); renderAdminFinanceiro(); renderCalculadoraFinanceira(); renderOrcamentos(); renderAdminProgramacao(); break;
+        case "sobre": atualizarStorageInfo(); renderDashboardUsoPortal(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminClassificacao(); renderAdminJogos(); renderAdminTimes(); renderNewsletterAdmin(); renderMonitorPautas(); renderConfigIA(); carregarBanner(); atualizarStatusPush(); renderAdminTorcedor(); renderAdminFinanceiro(); renderCalculadoraFinanceira(); renderOrcamentos(); renderAdminProgramacao(); break;
     }
 
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1753,6 +1754,7 @@ function renderGameCard(j) {
     if (j.timeFora) teams += " x " + j.timeFora;
     var esporte = ESPORTES.find(function (e) { return e.id === j.esporte; });
 
+    var rodadaTxt = j.rodada ? "Rodada " + j.rodada + " &middot; " : "";
     return '<div class="game-card">' +
         '<div class="game-date">' +
             '<div class="game-date-day">' + dc.dia + '</div>' +
@@ -1760,7 +1762,7 @@ function renderGameCard(j) {
         '</div>' +
         '<div class="game-info">' +
             '<div class="game-teams">' + esc(teams) + '</div>' +
-            '<div class="game-meta">' + (j.hora || "") + ' - ' + esc(j.local || "") + '</div>' +
+            '<div class="game-meta">' + rodadaTxt + (j.hora || "") + (j.hora && j.local ? " - " : "") + esc(j.local || "") + '</div>' +
         '</div>' +
         '<span class="game-sport-badge">' + (esporte ? esporte.icon + " " + esporte.nome : esc(j.esporte)) + '</span>' +
     '</div>';
@@ -3893,6 +3895,8 @@ function renderCalendarGames() {
     });
 }
 
+var _editandoJogoId = null;
+
 function salvarJogo() {
     if (!requireAdmin()) return;
     var esporte = document.getElementById("jogoEsporte").value;
@@ -3900,26 +3904,76 @@ function salvarJogo() {
     var timeFora = document.getElementById("jogoTimeFora").value.trim();
     var data = document.getElementById("jogoData").value;
     var hora = document.getElementById("jogoHora").value;
+    var rodada = parseInt(document.getElementById("jogoRodada").value) || 0;
     var local = document.getElementById("jogoLocal").value.trim();
 
     if (!timeCasa) return showToastAviso("Preencha o time/evento.");
     if (!data) return showToastAviso("Preencha a data.");
 
+    var editando = _editandoJogoId;
     var jogos = getData("jogos");
-    jogos.push({ id: gerarId(), esporte: esporte, timeCasa: timeCasa, timeFora: timeFora, data: data, hora: hora, local: local });
-    setData("jogos", jogos);
+    if (editando) {
+        var idx = -1;
+        for (var i = 0; i < jogos.length; i++) { if (jogos[i].id === editando) { idx = i; break; } }
+        if (idx === -1) { showToastErro("Jogo nao encontrado."); return; }
+        jogos[idx] = { id: editando, esporte: esporte, timeCasa: timeCasa, timeFora: timeFora, data: data, hora: hora, rodada: rodada, local: local };
+        setData("jogos", jogos);
+        _editandoJogoId = null;
+        document.getElementById("btnSalvarJogo").textContent = "Agendar";
+        document.getElementById("adminJogoTitle").textContent = "Novo Jogo";
+        document.getElementById("btnCancelarJogo").style.display = "none";
+    } else {
+        jogos.push({ id: gerarId(), esporte: esporte, timeCasa: timeCasa, timeFora: timeFora, data: data, hora: hora, rodada: rodada, local: local });
+        setData("jogos", jogos);
+    }
 
     document.getElementById("jogoTimeCasa").value = "";
     document.getElementById("jogoTimeFora").value = "";
     document.getElementById("jogoData").value = "";
     document.getElementById("jogoHora").value = "";
+    document.getElementById("jogoRodada").value = "";
     document.getElementById("jogoLocal").value = "";
     document.getElementById("adminJogo").style.display = "none";
 
     renderCalendario();
     renderTicker();
     renderInicio();
-    showToastSave("Jogo agendado!");
+    renderAdminJogos();
+    showToastSave(editando ? "Jogo atualizado!" : "Jogo agendado!");
+}
+
+function editarJogo(id) {
+    if (!requireAdmin()) return;
+    var jogos = getData("jogos");
+    var j = jogos.find(function (x) { return x.id === id; });
+    if (!j) return;
+    _editandoJogoId = id;
+    document.getElementById("jogoEsporte").value = j.esporte || "futebol";
+    document.getElementById("jogoTimeCasa").value = j.timeCasa || "";
+    document.getElementById("jogoTimeFora").value = j.timeFora || "";
+    document.getElementById("jogoData").value = j.data || "";
+    document.getElementById("jogoHora").value = j.hora || "";
+    document.getElementById("jogoRodada").value = j.rodada || "";
+    document.getElementById("jogoLocal").value = j.local || "";
+    document.getElementById("btnSalvarJogo").textContent = "Salvar Alteracoes";
+    document.getElementById("adminJogoTitle").textContent = "Editar Jogo";
+    document.getElementById("btnCancelarJogo").style.display = "";
+    document.getElementById("adminJogo").style.display = "";
+    var form = document.getElementById("adminJogo");
+    if (form) form.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function cancelarEdicaoJogo() {
+    _editandoJogoId = null;
+    document.getElementById("jogoTimeCasa").value = "";
+    document.getElementById("jogoTimeFora").value = "";
+    document.getElementById("jogoData").value = "";
+    document.getElementById("jogoHora").value = "";
+    document.getElementById("jogoRodada").value = "";
+    document.getElementById("jogoLocal").value = "";
+    document.getElementById("btnSalvarJogo").textContent = "Agendar";
+    document.getElementById("adminJogoTitle").textContent = "Novo Jogo";
+    document.getElementById("btnCancelarJogo").style.display = "none";
 }
 
 async function deletarJogo(id) {
@@ -3927,9 +3981,51 @@ async function deletarJogo(id) {
     if (!await showConfirm("Excluir este jogo?")) return;
     var jogos = getData("jogos").filter(function (j) { return j.id !== id; });
     setData("jogos", jogos);
+    if (_editandoJogoId === id) cancelarEdicaoJogo();
     renderCalendario();
     renderInicio();
     renderTicker();
+    renderAdminJogos();
+}
+
+var _filtroAdminJogos = "todos";
+
+function filtrarAdminJogos(filtro, btn) {
+    _filtroAdminJogos = filtro;
+    if (btn) {
+        document.querySelectorAll("#adminJogosList").previousElementSibling.querySelectorAll(".btn").forEach(function (b) { b.style.background = "var(--cinza-200)"; b.style.color = "var(--cinza-600)"; });
+        btn.style.background = "var(--azul-medio)";
+        btn.style.color = "#fff";
+    }
+    renderAdminJogos();
+}
+
+function renderAdminJogos() {
+    var container = document.getElementById("adminJogosList");
+    if (!container) return;
+    var hoje = new Date().toISOString().split("T")[0];
+    var jogos = getData("jogos").sort(function (a, b) { return a.data.localeCompare(b.data) || (a.hora || "").localeCompare(b.hora || ""); });
+    if (_filtroAdminJogos === "futuros") jogos = jogos.filter(function (j) { return j.data >= hoje; });
+    else if (_filtroAdminJogos === "passados") jogos = jogos.filter(function (j) { return j.data < hoje; });
+    if (jogos.length === 0) { container.innerHTML = "<p style='color:#8892a4;font-size:0.85rem;'>Nenhum jogo encontrado.</p>"; return; }
+    container.innerHTML = "";
+    jogos.forEach(function (j) {
+        var esporte = ESPORTES.find(function (e) { return e.id === j.esporte; });
+        var teams = esc(j.timeCasa) + (j.timeFora ? " x " + esc(j.timeFora) : "");
+        var rodadaTxt = j.rodada ? "Rodada " + j.rodada + " &middot; " : "";
+        container.innerHTML +=
+            '<div style="padding:10px 14px;border:1px solid var(--cinza-200);border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">' +
+                '<div style="display:flex;align-items:center;gap:10px;">' +
+                    '<div style="text-align:center;min-width:40px;"><div style="font-weight:900;font-size:1.1rem;color:var(--azul-escuro);line-height:1.1;">' + new Date(j.data + "T12:00:00").getDate() + '</div><div style="font-size:0.65rem;color:var(--cinza-400);text-transform:uppercase;">' + MESES_ABR[new Date(j.data + "T12:00:00").getMonth()] + '</div></div>' +
+                    '<div><div style="font-weight:700;font-size:0.9rem;">' + teams + '</div><div style="font-size:0.75rem;color:var(--cinza-500);">' + rodadaTxt + (j.hora || "") + (j.hora && j.local ? " - " : "") + esc(j.local || "") + '</div></div>' +
+                '</div>' +
+                '<div style="display:flex;gap:6px;">' +
+                    (esporte ? '<span style="font-size:0.7rem;background:var(--cinza-100);padding:2px 8px;border-radius:4px;">' + esporte.icon + ' ' + esc(esporte.nome) + '</span>' : '') +
+                    '<button class="btn btn-sm" onclick="editarJogo(\'' + j.id + '\')">Editar</button>' +
+                    '<button class="btn btn-sm" style="background:#c41e3a;color:#fff;border:1px solid #c41e3a;" onclick="deletarJogo(\'' + j.id + '\')">X</button>' +
+                '</div>' +
+            '</div>';
+    });
 }
 
 // ===== EVENTOS ESPORTIVOS =====
