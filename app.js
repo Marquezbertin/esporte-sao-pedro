@@ -1387,7 +1387,7 @@ function navegar(secao, e) {
         case "campeonatos": renderCampeonatos("futebol"); break;
         case "calendario": renderCalendario(); break;
         case "atletas": renderAtletas(); break;
-        case "galeria": renderGaleria(); break;
+        case "galeria": renderGaleria(); if (isAdmin()) renderAdminAlbuns(); break;
         case "videos": renderVideos(); break;
         case "podcast": renderEpisodios(); break;
         case "opiniao": renderOpinioes(); break;
@@ -4120,6 +4120,7 @@ async function deletarAtleta(id) {
 var _filtroGaleria = "todas";
 
 function renderGaleria() {
+    if (_galView === "albuns") { renderAlbuns(); return; }
     var fotos = getData("galeria").sort(function (a, b) { return (b.data || "").localeCompare(a.data || ""); });
     if (_filtroGaleria !== "todas") {
         fotos = fotos.filter(function (f) { return f.categoria === _filtroGaleria; });
@@ -4155,7 +4156,7 @@ function renderGaleria() {
 
 function filtrarGaleria(cat, btn) {
     _filtroGaleria = cat;
-    document.querySelectorAll(".gallery-filters .chip").forEach(function (c) { c.classList.remove("active"); });
+    document.querySelectorAll("#galeriaFotosView .chip").forEach(function (c) { c.classList.remove("active"); });
     if (btn) btn.classList.add("active");
     renderGaleria();
 }
@@ -4188,6 +4189,201 @@ async function deletarFoto(id) {
     var fotos = getData("galeria").filter(function (f) { return f.id !== id; });
     setData("galeria", fotos);
     renderGaleria();
+}
+
+// ===== GALERIA - ALBUNS / EVENTOS =====
+var _galView = "fotos";
+var _albumAberto = null;
+
+function alternarGaleriaView(modo) {
+    _galView = modo;
+    document.getElementById("galToggleFotos").style.background = modo === "fotos" ? "var(--azul-medio)" : "var(--cinza-200)";
+    document.getElementById("galToggleFotos").style.color = modo === "fotos" ? "#fff" : "var(--cinza-600)";
+    document.getElementById("galToggleAlbuns").style.background = modo === "albuns" ? "var(--azul-medio)" : "var(--cinza-200)";
+    document.getElementById("galToggleAlbuns").style.color = modo === "albuns" ? "#fff" : "var(--cinza-600)";
+    document.getElementById("galeriaFotosView").style.display = modo === "fotos" ? "" : "none";
+    document.getElementById("galeriaAlbunsView").style.display = modo === "albuns" ? "" : "none";
+    if (modo === "albuns") renderAlbuns();
+    else renderGaleria();
+}
+
+function renderAlbuns() {
+    var albuns = getData("galeria_eventos").sort(function (a, b) { return (b.data || "").localeCompare(a.data || ""); });
+    if (_filtroGaleria !== "todas") {
+        albuns = albuns.filter(function (a) { return a.categoria === _filtroGaleria; });
+    }
+    var grid = document.getElementById("albumGrid");
+    var container = document.getElementById("albumFotosContainer");
+    if (!grid) return;
+    grid.style.display = "";
+    if (container) container.style.display = "none";
+    grid.innerHTML = "";
+    if (albuns.length === 0) {
+        grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-state-icon">&#128247;</div><div class="empty-state-text">Nenhum album criado.</div></div>';
+        return;
+    }
+    albuns.forEach(function (a) {
+        var total = (a.fotos || []).length;
+        var capa = a.capa || (total > 0 ? a.fotos[0].url : "");
+        var adminActions = isAdmin()
+            ? '<div class="gallery-item-actions">' +
+                '<button onclick="event.stopPropagation();deletarAlbum(\'' + a.id + '\')" title="Excluir album">X</button>' +
+              '</div>'
+            : "";
+        grid.innerHTML +=
+            '<div class="gallery-item" onclick="abrirAlbum(\'' + a.id + '\')">' +
+                (capa ? '<img src="' + esc(capa) + '" alt="' + esc(a.titulo) + '" loading="lazy">' : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--cinza-100);color:var(--cinza-400);font-size:2rem;">&#128247;</div>') +
+                '<div class="gallery-item-overlay">' +
+                    '<div class="gallery-item-caption">' + esc(a.titulo) + '</div>' +
+                    '<div class="gallery-item-date">' + total + ' foto' + (total !== 1 ? "s" : "") + " &middot; " + formatarData(a.data) + '</div>' +
+                '</div>' +
+                adminActions +
+            '</div>';
+    });
+}
+
+function abrirAlbum(id) {
+    _albumAberto = id;
+    var albuns = getData("galeria_eventos");
+    var album = albuns.find(function (a) { return a.id === id; });
+    if (!album) return;
+    var grid = document.getElementById("albumGrid");
+    var container = document.getElementById("albumFotosContainer");
+    var fotosGrid = document.getElementById("albumFotosGrid");
+    if (!grid || !container || !fotosGrid) return;
+    grid.style.display = "none";
+    container.style.display = "";
+    fotosGrid.innerHTML = "";
+    var fotos = album.fotos || [];
+    if (fotos.length === 0) {
+        fotosGrid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-state-icon">&#128247;</div><div class="empty-state-text">Nenhuma foto neste album.</div></div>';
+        return;
+    }
+    fotos.forEach(function (f, i) {
+        var adminActions = isAdmin()
+            ? '<div class="gallery-item-actions">' +
+                '<button onclick="event.stopPropagation();deletarFotoAlbum(\'' + album.id + '\',' + i + ')" title="Excluir foto">X</button>' +
+              '</div>'
+            : "";
+        fotosGrid.innerHTML +=
+            '<div class="gallery-item" onclick="abrirLightbox(\'' + esc(f.url) + '\', \'' + esc(f.legenda || album.titulo) + '\')">' +
+                '<img src="' + esc(f.url) + '" alt="' + esc(f.legenda || "") + '" loading="lazy">' +
+                (f.legenda ? '<div class="gallery-item-overlay"><div class="gallery-item-caption">' + esc(f.legenda) + '</div></div>' : "") +
+                adminActions +
+            '</div>';
+    });
+}
+
+function voltarAlbuns() {
+    _albumAberto = null;
+    var grid = document.getElementById("albumGrid");
+    var container = document.getElementById("albumFotosContainer");
+    if (grid) grid.style.display = "";
+    if (container) container.style.display = "none";
+}
+
+function criarAlbum() {
+    if (!requireAdmin()) return;
+    var titulo = document.getElementById("albumTitulo").value.trim();
+    var descricao = document.getElementById("albumDescricao").value.trim();
+    var capa = document.getElementById("albumCapa").value.trim();
+    var categoria = document.getElementById("albumCategoria").value;
+    var data = document.getElementById("albumData").value;
+    if (!titulo) return showToastAviso("Preencha o titulo do album.");
+    var albuns = getData("galeria_eventos");
+    albuns.push({
+        id: gerarId(),
+        titulo: titulo,
+        descricao: descricao,
+        capa: capa,
+        categoria: categoria,
+        data: data || new Date().toISOString().split("T")[0],
+        fotos: []
+    });
+    setData("galeria_eventos", albuns);
+    document.getElementById("albumTitulo").value = "";
+    document.getElementById("albumDescricao").value = "";
+    document.getElementById("albumCapa").value = "";
+    document.getElementById("adminAlbum").style.display = "none";
+    renderAlbuns();
+    renderAdminAlbuns();
+    showToastSave("Album criado! Adicione fotos clicando em Gerenciar.");
+}
+
+function renderAdminAlbuns() {
+    var container = document.getElementById("adminAlbunsList");
+    if (!container) return;
+    var albuns = getData("galeria_eventos").sort(function (a, b) { return (b.data || "").localeCompare(a.data || ""); });
+    if (albuns.length === 0) { container.innerHTML = "<p style='color:#8892a4;font-size:0.85rem;'>Nenhum album criado.</p>"; return; }
+    container.innerHTML = "";
+    albuns.forEach(function (a) {
+        var total = (a.fotos || []).length;
+        var html = '<div style="padding:14px;border:1px solid var(--cinza-200);border-radius:8px;margin-bottom:12px;">';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
+        html += '<div><strong>' + esc(a.titulo) + '</strong> <span style="color:#8892a4;font-size:0.8rem;">(' + total + ' foto' + (total !== 1 ? "s" : "") + ')</span></div>';
+        html += '<div style="display:flex;gap:6px;">';
+        html += '<button class="btn btn-sm" onclick="toggleAdmin(\'adminFotosAlbum_' + a.id + '\')">+ Fotos</button>';
+        html += '<button class="btn btn-sm" style="background:#c41e3a;color:#fff;border:1px solid #c41e3a;" onclick="deletarAlbum(\'' + a.id + '\')">Excluir</button>';
+        html += '</div></div>';
+        html += '<div class="admin-form" id="adminFotosAlbum_' + a.id + '" style="display:none;">';
+        html += '<h4 style="margin-bottom:8px;">Adicionar Fotos ao Album</h4>';
+        html += '<input type="text" id="albumFotoUrl_' + a.id + '" placeholder="URL da foto" data-upload-target="albumFotoUrl_' + a.id + '">';
+        html += '<input type="text" id="albumFotoLegenda_' + a.id + '" placeholder="Legenda (opcional)">';
+        html += '<button class="btn btn-primary" onclick="adicionarFotoAlbum(\'' + a.id + '\')">Adicionar Foto</button>';
+        html += '<div id="adminFotosPreview_' + a.id + '" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">';
+        (a.fotos || []).forEach(function (f, i) {
+            html += '<div style="position:relative;width:60px;height:60px;"><img src="' + esc(f.url) + '" style="width:100%;height:100%;object-fit:cover;border-radius:4px;"><button onclick="deletarFotoAlbum(\'' + a.id + '\',' + i + ')" style="position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;border:none;background:#c41e3a;color:#fff;font-size:0.6rem;cursor:pointer;">X</button></div>';
+        });
+        html += '</div></div>';
+        html += '</div>';
+        container.innerHTML += html;
+    });
+    if (typeof CloudUpload !== "undefined" && CloudUpload.init) {
+        setTimeout(function () { CloudUpload.init(); }, 50);
+    }
+}
+
+function adicionarFotoAlbum(albumId) {
+    if (!requireAdmin()) return;
+    var url = document.getElementById("albumFotoUrl_" + albumId).value.trim();
+    var legenda = document.getElementById("albumFotoLegenda_" + albumId).value.trim();
+    if (!url) return showToastAviso("Preencha a URL da foto.");
+    var albuns = getData("galeria_eventos");
+    var album = albuns.find(function (a) { return a.id === albumId; });
+    if (!album) return;
+    if (!album.fotos) album.fotos = [];
+    album.fotos.push({ url: url, legenda: legenda });
+    if (!album.capa) album.capa = url;
+    setData("galeria_eventos", albuns);
+    document.getElementById("albumFotoUrl_" + albumId).value = "";
+    document.getElementById("albumFotoLegenda_" + albumId).value = "";
+    renderAdminAlbuns();
+    if (_albumAberto === albumId) abrirAlbum(albumId);
+    showToastSave("Foto adicionada ao album!");
+}
+
+async function deletarAlbum(id) {
+    if (!requireAdmin()) return;
+    if (!await showConfirm("Excluir este album e todas as suas fotos?")) return;
+    var albuns = getData("galeria_eventos").filter(function (a) { return a.id !== id; });
+    setData("galeria_eventos", albuns);
+    renderAdminAlbuns();
+    if (_albumAberto === id) voltarAlbuns();
+    else renderAlbuns();
+}
+
+async function deletarFotoAlbum(albumId, fotoIdx) {
+    if (!requireAdmin()) return;
+    if (!await showConfirm("Excluir esta foto do album?")) return;
+    var albuns = getData("galeria_eventos");
+    var album = albuns.find(function (a) { return a.id === albumId; });
+    if (!album) return;
+    album.fotos.splice(fotoIdx, 1);
+    if (album.fotos.length > 0) album.capa = album.fotos[0].url;
+    else album.capa = "";
+    setData("galeria_eventos", albuns);
+    renderAdminAlbuns();
+    if (_albumAberto === albumId) abrirAlbum(albumId);
 }
 
 // ===== VIDEOS =====

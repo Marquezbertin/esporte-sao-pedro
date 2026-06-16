@@ -458,14 +458,31 @@
                 <h2 class="section-title">Galeria de Fotos</h2>
                 <p class="section-sub">Registros do esporte sampedrano</p>
             </div>
-            <div class="gallery-filters">
-                <button class="chip active" onclick="filtrarGaleria('todas', this)">Todas</button>
-                <button class="chip" onclick="filtrarGaleria('futebol', this)">Futebol</button>
-                <button class="chip" onclick="filtrarGaleria('volei', this)">Volei</button>
-                <button class="chip" onclick="filtrarGaleria('basquete', this)">Basquete</button>
-                <button class="chip" onclick="filtrarGaleria('eventos', this)">Eventos</button>
+
+            <!-- TOGGLE FOTOS / ALBUNS -->
+            <div style="display:flex;gap:8px;margin-bottom:16px;">
+                <button class="btn btn-sm" id="galToggleFotos" onclick="alternarGaleriaView('fotos')" style="background:var(--azul-medio);color:#fff;border:none;">Fotos</button>
+                <button class="btn btn-sm" id="galToggleAlbuns" onclick="alternarGaleriaView('albuns')" style="background:var(--cinza-200);color:var(--cinza-600);border:none;">Albuns</button>
             </div>
-            <div class="gallery-grid" id="galleryGrid"></div>
+
+            <div id="galeriaFotosView">
+                <div class="gallery-filters">
+                    <button class="chip active" onclick="filtrarGaleria('todas', this)">Todas</button>
+                    <button class="chip" onclick="filtrarGaleria('futebol', this)">Futebol</button>
+                    <button class="chip" onclick="filtrarGaleria('volei', this)">Volei</button>
+                    <button class="chip" onclick="filtrarGaleria('basquete', this)">Basquete</button>
+                    <button class="chip" onclick="filtrarGaleria('eventos', this)">Eventos</button>
+                </div>
+                <div class="gallery-grid" id="galleryGrid"></div>
+            </div>
+
+            <div id="galeriaAlbunsView" style="display:none;">
+                <div class="gallery-grid" id="albumGrid"></div>
+                <div id="albumFotosContainer" style="display:none;margin-top:24px;">
+                    <button class="btn btn-sm" onclick="voltarAlbuns()" style="margin-bottom:16px;">&larr; Voltar para Albuns</button>
+                    <div class="gallery-grid" id="albumFotosGrid"></div>
+                </div>
+            </div>
 
             <!-- ADMIN: ADICIONAR FOTO -->
             <div class="admin-section admin-only">
@@ -483,6 +500,26 @@
                     <input type="date" id="fotoData">
                     <button class="btn btn-primary" onclick="salvarFoto()">Adicionar</button>
                 </div>
+
+                <!-- ADMIN: CRIAR ALBUM -->
+                <button class="btn btn-secondary" style="margin-top:16px;" onclick="toggleAdmin('adminAlbum')">+ Criar Album / Evento</button>
+                <div class="admin-form" id="adminAlbum" style="display:none;">
+                    <h3>Novo Album</h3>
+                    <input type="text" id="albumTitulo" placeholder="Titulo (ex: Final do Municipal 2026)">
+                    <textarea id="albumDescricao" placeholder="Descricao do evento" rows="3"></textarea>
+                    <input type="text" id="albumCapa" placeholder="URL da foto de capa" data-upload-target="albumCapa">
+                    <select id="albumCategoria">
+                        <option value="futebol">Futebol</option>
+                        <option value="volei">Volei</option>
+                        <option value="basquete">Basquete</option>
+                        <option value="eventos">Eventos</option>
+                    </select>
+                    <input type="date" id="albumData">
+                    <button class="btn btn-primary" onclick="criarAlbum()">Criar Album</button>
+                </div>
+
+                <!-- ADMIN: LISTA DE ALBUNS -->
+                <div id="adminAlbunsList" style="margin-top:16px;"></div>
             </div>
         </div>
     </section>
