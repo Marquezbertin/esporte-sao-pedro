@@ -6337,11 +6337,11 @@ function gerarPDFOrcamento(id) {
         var unit = "R$ " + ((item.valorUnitario || 0).toFixed(2).replace(".", ","));
         var sub = "R$ " + ((item.subtotal || 0).toFixed(2).replace(".", ","));
         return "<tr>" +
-            '<td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:center;width:40px;font-size:12px;">' + (idx + 1) + "</td>" +
-            '<td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;">' + esc(item.nome) + (item.descricao ? '<br><span style="font-size:10px;color:#64748b;">' + esc(item.descricao) + "</span>" : "") + "</td>" +
-            '<td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:center;width:50px;font-size:12px;">' + item.quantidade + "</td>" +
-            '<td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:right;width:100px;font-size:12px;">' + unit + "</td>" +
-            '<td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:right;width:100px;font-size:12px;font-weight:700;">' + sub + "</td>" +
+            '<td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:center;font-size:12px;">' + (idx + 1) + "</td>" +
+            '<td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;">' + esc(item.nome) + "</td>" +
+            '<td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:center;font-size:12px;">' + item.quantidade + "</td>" +
+            '<td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:right;font-size:12px;">' + unit + "</td>" +
+            '<td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:right;font-size:12px;font-weight:700;">' + sub + "</td>" +
             "</tr>";
     }).join("");
 
@@ -6352,82 +6352,104 @@ function gerarPDFOrcamento(id) {
     var obs = orcamento.observacoes || "";
     var numOrcamento = "#" + orcamento.id.slice(-6).toUpperCase();
 
-    var html = '<div id="pdf-orcamento" style="font-family:Arial,Helvetica,sans-serif;width:740px;padding:40px;background:#fff;color:#1e293b;">' +
+    var html = '<div id="pdf-orcamento" style="font-family:Arial,Helvetica,sans-serif;width:820px;padding:50px;background:#ffffff;color:#1e293b;box-sizing:border-box;">' +
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #d4a017;padding-bottom:16px;margin-bottom:20px;">' +
-            '<div style="font-size:24px;font-weight:900;color:#0a1628;">ESPORTE <span style="color:#d4a017;">SAO PEDRO</span><div style="font-size:10px;color:#64748b;font-weight:400;margin-top:2px;">Portal Esportivo de Sao Pedro/SP</div></div>' +
+            '<div style="font-size:26px;font-weight:900;color:#0a1628;">ESPORTE <span style="color:#d4a017;">SAO PEDRO</span><div style="font-size:11px;color:#64748b;font-weight:400;margin-top:2px;">Portal Esportivo de Sao Pedro/SP</div></div>' +
             '<div style="text-align:right;">' +
-                '<div style="font-size:24px;font-weight:800;color:#0a1628;letter-spacing:2px;">ORCAMENTO</div>' +
-                '<div style="font-size:12px;color:#64748b;margin-top:2px;">' + numOrcamento + "</div>" +
+                '<div style="font-size:26px;font-weight:800;color:#0a1628;letter-spacing:2px;">ORCAMENTO</div>' +
+                '<div style="font-size:13px;color:#64748b;margin-top:2px;">' + numOrcamento + "</div>" +
             "</div>" +
         "</div>" +
-        '<div style="display:flex;justify-content:space-between;margin-bottom:24px;padding:14px 20px;background:#f8fafc;border-radius:6px;">' +
+        '<div style="display:flex;justify-content:space-between;margin-bottom:24px;padding:14px 20px;background:#f8fafc;">' +
             "<div>" +
-                '<div style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">Cliente</div>' +
-                '<div style="font-size:15px;font-weight:700;color:#0a1628;margin-top:4px;">' + esc(cliente) + "</div>" +
+                '<div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">Cliente</div>' +
+                '<div style="font-size:16px;font-weight:700;color:#0a1628;margin-top:4px;">' + esc(cliente) + "</div>" +
             "</div>" +
             '<div style="text-align:right;">' +
-                '<div style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">Data</div>' +
-                '<div style="font-size:15px;font-weight:600;color:#0a1628;margin-top:4px;">' + dataFormatada + "</div>" +
+                '<div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">Data</div>' +
+                '<div style="font-size:16px;font-weight:600;color:#0a1628;margin-top:4px;">' + dataFormatada + "</div>" +
             "</div>" +
         "</div>" +
-        '<table style="width:100%;border-collapse:collapse;margin-bottom:20px;">' +
+        '<table style="width:100%;border-collapse:collapse;margin-bottom:24px;">' +
             "<thead>" +
-                '<tr style="background:#0a1628;color:#fff;">' +
-                    '<th style="padding:8px 10px;text-align:center;width:40px;font-size:10px;">#</th>' +
-                    '<th style="padding:8px 10px;text-align:left;font-size:10px;">Item</th>' +
-                    '<th style="padding:8px 10px;text-align:center;width:50px;font-size:10px;">Qtd</th>' +
-                    '<th style="padding:8px 10px;text-align:right;width:100px;font-size:10px;">Valor Unit.</th>' +
-                    '<th style="padding:8px 10px;text-align:right;width:100px;font-size:10px;">Subtotal</th>' +
+                '<tr style="background:#0a1628;color:#ffffff;">' +
+                    '<th style="padding:10px 12px;text-align:center;font-size:11px;">#</th>' +
+                    '<th style="padding:10px 12px;text-align:left;font-size:11px;">Item</th>' +
+                    '<th style="padding:10px 12px;text-align:center;font-size:11px;">Qtd</th>' +
+                    '<th style="padding:10px 12px;text-align:right;font-size:11px;">Valor Unit.</th>' +
+                    '<th style="padding:10px 12px;text-align:right;font-size:11px;">Subtotal</th>' +
                 "</tr>" +
             "</thead>" +
             "<tbody>" + itensHtml + "</tbody>" +
         "</table>" +
         '<div style="display:flex;justify-content:flex-end;margin-bottom:24px;">' +
-            '<div style="background:#0a1628;color:#fff;padding:12px 32px;border-radius:6px;text-align:center;">' +
-                '<div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;opacity:0.7;">Total</div>' +
-                '<div style="font-size:24px;font-weight:800;margin-top:2px;">' + total + "</div>" +
+            '<div style="background:#0a1628;color:#ffffff;padding:12px 36px;text-align:center;">' +
+                '<div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.7;">Total</div>' +
+                '<div style="font-size:26px;font-weight:800;margin-top:2px;">' + total + "</div>" +
             "</div>" +
         "</div>" +
-        (obs ? '<div style="padding:14px 20px;background:#fef9c3;border-radius:6px;margin-bottom:24px;border-left:4px solid #d4a017;">' +
-            '<div style="font-size:9px;color:#854d0e;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Observacoes</div>' +
-            '<div style="font-size:12px;color:#3b2f00;">' + esc(obs) + "</div>" +
+        (obs ? '<div style="padding:14px 20px;background:#fef9c3;margin-bottom:24px;border-left:4px solid #d4a017;">' +
+            '<div style="font-size:10px;color:#854d0e;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Observacoes</div>' +
+            '<div style="font-size:13px;color:#3b2f00;">' + esc(obs) + "</div>" +
         "</div>" : "") +
-        '<div style="border-top:2px solid #e2e8f0;padding-top:16px;text-align:center;font-size:10px;color:#94a3b8;">' +
+        '<div style="border-top:2px solid #e2e8f0;padding-top:16px;text-align:center;font-size:11px;color:#94a3b8;">' +
             '<div style="font-weight:600;color:#64748b;margin-bottom:2px;">Esporte Sao Pedro - Portal Esportivo</div>' +
             '<div style="margin-bottom:4px;">Sao Pedro/SP &bull; @esportesaopedro2026</div>' +
-            '<div style="font-size:8px;">Documento gerado automaticamente. Valido por 30 dias.</div>' +
+            '<div style="font-size:9px;">Documento gerado automaticamente. Valido por 30 dias.</div>' +
         "</div>" +
     "</div>";
 
     var div = document.createElement("div");
     div.innerHTML = html;
     div.style.position = "fixed";
-    div.style.top = "0";
     div.style.left = "0";
-    div.style.zIndex = "-1";
-    div.style.opacity = "0";
-    div.style.pointerEvents = "none";
+    div.style.top = "0";
+    div.style.width = "820px";
+    div.style.zIndex = "-9999";
+    div.style.background = "#ffffff";
     document.body.appendChild(div);
 
-    // Aguardar renderizacao completa e capturar como PDF
-    setTimeout(function () {
-        var opt = {
-            margin: [5, 5, 5, 5],
-            filename: "orcamento-esporte-sao-pedro-" + orcamento.id.slice(-8) + ".pdf",
-            image: { type: "jpeg", quality: 0.95 },
-            html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false, backgroundColor: "#ffffff" },
-            jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
-        };
-        html2pdf().set(opt).from(div).save().then(function () {
-            if (div.parentNode) document.body.removeChild(div);
-            hideLoading();
-            showToastSave("PDF gerado com sucesso!");
-        }).catch(function () {
-            if (div.parentNode) document.body.removeChild(div);
-            hideLoading();
-            showToastErro("Erro ao gerar PDF. Tente novamente.");
+    html2canvas(div, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+        width: 820,
+        height: div.scrollHeight
+    }).then(function (canvas) {
+        var imgData = canvas.toDataURL("image/jpeg", 0.95);
+        var { jsPDF } = window.jspdf;
+        var pdf = new jsPDF({
+            unit: "mm",
+            format: "a4",
+            orientation: "portrait"
         });
-    }, 600);
+        var pageW = pdf.internal.pageSize.getWidth() - 10;
+        var imgW = canvas.width;
+        var imgH = canvas.height;
+        var ratio = pageW / imgW;
+        var finalH = imgH * ratio;
+        var pageH = pdf.internal.pageSize.getHeight() - 10;
+        if (finalH <= pageH) {
+            pdf.addImage(imgData, "JPEG", 5, 5, pageW, finalH);
+        } else {
+            var y = 0;
+            while (y < finalH) {
+                if (y > 0) pdf.addPage();
+                pdf.addImage(imgData, "JPEG", 5, 5 - y, pageW, finalH);
+                y += pageH;
+            }
+        }
+        pdf.save("orcamento-esporte-sao-pedro-" + orcamento.id.slice(-8) + ".pdf");
+        if (div.parentNode) document.body.removeChild(div);
+        hideLoading();
+        showToastSave("PDF gerado com sucesso!");
+    }).catch(function (err) {
+        if (div.parentNode) document.body.removeChild(div);
+        hideLoading();
+        showToastErro("Erro ao gerar PDF: " + (err.message || "erro desconhecido"));
+    });
 }
 
 function compartilharOrcamento(id) {
