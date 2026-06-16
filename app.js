@@ -6018,6 +6018,7 @@ function salvarProdutoFinanceiro() {
     document.getElementById("finValor").value = "";
 
     renderAdminFinanceiro();
+    renderCalculadoraFinanceira();
     showToastSave(editando ? "Produto atualizado!" : "Produto cadastrado!");
 }
 
