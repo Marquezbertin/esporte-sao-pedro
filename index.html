@@ -808,13 +808,10 @@
             <div class="card-panel" style="margin-top:30px;">
                 <div class="card-panel-header">
                     <h3>Calendario Editorial</h3>
-                    <div style="display:flex;gap:8px;align-items:center;">
-                        <button class="btn btn-secondary" onclick="navegarCalendario(-1)" style="padding:4px 10px;font-size:0.8rem;">&larr;</button>
-                        <span id="calendarioMesAno" style="font-weight:700;font-size:0.9rem;"></span>
-                        <button class="btn btn-secondary" onclick="navegarCalendario(1)" style="padding:4px 10px;font-size:0.8rem;">&rarr;</button>
-                    </div>
+                    <span style="font-size:0.75rem;color:var(--cinza-400);">Noticias, pautas, jogos e eventos</span>
                 </div>
                 <div id="calendarioGrid" style="margin-top:12px;"></div>
+                <div id="calendarioDetalhe" style="display:none;margin-top:16px;padding:16px;background:var(--cinza-50);border-radius:8px;border:1px solid var(--cinza-200);"></div>
             </div>
         </div>
     </section>
@@ -1850,7 +1847,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase.js"></script>
     <script src="upload.js"></script>
-    <script src="app.min.js?v=3"></script>
+    <script src="app.min.js?v=4"></script>
     <script>
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js').catch(function(){});

@@ -5706,22 +5706,48 @@ function renderCalendarioEditorial() {
     var diasNoMes = ultimo.getDate();
     var nomeMeses = ["Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
-    // Gather scheduled content
-    var noticias = getData("noticias");
-    var eventos = {};
-    noticias.forEach(function (n) {
+    var itemsByDate = {};
+    function addItem(dateStr, item) {
+        if (!dateStr) return;
+        if (!itemsByDate[dateStr]) itemsByDate[dateStr] = [];
+        itemsByDate[dateStr].push(item);
+    }
+
+    getData("noticias").forEach(function (n) {
         var d = n.dataAgendada || n.data;
         if (!d) return;
-        var key = d;
-        if (!eventos[key]) eventos[key] = [];
-        var tipo = n.rascunho ? "rascunho" : (n.dataAgendada ? "agendada" : "publicada");
-        eventos[key].push({ titulo: n.titulo, tipo: tipo, id: n.id });
+        var st = n.rascunho ? "rascunho" : (n.dataAgendada ? "agendada" : "publicada");
+        addItem(d, { tipo: "noticia", subtipo: st, titulo: n.titulo, id: n.id });
+    });
+    getData("pautas").forEach(function (p) {
+        if (!p.prazo) return;
+        addItem(p.prazo, { tipo: "pauta", subtipo: p.status, titulo: p.titulo, id: p.id });
+    });
+    getData("jogos").forEach(function (j) {
+        if (!j.data) return;
+        addItem(j.data, { tipo: "jogo", titulo: (j.timeCasa || "") + (j.timeFora ? " x " + j.timeFora : ""), id: j.id, hora: j.hora });
+    });
+    getData("eventos").forEach(function (ev) {
+        if (!ev.data) return;
+        addItem(ev.data, { tipo: "evento", titulo: ev.nome, id: ev.id });
+    });
+    getData("monitor_pautas").forEach(function (mp) {
+        if (!mp.dataEvento) return;
+        addItem(mp.dataEvento, { tipo: "monitor", subtipo: mp.status, titulo: mp.titulo || (mp.times || ""), id: mp.id });
     });
 
     var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
         '<button class="btn btn-sm" onclick="navegarCalendario(-1)">&larr; ' + nomeMeses[mes === 0 ? 11 : mes - 1].substring(0, 3) + '</button>' +
         '<strong style="font-size:1rem;">' + nomeMeses[mes] + ' ' + ano + '</strong>' +
         '<button class="btn btn-sm" onclick="navegarCalendario(1)">' + nomeMeses[(mes + 1) % 12].substring(0, 3) + ' &rarr;</button>' +
+    '</div>';
+
+    html += '<div style="display:flex;gap:12px;margin-bottom:12px;font-size:0.7rem;flex-wrap:wrap;">' +
+        '<span style="display:flex;align-items:center;gap:4px;"><span class="cal-dot" style="background:#1a3f7a;"></span> Noticia</span>' +
+        '<span style="display:flex;align-items:center;gap:4px;"><span class="cal-dot" style="background:#d4a017;"></span> Pauta</span>' +
+        '<span style="display:flex;align-items:center;gap:4px;"><span class="cal-dot" style="background:#16a34a;"></span> Jogo</span>' +
+        '<span style="display:flex;align-items:center;gap:4px;"><span class="cal-dot" style="background:#8b5cf6;"></span> Evento</span>' +
+        '<span style="display:flex;align-items:center;gap:4px;"><span class="cal-dot" style="background:#e11d48;"></span> Pauta (monitor)</span>' +
     '</div>';
 
     html += '<div class="cal-grid">';
@@ -5735,17 +5761,76 @@ function renderCalendarioEditorial() {
         var dateStr = ano + "-" + String(mes + 1).padStart(2, "0") + "-" + String(dia).padStart(2, "0");
         var classes = "cal-day";
         if (dateStr === hoje) classes += " today";
-        html += '<div class="' + classes + '">';
+        html += '<div class="' + classes + '" onclick="abrirDetalheCalendario(\'' + dateStr + '\')">';
         html += '<div class="cal-day-num">' + dia + '</div>';
-        if (eventos[dateStr]) {
-            eventos[dateStr].forEach(function (ev) {
-                html += '<div class="cal-day-event ' + ev.tipo + '" onclick="abrirPreview(\'' + ev.id + '\')" title="' + esc(ev.titulo) + '">' + esc(ev.titulo.substring(0, 18)) + '</div>';
+        if (itemsByDate[dateStr]) {
+            html += '<div class="cal-day-items">';
+            itemsByDate[dateStr].forEach(function (item) {
+                var cor = item.tipo === "noticia" ? "#1a3f7a" : item.tipo === "pauta" ? "#d4a017" : item.tipo === "jogo" ? "#16a34a" : item.tipo === "evento" ? "#8b5cf6" : "#e11d48";
+                html += '<span class="cal-dot" style="background:' + cor + ';" title="' + esc(item.titulo) + '"></span>';
             });
+            html += '</div>';
         }
         html += '</div>';
     }
     html += '</div>';
+
     container.innerHTML = html;
+    document.getElementById("calendarioDetalhe").style.display = "none";
+}
+
+function abrirDetalheCalendario(dateStr) {
+    var container = document.getElementById("calendarioDetalhe");
+    if (!container) return;
+    if (container.getAttribute("data-date") === dateStr && container.style.display !== "none") {
+        container.style.display = "none";
+        return;
+    }
+
+    var items = [];
+    getData("noticias").forEach(function (n) {
+        var d = n.dataAgendada || n.data;
+        if (d === dateStr) items.push({ tipo: "noticia", subtipo: n.rascunho ? "Rascunho" : (n.dataAgendada ? "Agendada" : "Publicada"), titulo: n.titulo, id: n.id, cor: "#1a3f7a", acao: "abrirPreview('" + n.id + "')" });
+    });
+    getData("pautas").forEach(function (p) {
+        if (p.prazo === dateStr) items.push({ tipo: "pauta", subtipo: (p.status || "nova"), titulo: p.titulo, id: p.id, cor: "#d4a017", acao: "editarPauta('" + p.id + "')" });
+    });
+    getData("jogos").forEach(function (j) {
+        if (j.data === dateStr) items.push({ tipo: "jogo", subtipo: j.hora || "", titulo: (j.timeCasa || "") + (j.timeFora ? " x " + j.timeFora : ""), id: j.id, cor: "#16a34a", acao: "editarJogo('" + j.id + "')" });
+    });
+    getData("eventos").forEach(function (ev) {
+        if (ev.data === dateStr) items.push({ tipo: "evento", subtipo: "", titulo: ev.nome || "", id: ev.id, cor: "#8b5cf6", acao: "" });
+    });
+    getData("monitor_pautas").forEach(function (mp) {
+        if (mp.dataEvento === dateStr) items.push({ tipo: "monitor", subtipo: mp.status || "", titulo: mp.titulo || (mp.times || ""), id: mp.id, cor: "#e11d48", acao: "" });
+    });
+
+    if (items.length === 0) {
+        container.style.display = "none";
+        return showToastAviso("Nenhum item neste dia.");
+    }
+
+    var dataFmt = dateStr.split("-").reverse().join("/");
+    var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
+        '<strong style="font-size:0.95rem;">' + dataFmt + '</strong>' +
+        '<button class="btn btn-sm" onclick="document.getElementById(\'calendarioDetalhe\').style.display=\'none\'">Fechar</button>' +
+    '</div>';
+
+    items.forEach(function (item) {
+        var desc = item.tipo.charAt(0).toUpperCase() + item.tipo.slice(1);
+        if (item.subtipo) desc += " · " + item.subtipo.charAt(0).toUpperCase() + item.subtipo.slice(1);
+        html += '<div class="cal-det-item"' + (item.acao ? ' onclick="' + item.acao + '"' : '') + '>' +
+            '<span class="cal-det-dot" style="background:' + item.cor + ';"></span>' +
+            '<div class="cal-det-info">' +
+            '<div class="cal-det-titulo">' + esc(item.titulo) + '</div>' +
+            '<div class="cal-det-tipo">' + desc + '</div>' +
+            '</div>' +
+        '</div>';
+    });
+
+    container.innerHTML = html;
+    container.setAttribute("data-date", dateStr);
+    container.style.display = "block";
 }
 
 // ===== PREVIEW MODAL =====

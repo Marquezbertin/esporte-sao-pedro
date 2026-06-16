@@ -5369,3 +5369,111 @@ html.copa-mode .hero::after {
 .prog-item-replay .prog-item-info strong {
     color: var(--azul-medio);
 }
+
+/* ===== CALENDARIO EDITORIAL ===== */
+.cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    background: var(--cinza-200);
+    border: 1px solid var(--cinza-200);
+    border-radius: 8px;
+    overflow: hidden;
+}
+.cal-header {
+    background: var(--azul-escuro);
+    color: #fff;
+    text-align: center;
+    padding: 6px 2px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.cal-day {
+    background: #fff;
+    min-height: 70px;
+    padding: 4px;
+    cursor: pointer;
+    transition: background 0.15s;
+    vertical-align: top;
+}
+.cal-day:hover {
+    background: var(--cinza-50);
+}
+.cal-day.other-month {
+    background: #f5f5f5;
+}
+.cal-day.today {
+    background: #e8f4fd;
+}
+.cal-day.today .cal-day-num {
+    background: var(--azul-medio);
+    color: #fff;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.cal-day-num {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--cinza-600);
+    margin-bottom: 2px;
+}
+.cal-day-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-top: 2px;
+}
+.cal-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+.cal-det-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+    border: 1px solid var(--cinza-200);
+    margin-bottom: 4px;
+}
+.cal-det-item:hover {
+    background: var(--cinza-100);
+}
+.cal-det-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.cal-det-info {
+    flex: 1;
+    min-width: 0;
+}
+.cal-det-titulo {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--azul-escuro);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.cal-det-tipo {
+    font-size: 0.65rem;
+    color: var(--cinza-400);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+.cal-det-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
