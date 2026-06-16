@@ -4252,6 +4252,10 @@ body.admin-mode .episodio-card-actions { display: flex; }
 .fin-orc-actions button.btn-cancelar:hover { background: #dc2626; color: #fff; }
 .fin-orc-actions button.btn-excluir { color: #94a3b8; border-color: #94a3b8; }
 .fin-orc-actions button.btn-excluir:hover { background: #94a3b8; color: #fff; }
+.fin-orc-actions button.btn-pdf { color: #1d4ed8; border-color: #1d4ed8; }
+.fin-orc-actions button.btn-pdf:hover { background: #1d4ed8; color: #fff; }
+.fin-orc-actions button.btn-compartilhar { color: #7c3aed; border-color: #7c3aed; }
+.fin-orc-actions button.btn-compartilhar:hover { background: #7c3aed; color: #fff; }
 .fin-orc-resumo {
     display: flex;
     gap: 20px;
