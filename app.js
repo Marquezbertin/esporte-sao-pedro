@@ -4897,9 +4897,12 @@ async function deletarProgramacao(id) {
     renderProgramacaoHome();
 }
 
+var _progAtualRenderizado = null;
+
 function fecharProgramacaoWidget() {
     var el = document.getElementById("programacaoHome");
     if (el) el.innerHTML = "";
+    _progAtualRenderizado = null;
     sessionStorage.setItem("prog_fechado_" + (window._progAtualId || ""), "1");
 }
 
@@ -4908,10 +4911,10 @@ function renderProgramacaoHome() {
     if (!container) return;
 
     var live = getLive();
-    if (live && live.ativa) { container.innerHTML = ""; return; }
+    if (live && live.ativa) { container.innerHTML = ""; _progAtualRenderizado = null; return; }
 
     var lista = getProgramacao();
-    if (lista.length === 0) { container.innerHTML = ""; return; }
+    if (lista.length === 0) { container.innerHTML = ""; _progAtualRenderizado = null; return; }
 
     var agora = new Date();
     var hoje = agora.toISOString().split("T")[0];
@@ -4938,7 +4941,14 @@ function renderProgramacaoHome() {
         }
     });
 
-    if (!atual && futuros.length === 0) { container.innerHTML = ""; return; }
+    if (!atual && futuros.length === 0) { container.innerHTML = ""; _progAtualRenderizado = null; return; }
+
+    // Se o mesmo programa ainda estiver no ar, não recria o iframe (preserva o player)
+    if (_progAtualRenderizado && atual && _progAtualRenderizado === atual.id) {
+        return;
+    }
+
+    _progAtualRenderizado = atual ? atual.id : null;
 
     var html = '<div class="programacao-widget">';
 
@@ -4951,7 +4961,7 @@ function renderProgramacaoHome() {
         html += '<div class="prog-card ' + (tocando ? 'prog-tocando' : 'prog-proximo') + '">';
         if (tocando) {
             window._progAtualId = atual.id;
-            if (sessionStorage.getItem("prog_fechado_" + atual.id)) { container.innerHTML = ""; return; }
+            if (sessionStorage.getItem("prog_fechado_" + atual.id)) { container.innerHTML = ""; _progAtualRenderizado = null; return; }
             contarViewProgramacao(atual.id);
             html += '<button class="prog-close" onclick="fecharProgramacaoWidget()" aria-label="Fechar" style="float:right;background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--cinza-400);line-height:1;">&times;</button>';
             html += '<div class="prog-badge tocando">&#9679; Tocando Agora</div>';
@@ -4961,7 +4971,7 @@ function renderProgramacaoHome() {
                     '<a href="' + esc(atual.url) + '" target="_blank" rel="noopener" class="btn btn-primary" style="background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045);color:#fff;text-decoration:none;">Abrir no Instagram</a>' +
                 '</div>';
             } else {
-                html += '<iframe src="' + esc(embedInfo.embedUrl) + '" allowfullscreen allow="autoplay" style="width:100%;aspect-ratio:16/9;border:none;border-radius:8px;margin:10px 0;" loading="lazy"></iframe>';
+                html += '<iframe src="' + esc(embedInfo.embedUrl) + '" allowfullscreen allow="autoplay" style="width:100%;aspect-ratio:16/9;border:none;border-radius:8px;margin:10px 0;"></iframe>';
             }
         } else {
             html += '<div class="prog-badge proximo">&#9711; Proximo</div>';
