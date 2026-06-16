@@ -5250,12 +5250,12 @@ function filtrarAdminPainel() {
     var termo = input ? input.value.trim().toLowerCase() : "";
     var panels = document.querySelectorAll("#secao-sobre .card-panel.admin-only");
     panels.forEach(function (p) {
-        if (!termo) {
-            p.style.display = "";
+        var texto = p.textContent.toLowerCase();
+        var match = !termo || texto.indexOf(termo) !== -1;
+        if (match) {
+            p.style.removeProperty("display");
         } else {
-            var texto = p.textContent.toLowerCase();
-            var match = texto.indexOf(termo) !== -1;
-            p.style.display = match ? "" : "none";
+            p.style.setProperty("display", "none", "important");
         }
     });
 }
