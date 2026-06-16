@@ -2774,11 +2774,33 @@ function renderAdminEnquetes() {
         var total = 0;
         e.opcoes.forEach(function (o) { total += (o.votos || 0); });
         var status = e.ativa ? '<span style="color:#16a34a;font-weight:700;">Ativa</span>' : '<span style="color:#8892a4;">Encerrada</span>';
+        
+        var opcoesHtml = "";
+        e.opcoes.forEach(function (o, i) {
+            var pct = total > 0 ? Math.round((o.votos || 0) / total * 100) : 0;
+            opcoesHtml +=
+                '<div style="margin-top:8px;">' +
+                    '<div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:2px;">' +
+                        '<span>' + esc(o.texto) + '</span>' +
+                        '<span><strong>' + (o.votos || 0) + '</strong> voto' + ((o.votos || 0) !== 1 ? 's' : '') + ' (' + pct + '%)</span>' +
+                    '</div>' +
+                    '<div style="height:8px;background:var(--cinza-100);border-radius:4px;overflow:hidden;">' +
+                        '<div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,var(--azul),var(--dourado));border-radius:4px;transition:width 0.3s;"></div>' +
+                    '</div>' +
+                '</div>';
+        });
+
         container.innerHTML +=
-            '<div style="padding:12px;border:1px solid var(--cinza-200);border-radius:8px;margin-bottom:8px;">' +
-                '<strong>' + esc(e.pergunta) + '</strong> - ' + status + ' (' + total + ' votos)<br>' +
-                (e.ativa ? '<button class="btn btn-sm" style="margin-top:6px;" onclick="encerrarEnquete(\'' + e.id + '\')">Encerrar</button> ' : '') +
-                '<button class="btn btn-sm" style="margin-top:6px;" onclick="deletarEnquete(\'' + e.id + '\')">Excluir</button>' +
+            '<div style="padding:14px;border:1px solid var(--cinza-200);border-radius:8px;margin-bottom:12px;">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
+                    '<strong>' + esc(e.pergunta) + '</strong>' +
+                    '<span>' + status + ' &middot; <strong>' + total + '</strong> voto' + (total !== 1 ? 's' : '') + '</span>' +
+                '</div>' +
+                opcoesHtml +
+                '<div style="margin-top:10px;">' +
+                    (e.ativa ? '<button class="btn btn-sm" onclick="encerrarEnquete(\'' + e.id + '\')">Encerrar</button> ' : '') +
+                    '<button class="btn btn-sm" style="background:#c41e3a;color:#fff;border:1px solid #c41e3a;" onclick="deletarEnquete(\'' + e.id + '\')">Excluir</button>' +
+                '</div>' +
             '</div>';
     });
 }
