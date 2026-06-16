@@ -5245,6 +5245,21 @@ function buscarAdminNews() {
     renderAdminNewsList();
 }
 
+function filtrarAdminPainel() {
+    var input = document.getElementById("adminSearchInput");
+    var termo = input ? input.value.trim().toLowerCase() : "";
+    var panels = document.querySelectorAll("#secao-sobre .card-panel.admin-only");
+    panels.forEach(function (p) {
+        if (!termo) {
+            p.style.display = "";
+        } else {
+            var texto = p.textContent.toLowerCase();
+            var match = texto.indexOf(termo) !== -1;
+            p.style.display = match ? "" : "none";
+        }
+    });
+}
+
 function renderAdminNewsList() {
     var container = document.getElementById("adminNewsList");
     if (!container) return;

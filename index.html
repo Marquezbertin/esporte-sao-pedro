@@ -1008,8 +1008,13 @@
                 </div>
             </div>
 
+            <!-- ADMIN: BARRA DE PESQUISA -->
+            <div class="admin-only" style="margin-top:32px;margin-bottom:8px;">
+                <input type="text" id="adminSearchInput" placeholder="Pesquisar painel admin... (ex: youtube, financeiro, enquete)" oninput="filtrarAdminPainel()" style="width:100%;padding:12px 16px;border:2px solid var(--cinza-200);border-radius:10px;font-size:0.95rem;background:var(--bg-card);color:var(--texto);transition:border-color 0.2s;">
+            </div>
+
             <!-- ADMIN: MONITOR DE PAUTAS DA INTERNET -->
-            <div class="card-panel admin-only" style="margin-top:40px;">
+            <div class="card-panel admin-only painel-admin-item" style="margin-top:20px;">
                 <div class="card-panel-header">
                     <h3>&#128269; Monitor de Pautas da Internet</h3>
                     <span class="badge">ADMIN</span>
