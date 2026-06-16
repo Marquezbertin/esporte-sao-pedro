@@ -2763,6 +2763,11 @@ async function deletarEnquete(id) {
     renderEnqueteHome();
 }
 
+function toggleParciais(id) {
+    var el = document.getElementById("parciais_" + id);
+    if (el) el.style.display = el.style.display === "none" ? "block" : "none";
+}
+
 function renderAdminEnquetes() {
     var container = document.getElementById("adminEnqueteList");
     if (!container) return;
@@ -2774,7 +2779,7 @@ function renderAdminEnquetes() {
         var total = 0;
         e.opcoes.forEach(function (o) { total += (o.votos || 0); });
         var status = e.ativa ? '<span style="color:#16a34a;font-weight:700;">Ativa</span>' : '<span style="color:#8892a4;">Encerrada</span>';
-        
+
         var opcoesHtml = "";
         e.opcoes.forEach(function (o, i) {
             var pct = total > 0 ? Math.round((o.votos || 0) / total * 100) : 0;
@@ -2796,8 +2801,9 @@ function renderAdminEnquetes() {
                     '<strong>' + esc(e.pergunta) + '</strong>' +
                     '<span>' + status + ' &middot; <strong>' + total + '</strong> voto' + (total !== 1 ? 's' : '') + '</span>' +
                 '</div>' +
-                opcoesHtml +
+                '<div id="parciais_' + e.id + '" style="display:none;">' + opcoesHtml + '</div>' +
                 '<div style="margin-top:10px;">' +
+                    '<button class="btn btn-sm" onclick="toggleParciais(\'' + e.id + '\')">Ver Parciais</button> ' +
                     (e.ativa ? '<button class="btn btn-sm" onclick="encerrarEnquete(\'' + e.id + '\')">Encerrar</button> ' : '') +
                     '<button class="btn btn-sm" style="background:#c41e3a;color:#fff;border:1px solid #c41e3a;" onclick="deletarEnquete(\'' + e.id + '\')">Excluir</button>' +
                 '</div>' +
