@@ -1395,7 +1395,7 @@ function navegar(secao, e) {
         case "torcedor": renderTorcedorGaleria(); break;
         case "mapa": renderMapa(); renderAdminLocaisList(); break;
         case "redacao": if (!isAdmin()) { navegar("inicio", null); return; } renderTemplatesPauta(); renderAdminPautas(); renderEditorialDashboard(); renderAdminNewsList(); renderCalendarioEditorial(); break;
-        case "sobre": atualizarStorageInfo(); renderDashboardUsoPortal(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminTimes(); renderNewsletterAdmin(); renderMonitorPautas(); renderConfigIA(); carregarBanner(); atualizarStatusPush(); renderAdminTorcedor(); renderAdminFinanceiro(); renderCalculadoraFinanceira(); renderOrcamentos(); renderAdminProgramacao(); break;
+        case "sobre": atualizarStorageInfo(); renderDashboardUsoPortal(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminClassificacao(); renderAdminTimes(); renderNewsletterAdmin(); renderMonitorPautas(); renderConfigIA(); carregarBanner(); atualizarStatusPush(); renderAdminTorcedor(); renderAdminFinanceiro(); renderCalculadoraFinanceira(); renderOrcamentos(); renderAdminProgramacao(); break;
     }
 
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1495,6 +1495,7 @@ function renderInicio() {
     renderNoticiasHome();
     renderPlacarAoVivo();
     renderProximosJogos();
+    renderClassificacaoHome();
     renderArtilheirosHome();
     renderEnqueteHome();
     renderResumoSemana();
@@ -1763,6 +1764,40 @@ function renderGameCard(j) {
         '</div>' +
         '<span class="game-sport-badge">' + (esporte ? esporte.icon + " " + esporte.nome : esc(j.esporte)) + '</span>' +
     '</div>';
+}
+
+function renderClassificacaoHome() {
+    var container = document.getElementById("classificacaoHome");
+    if (!container) return;
+    var campeonatos = getCampeonatos();
+    if (campeonatos.length === 0) { container.innerHTML = ""; return; }
+    var camp = campeonatos[0];
+    var times = (camp.times || []).slice();
+    times.sort(function (a, b) { return b.p - a.p || (b.gp - b.gc) - (a.gp - a.gc); });
+    var topTimes = times.slice(0, 5);
+    var resultados = (camp.resultados || []).slice();
+    resultados.sort(function (a, b) { return (b.data || "").localeCompare(a.data || ""); });
+    var ultimosRes = resultados.slice(0, 3);
+    if (topTimes.length === 0 && ultimosRes.length === 0) { container.innerHTML = ""; return; }
+    var html = '<div class="section-header" style="margin-top:50px;"><h2 class="section-title">' + esc(camp.nome) + '</h2><a href="#" class="section-link" onclick="navegar(\'campeonatos\', event)">Ver completa &rarr;</a></div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;">';
+    if (topTimes.length > 0) {
+        html += '<div class="card-panel"><div class="card-panel-header"><h3>Classificacao</h3></div><div class="table-responsive"><table class="standings-table"><thead><tr><th>#</th><th>Time</th><th>P</th><th>J</th><th>V</th><th>E</th><th>D</th><th>SG</th></tr></thead><tbody>';
+        topTimes.forEach(function (t, i) {
+            var sg = t.gp - t.gc;
+            html += '<tr><td>' + (i + 1) + '</td><td>' + esc(t.nome) + '</td><td><strong>' + t.p + '</strong></td><td>' + t.j + '</td><td>' + t.v + '</td><td>' + t.e + '</td><td>' + t.d + '</td><td>' + (sg > 0 ? "+" : "") + sg + '</td></tr>';
+        });
+        html += '</tbody></table></div></div>';
+    }
+    if (ultimosRes.length > 0) {
+        html += '<div class="card-panel"><div class="card-panel-header"><h3>Ultimos Resultados</h3></div>';
+        ultimosRes.forEach(function (r) {
+            html += '<div class="result-card"><div class="result-team">' + esc(r.timeCasa) + '</div><div style="text-align:center;"><div class="result-score">' + r.placarCasa + ' x ' + r.placarFora + '</div><div class="result-meta">' + formatarData(r.data) + '</div></div><div class="result-team away">' + esc(r.timeFora) + '</div></div>';
+        });
+        html += '</div>';
+    }
+    html += '</div>';
+    container.innerHTML = html;
 }
 
 function renderArtilheirosHome() {
@@ -3124,6 +3159,35 @@ function editarTime(id) {
     if (form) form.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
+function renderAdminClassificacao() {
+    var container = document.getElementById("adminClassificacaoList");
+    if (!container) return;
+    var campeonatos = getCampeonatos();
+    if (campeonatos.length === 0) { container.innerHTML = "<p style='color:#8892a4;font-size:0.85rem;'>Nenhum campeonato.</p>"; return; }
+    container.innerHTML = "";
+    campeonatos.forEach(function (camp) {
+        var times = (camp.times || []).slice();
+        times.sort(function (a, b) { return b.p - a.p || (b.gp - b.gc) - (a.gp - a.gc); });
+        var resultados = (camp.resultados || []).slice();
+        resultados.sort(function (a, b) { return (b.data || "").localeCompare(a.data || ""); });
+        var html = '<div style="padding:14px;border:1px solid var(--cinza-200);border-radius:8px;margin-bottom:16px;">';
+        html += '<div class="card-panel-header" style="margin-bottom:8px;"><h3>' + esc(camp.nome) + ' (' + esc(camp.ano) + ')</h3></div>';
+        if (times.length > 0) {
+            html += '<div class="table-responsive"><table class="standings-table"><thead><tr><th>#</th><th>Time</th><th>P</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th><th>SG</th></tr></thead><tbody>';
+            times.forEach(function (t, i) {
+                var sg = t.gp - t.gc;
+                html += '<tr><td>' + (i + 1) + '</td><td>' + esc(t.nome) + '</td><td><strong>' + t.p + '</strong></td><td>' + t.j + '</td><td>' + t.v + '</td><td>' + t.e + '</td><td>' + t.d + '</td><td>' + t.gp + '</td><td>' + t.gc + '</td><td>' + (sg > 0 ? "+" : "") + sg + '</td></tr>';
+            });
+            html += '</tbody></table></div>';
+            html += '<div style="margin-top:8px;"><a href="#" onclick="navegar(\'campeonatos\', event)" style="font-size:0.82rem;color:var(--azul-medio);">Gerenciar times e resultados &rarr;</a></div>';
+        } else {
+            html += '<p style="color:#8892a4;font-size:0.85rem;">Nenhum time cadastrado. <a href="#" onclick="navegar(\'campeonatos\', event)" style="color:var(--azul-medio);">Gerenciar</a></p>';
+        }
+        html += '</div>';
+        container.innerHTML += html;
+    });
+}
+
 function renderAdminTimes() {
     var container = document.getElementById("adminTimesList");
     if (!container) return;
@@ -3394,6 +3458,7 @@ function renderCampeonatoAtivo() {
         html += '<div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">';
         html += '<input type="text" id="novoTimeNome" placeholder="Nome do time" style="flex:1;min-width:200px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.85rem;">';
         html += '<button class="btn btn-secondary" onclick="adicionarTime()" style="padding:8px 16px;">+ Adicionar Time</button>';
+        html += '<button class="btn btn-secondary" onclick="recalcularClassificacao()" style="padding:8px 16px;border-color:var(--dourado);color:var(--dourado);">Recalcular Classificacao</button>';
         html += '</div>';
     }
     html += '</div>';
@@ -3667,6 +3732,33 @@ async function removerArtilheiro(artId) {
 }
 
 // --- RESULTADOS ---
+function atualizarClassificacaoDeResultados(camp) {
+    if (!camp || !camp.times) return;
+    camp.times.forEach(function (t) { t.p = 0; t.j = 0; t.v = 0; t.e = 0; t.d = 0; t.gp = 0; t.gc = 0; });
+    (camp.resultados || []).forEach(function (r) {
+        var casa = camp.times.find(function (t) { return t.nome.toLowerCase() === r.timeCasa.toLowerCase(); });
+        var fora = camp.times.find(function (t) { return t.nome.toLowerCase() === r.timeFora.toLowerCase(); });
+        if (!casa || !fora) return;
+        casa.j++; fora.j++;
+        casa.gp += r.placarCasa || 0; casa.gc += r.placarFora || 0;
+        fora.gp += r.placarFora || 0; fora.gc += r.placarCasa || 0;
+        if ((r.placarCasa || 0) > (r.placarFora || 0)) { casa.v++; casa.p += 3; fora.d++; }
+        else if ((r.placarCasa || 0) < (r.placarFora || 0)) { casa.d++; fora.v++; fora.p += 3; }
+        else { casa.e++; casa.p++; fora.e++; fora.p++; }
+    });
+}
+
+function recalcularClassificacao() {
+    if (!requireAdmin()) return;
+    var camp = getCampAtivo();
+    if (!camp) return;
+    atualizarClassificacaoDeResultados(camp);
+    salvarCampAtivo(camp);
+    renderCampeonatoAtivo();
+    renderHeroStats();
+    showToastSave("Classificacao recalculada dos resultados!");
+}
+
 function salvarResultado() {
     if (!requireAdmin()) return;
     var timeCasa = document.getElementById("resTimeCasa").value.trim();
@@ -3681,10 +3773,11 @@ function salvarResultado() {
     if (!camp) return;
     if (!camp.resultados) camp.resultados = [];
     camp.resultados.push({ id: gerarId(), timeCasa: timeCasa, placarCasa: placarCasa, placarFora: placarFora, timeFora: timeFora, data: data, local: local });
+    atualizarClassificacaoDeResultados(camp);
     salvarCampAtivo(camp);
     renderCampeonatoAtivo();
     renderHeroStats();
-    showToastSave("Resultado salvo!");
+    showToastSave("Resultado salvo! Classificacao atualizada automaticamente.");
 }
 
 async function deletarResultado(resId) {
@@ -3693,6 +3786,7 @@ async function deletarResultado(resId) {
     var camp = getCampAtivo();
     if (!camp) return;
     camp.resultados = camp.resultados.filter(function (r) { return r.id !== resId; });
+    atualizarClassificacaoDeResultados(camp);
     salvarCampAtivo(camp);
     renderCampeonatoAtivo();
     renderHeroStats();
