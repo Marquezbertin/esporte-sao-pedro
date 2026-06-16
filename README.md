@@ -38,7 +38,9 @@ Portal esportivo regional de São Pedro/SP. Resultados, tabelas, artilheiros, ca
 ### Administrativo / Financeiro
 - **Dashboard Financeiro** — Produtos publicitários (banner, narrador, vídeo, post patrocinado, patrocínio geral) com valores customizáveis
 - **Calculadora de Vendas** — Seleção de produtos, definição de quantidades, geração de orçamentos com total automático
-- **Histórico de Orçamentos** — Orçamentos salvos com status (orçamento/vendido/cancelado)
+- **Histórico de Orçamentos** — Orçamentos salvos com status (orçamento/vendido/cancelado), edição, exclusão
+- **PDF do Orçamento** — Gera PDF profissional com layout organizado, logo do portal (texto), tabela de itens, total em destaque e observações. Pronto para enviar ao cliente
+- **Compartilhar Orçamento** — Envio do orçamento por e-mail (cliente de e-mail padrão) ou compartilhamento via Web Share API (celular)
 - **Patrocinadores** — Cadastro com logo, link e plano (ouro/prata/bronze). Aprovação para exibição pública
 
 ### Infraestrutura do Portal
@@ -69,6 +71,7 @@ Portal esportivo regional de São Pedro/SP. Resultados, tabelas, artilheiros, ca
 | Mapa | Leaflet + OpenStreetMap | R$ 0 |
 | Gráficos | Chart.js | R$ 0 |
 | Push | Supabase Edge Functions | R$ 0 |
+| PDF | html2canvas + jsPDF | R$ 0 |
 | IA | Google Gemini API | R$ 0 |
 | Fonte | Google Fonts (Inter + Outfit) | R$ 0 |
 
@@ -79,9 +82,9 @@ Portal esportivo regional de São Pedro/SP. Resultados, tabelas, artilheiros, ca
 ```
 esporte-sao-pedro/
 ├── index.html              # Estrutura completa do portal
-├── app.js                  # Toda a lógica do frontend (~5700 linhas)
+├── app.js                  # Toda a lógica do frontend (~6500 linhas)
 ├── app.min.js              # Versão minificada do app.js
-├── style.css               # Estilos (~5200 linhas)
+├── style.css               # Estilos (~5500 linhas)
 ├── style.min.css           # Versão minificada do style.css
 ├── supabase.js             # Camada de integração Supabase
 ├── upload.js               # Upload de imagens Cloudinary
