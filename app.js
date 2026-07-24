@@ -5213,6 +5213,8 @@ function abrirLive(e) {
 function fecharLiveModal() {
     document.getElementById("liveModal").classList.remove("active");
     document.getElementById("liveContainer").innerHTML = "";
+    var badge = document.querySelector(".live-badge");
+    if (badge) badge.textContent = "AO VIVO";
 }
 
 function toggleFullscreenLive() {
@@ -5485,14 +5487,6 @@ function abrirProgramacao(id) {
     var badge = document.querySelector(".live-badge");
     if (badge) badge.textContent = "\u25B6 REPRISE";
     document.getElementById("liveModal").classList.add("active");
-}
-
-// Override fecharLiveModal to restore live badge
-var _origFecharLive = fecharLiveModal;
-function fecharLiveModal() {
-    _origFecharLive();
-    var badge = document.querySelector(".live-badge");
-    if (badge) badge.textContent = "AO VIVO";
 }
 
 // ===== PATROCINADORES =====
