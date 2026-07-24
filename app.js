@@ -5104,10 +5104,10 @@ function extrairEmbedUrl(url) {
     if (/instagram\.com\//i.test(url)) return { embedUrl: url, tipo: "redirect" };
     // YouTube
     var ytId = extrairYoutubeId(url);
-    if (ytId) return { embedUrl: "https://www.youtube.com/embed/" + ytId + "?autoplay=1", tipo: "embed" };
+    if (ytId) return { embedUrl: "https://www.youtube.com/embed/" + ytId + "?autoplay=1&playsinline=1", tipo: "embed" };
     // Twitch
     var twitchMatch = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
-    if (twitchMatch) return { embedUrl: "https://player.twitch.tv/?channel=" + twitchMatch[1] + "&parent=" + location.hostname, tipo: "embed" };
+    if (twitchMatch) return { embedUrl: "https://player.twitch.tv/?channel=" + twitchMatch[1] + "&parent=" + location.hostname + "&playsinline=true", tipo: "embed" };
     // Facebook
     if (/(facebook\.com|fb\.watch)\//i.test(url)) return { embedUrl: "https://www.facebook.com/plugins/video.php?href=" + encodeURIComponent(url) + "&show_text=0&autoplay=1", tipo: "embed" };
     return { embedUrl: url, tipo: "embed" };
@@ -5177,7 +5177,13 @@ function abrirLive(e) {
                 '<a href="' + esc(live.url) + '" target="_blank" rel="noopener" class="btn btn-primary" style="background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045);color:#fff;text-decoration:none;display:inline-block;">Abrir no Instagram</a>' +
             '</div>';
     } else {
-        container.innerHTML = '<iframe src="' + esc(live.url) + '" allowfullscreen allow="autoplay" style="width:100%;aspect-ratio:16/9;border:none;border-radius:8px;"></iframe>';
+        var embedUrl = live.url;
+        if (/player\.twitch\.tv/i.test(embedUrl)) {
+            embedUrl += (embedUrl.includes('?') ? '&' : '?') + 'muted=1&autoplay=true';
+        } else if (/youtube\.com\/embed/i.test(embedUrl)) {
+            embedUrl += (embedUrl.includes('?') ? '&' : '?') + 'enablejsapi=1&origin=' + encodeURIComponent(location.origin);
+        }
+        container.innerHTML = '<iframe src="' + esc(embedUrl) + '" allowfullscreen allow="autoplay; fullscreen" style="width:100%;aspect-ratio:16/9;border:none;border-radius:8px;min-height:450px;"></iframe>';
     }
     document.getElementById("liveTitle").textContent = live.titulo;
     document.getElementById("liveModal").classList.add("active");
@@ -5450,8 +5456,8 @@ function abrirProgramacao(id) {
                 '<p style="color:#64748b;font-size:0.9rem;margin-bottom:20px;">Este conteudo e do Instagram e nao pode ser exibido dentro do portal. Clique abaixo para assistir.</p>' +
                 '<a href="' + esc(p.url) + '" target="_blank" rel="noopener" class="btn btn-primary" style="background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045);color:#fff;text-decoration:none;display:inline-block;">Abrir no Instagram</a>' +
             '</div>';
-    } else {
-        container.innerHTML = '<iframe src="' + esc(embedInfo.embedUrl) + '" allowfullscreen allow="autoplay" style="width:100%;aspect-ratio:16/9;border:none;border-radius:8px;"></iframe>';
+} else {
+        container.innerHTML = '<iframe src="' + esc(live.url) + '" allowfullscreen allow="autoplay; fullscreen; picture-in-picture" style="width:100%;aspect-ratio:16/9;border:none;border-radius:8px;"></iframe>';
     }
 
     document.getElementById("liveTitle").textContent = p.titulo;

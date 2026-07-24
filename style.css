@@ -2598,6 +2598,15 @@ body.admin-mode .admin-login-btn { display: none; }
 }
 .live-fullscreen-btn:hover { color: var(--vermelho); }
 
+.live-container {
+    width: 100%;
+    aspect-ratio: 16/9;
+    min-height: 200px;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
 .live-container:fullscreen,
 .live-container:-webkit-full-screen {
     width: 100vw !important;
