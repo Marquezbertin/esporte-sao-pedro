@@ -2600,11 +2600,22 @@ body.admin-mode .admin-login-btn { display: none; }
 
 .live-container {
     width: 100%;
-    aspect-ratio: 16/9;
+    max-width: 800px;
+    position: relative;
+    padding-top: 56.25%;
     min-height: 200px;
     background: #000;
     border-radius: 8px;
     overflow: hidden;
+}
+.live-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: 8px;
 }
 
 .live-container:fullscreen,

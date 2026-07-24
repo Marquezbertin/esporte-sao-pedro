@@ -5183,7 +5183,7 @@ function abrirLive(e) {
         } else if (/youtube\.com\/embed/i.test(embedUrl)) {
             embedUrl += (embedUrl.includes('?') ? '&' : '?') + 'enablejsapi=1&origin=' + encodeURIComponent(location.origin);
         }
-        container.innerHTML = '<iframe src="' + esc(embedUrl) + '" allowfullscreen allow="autoplay; fullscreen" style="width:100%;aspect-ratio:16/9;border:none;border-radius:8px;min-height:450px;"></iframe>';
+        container.innerHTML = '<iframe src="' + esc(embedUrl) + '" allowfullscreen allow="autoplay; fullscreen"></iframe>';
     }
     document.getElementById("liveTitle").textContent = live.titulo;
     document.getElementById("liveModal").classList.add("active");
@@ -5391,7 +5391,7 @@ function renderProgramacaoHome() {
                     '<a href="' + esc(atual.url) + '" target="_blank" rel="noopener" class="btn btn-primary" style="background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045);color:#fff;text-decoration:none;">Abrir no Instagram</a>' +
                 '</div>';
             } else {
-                html += '<iframe src="' + esc(embedInfo.embedUrl) + '" allowfullscreen allow="autoplay" style="width:100%;aspect-ratio:16/9;border:none;border-radius:8px;margin:10px 0;"></iframe>';
+                html += '<iframe src="' + esc(embedInfo.embedUrl) + '" allowfullscreen allow="autoplay"></iframe>';
             }
         } else {
             html += '<div class="prog-badge proximo">&#9711; Proximo</div>';
@@ -5457,7 +5457,7 @@ function abrirProgramacao(id) {
                 '<a href="' + esc(p.url) + '" target="_blank" rel="noopener" class="btn btn-primary" style="background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045);color:#fff;text-decoration:none;display:inline-block;">Abrir no Instagram</a>' +
             '</div>';
 } else {
-        container.innerHTML = '<iframe src="' + esc(live.url) + '" allowfullscreen allow="autoplay; fullscreen; picture-in-picture" style="width:100%;aspect-ratio:16/9;border:none;border-radius:8px;"></iframe>';
+        container.innerHTML = '<iframe src="' + esc(live.url) + '" allowfullscreen allow="autoplay; fullscreen; picture-in-picture"></iframe>';
     }
 
     document.getElementById("liveTitle").textContent = p.titulo;
