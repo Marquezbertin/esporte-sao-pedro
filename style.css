@@ -2508,6 +2508,7 @@ body.admin-mode .admin-login-btn { display: none; }
     font-size: 1.5rem;
     color: var(--cinza-400);
     cursor: pointer;
+    z-index: 10;
 }
 
 .modal-close:hover { color: var(--vermelho); }

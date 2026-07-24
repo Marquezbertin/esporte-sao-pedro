@@ -1354,6 +1354,27 @@ document.addEventListener("DOMContentLoaded", function () {
             renderProgramacaoHome();
         }
     }, 15000);
+
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
+            var liveModal = document.getElementById("liveModal");
+            if (liveModal && liveModal.classList.contains("active")) {
+                fecharLiveModal();
+            }
+            var noticiaModal = document.getElementById("noticiaModal");
+            if (noticiaModal && noticiaModal.classList.contains("active")) {
+                fecharNoticiaModal();
+            }
+            var adminModal = document.getElementById("adminModal");
+            if (adminModal && adminModal.classList.contains("active")) {
+                fecharModalAdmin();
+            }
+            var editNoticia = document.getElementById("editarNoticiaModal");
+            if (editNoticia && editNoticia.classList.contains("active")) {
+                fecharEditarNoticia();
+            }
+        }
+    });
 });
 
 function atualizarData() {
