@@ -917,6 +917,78 @@
         </div>
     </section>
 
+    <!-- SECAO: TV ESPORTE SAO PEDRO -->
+    <section class="section secao-page" id="secao-tv-esporte">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">TV Esporte Sao Pedro</h2>
+                <p class="section-sub">Transmissoes ao vivo, episódios e programação esportiva</p>
+            </div>
+
+            <div id="tvStats" class="tv-stats" style="display:none;">
+                <div class="tv-stat">
+                    <span class="tv-stat-num" id="tvEpisodiosCount">0</span>
+                    <span class="tv-stat-label">Episodios</span>
+                </div>
+                <div class="tv-stat">
+                    <span class="tv-stat-num" id="tvProgramacaoCount">0</span>
+                    <span class="tv-stat-label">Programas Agendados</span>
+                </div>
+            </div>
+
+            <!-- TV Episodios em Destaque -->
+            <div class="section-header" style="margin-top:30px;">
+                <h3 class="section-title">Episodios Recentes</h3>
+            </div>
+            <div class="video-grid" id="tvEpisodiosGrid"></div>
+
+            <!-- Programacao de Hoje -->
+            <div class="section-header" style="margin-top:40px;">
+                <h3 class="section-title">Programacao de Hoje</h3>
+            </div>
+            <div id="programacaoTvGrid" class="programacao-grid"></div>
+
+            <!-- Proximos Programas -->
+            <div class="section-header" style="margin-top:40px;">
+                <h3 class="section-title">Proximos a Transmissao</h3>
+            </div>
+            <div id="programacaoTvProximos" class="programacao-grid"></div>
+
+            <!-- ADMIN TV PANEL -->
+            <div class="admin-section admin-only" style="margin-top:40px;" id="tvAdminPanel">
+                <div class="card-panel-header">
+                    <h3>Gerenciar TV Esporte Sao Pedro</h3>
+                </div>
+                <div class="admin-form" style="display:block;margin-top:12px;border-color:var(--cinza-200);">
+                    <h4>Agendar Novo Programa</h4>
+                    <input type="text" id="tvProgTitulo" placeholder="Titulo do programa">
+                    <input type="date" id="tvProgData">
+                    <input type="time" id="tvProgHora">
+                    <input type="text" id="tvProgUrl" placeholder="URL do video (YouTube, Twitch, etc.)">
+                    <select id="tvProgTipo">
+                        <option value="youtube">YouTube</option>
+                        <option value="twitch">Twitch</option>
+                        <option value="facebook">Facebook</option>
+                        <option value="instagram">Instagram</option>
+                    </select>
+                    <input type="number" id="tvProgDuracao" placeholder="Duracao (min)" min="1" value="60">
+                    <button class="btn btn-primary" onclick="salvarTvPrograma()" id="tvProgSalvarBtn">Agendar Programa</button>
+                    <button class="btn btn-secondary" onclick="limparFormularioTv()">Cancelar</button>
+                </div>
+
+                <div style="margin-top:20px;">
+                    <h4>Episodios</h4>
+                    <div id="adminTvEpisodiosList" style="margin-top:8px;"></div>
+                </div>
+
+                <div style="margin-top:20px;">
+                    <h4>Programacao Agendada</h4>
+                    <div id="adminTvProgramacaoList" style="margin-top:8px;"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- SECAO: SOBRE -->
     <section class="section secao-page" id="secao-sobre">
         <div class="container">

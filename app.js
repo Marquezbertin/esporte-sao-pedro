@@ -5163,19 +5163,19 @@ function navegarParaTv() {
 }
 
 function renderizarPaginaTv() {
-    var secao = document.getElementById("secao-tv");
+    var secao = document.getElementById("secao-tv-esporte");
     if (!secao) return;
     secao.innerHTML = '<div class="container">' +
         '<div class="tv-header">' +
-            '<h2>TV São Pedro - Programacao Completa</h2>' +
+            '<h2>TV Esporte Sao Pedro - Programacao Completa</h2>' +
             '<p>Acompanhe todos os esportes ao vivo e gravados do Esporte Sao Pedro</p>' +
             '<div class="tv-stats">' +
                 '<div class="tv-stat">' +
-                    '<span class="tv-stat-num" id="tvEpisodiosCount">0</span>' +
+                    '<span class="tv-stat-num" id="tvEpisodiosCountAdmin">0</span>' +
                     '<span class="tv-stat-label">Episodios</span>' +
                 '</div>' +
                 '<div class="tv-stat">' +
-                    '<span class="tv-stat-num" id="tvProgramacaoCount">0</span>' +
+                    '<span class="tv-stat-num" id="tvProgramacaoCountAdmin">0</span>' +
                     '<span class="tv-stat-label">Programas Agendados</span>' +
                 '</div>' +
             '</div>' +
@@ -5191,9 +5191,9 @@ function renderizarPaginaTv() {
             '</div>' +
         '</div>' +
         '<div class="tv-section admin-only" id="tvAdminPanel">' +
-            '<h3>Gerenciar TV</h3>' +
-            '<div class="admin-form">' +
-                '<h4>' + (_tvEditando ? "Editar Programa" : "Agendar Novo Programa") + '</h4>' +
+            '<h3>Gerenciar TV Esporte Sao Pedro</h3>' +
+            '<div class="admin-form" style="display:block;margin-top:12px;border-color:var(--cinza-200);">' +
+                '<h4>Agendar Novo Programa</h4>' +
                 '<input type="text" id="tvProgTitulo" placeholder="Titulo do programa">' +
                 '<input type="date" id="tvProgData">' +
                 '<input type="time" id="tvProgHora">' +
@@ -5208,16 +5208,76 @@ function renderizarPaginaTv() {
                 '<button class="btn btn-primary" onclick="salvarTvPrograma()" id="tvProgSalvarBtn">Agendar Programa</button>' +
                 '<button class="btn btn-secondary" onclick="limparFormularioTv()">Cancelar</button>' +
             '</div>' +
-            '<div class="admin-section">' +
-                '<button class="btn btn-secondary" onclick="toggleAdminTv()">Fechar painel de administracao</button>' +
+            '<div style="margin-top:20px;">' +
+                '<h4>Episodios</h4>' +
+                '<div id="adminTvEpisodiosList" style="margin-top:8px;"></div>' +
+            '</div>' +
+            '<div style="margin-top:20px;">' +
+                '<h4>Programacao Agendada</h4>' +
+                '<div id="adminTvProgramacaoList" style="margin-top:8px;"></div>' +
             '</div>' +
         '</div>' +
     '</div>';
     var episodios = getTvEpisodios();
-    document.getElementById("tvEpisodiosCount").textContent = episodios.length;
-    document.getElementById("tvProgramacaoCount").textContent = getTvProgramacao().length;
+    var progCount = getTvProgramacao().length;
+    var countEl1 = document.getElementById("tvEpisodiosCountAdmin");
+    var countEl2 = document.getElementById("tvProgramacaoCountAdmin");
+    if (countEl1) countEl1.textContent = episodios.length;
+    if (countEl2) countEl2.textContent = progCount;
     renderizarTvEpisodios();
     renderizarProgramacaoTv();
+    if (isAdmin()) {
+        renderAdminTvEpisodiosList();
+        renderAdminTvProgramacaoList();
+    }
+}
+
+function renderAdminTvEpisodiosList() {
+    var el = document.getElementById("adminTvEpisodiosList");
+    if (!el || !isAdmin()) return;
+    var episodios = getTvEpisodios();
+    if (episodios.length === 0) {
+        el.innerHTML = '<p style="color:#94a3b8;font-size:0.85rem;">Nenhum episodio cadastrado.</p>';
+        return;
+    }
+    el.innerHTML = episodios.map(function(ep) {
+        return '<div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--cinza-50);border-radius:6px;margin-bottom:6px;border:1px solid var(--cinza-100);">' +
+            '<div style="flex:1;min-width:0;">' +
+                '<strong style="font-size:0.85rem;">' + esc(ep.titulo) + '</strong>' +
+                '<span style="font-size:0.72rem;color:#64748b;margin-left:8px;">' + esc(ep.tipo) + ' • ' + ep.data + '</span>' +
+            '</div>' +
+            '<button class="btn btn-danger btn-sm" onclick="removerTvEpisodio(\'' + ep.id + '\')" style="padding:4px 10px;font-size:0.75rem;">Remover</button>' +
+        '</div>';
+    }).join("");
+}
+
+function renderAdminTvProgramacaoList() {
+    var el = document.getElementById("adminTvProgramacaoList");
+    if (!el || !isAdmin()) return;
+    var programas = getTvProgramacao();
+    if (programas.length === 0) {
+        el.innerHTML = '<p style="color:#94a3b8;font-size:0.85rem;">Nenhum programa agendado.</p>';
+        return;
+    }
+    el.innerHTML = programas.sort(function(a,b){ return (a.data||"").localeCompare(b.data||"") || (a.hora||"").localeCompare(b.hora||""); }).map(function(p) {
+        return '<div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--cinza-50);border-radius:6px;margin-bottom:6px;border:1px solid var(--cinza-100);">' +
+            '<div style="flex:1;min-width:0;">' +
+                '<strong style="font-size:0.85rem;">' + esc(p.titulo) + '</strong>' +
+                '<span style="font-size:0.72rem;color:#64748b;margin-left:8px;">' + esc(p.data) + ' as ' + esc(p.hora) + '</span>' +
+            '</div>' +
+            '<button class="btn btn-danger btn-sm" onclick="removerTvPrograma(\'' + p.id + '\')" style="padding:4px 10px;font-size:0.75rem;">Remover</button>' +
+        '</div>';
+    }).join("");
+}
+
+function toggleAdminTv() {
+    var panel = document.getElementById("tvAdminPanel");
+    if (!panel) return;
+    if (panel.style.display === "none") {
+        panel.style.display = "";
+    } else {
+        panel.style.display = "none";
+    }
 }
 
 function bytesPortal(value) {
