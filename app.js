@@ -4971,8 +4971,10 @@ function getTvEmbedUrl(url, tipo) {
         return match ? "https://www.youtube.com/embed/" + match[1] + "?autoplay=1&playsinline=1&mute=1" : "";
     }
     if (tipo === "twitch") {
-        var match = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/i);
-        return match ? "https://player.twitch.tv/?channel=" + match[1] + "&parent=" + location.hostname + "&playsinline=true" : "";
+        var vMatch = url.match(/twitch\.tv\/videos\/(\d+)/i);
+        if (vMatch) return "https://player.twitch.tv/?video=v" + vMatch[1] + "&parent=" + location.hostname + "&autoplay=true";
+        var cMatch = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/i);
+        return cMatch ? "https://player.twitch.tv/?channel=" + cMatch[1] + "&parent=" + location.hostname + "&autoplay=true" : "";
     }
     if (tipo === "facebook") {
         return "https://www.facebook.com/plugins/video.php?href=" + encodeURIComponent(url) + "&show_text=0&autoplay=1";
