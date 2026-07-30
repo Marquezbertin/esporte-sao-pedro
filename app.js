@@ -5270,9 +5270,16 @@ function renderizarPaginaTv() {
             }
         });
     });
+    if (_tvCheckInterval) clearInterval(_tvCheckInterval);
+    _tvCheckInterval = setInterval(verificarProgramaAhora, 60000);
+    verificarProgramaAhora();
 }
 
+var _tvCheckInterval = null;
+
 function verificarProgramaAhora() {
+    var secao = document.getElementById("secao-tv-esporte");
+    if (!secao) return;
     var agora = new Date();
     var programacao = getTvProgramacao();
     if (!programacao || programacao.length === 0) return;
