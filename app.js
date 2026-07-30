@@ -4863,26 +4863,31 @@ var TV_SESSAO_CACHE = {};
 var TV_CONTADOR_VISUALIZACOES = {};
 
 function getTvEpisodios() {
-    return getData("tv_episodios") || [];
-}
-
-function setTvEpisodios(episodios) {
-    try { localStorage.setItem("esp_tv_episodios", JSON.stringify(episodios)); } catch (e) {}
-    setData("tv_episodios", episodios);
+    var cached = SupaDB.getCache()["tv_episodios"];
+    if (cached !== undefined && cached !== null) return cached;
+    var local = null;
+    try { local = JSON.parse(localStorage.getItem("esp_tv_episodios") || "null"); } catch (e) {}
+    if (local && local.length) return local;
+    SupaDB.getItem("tv_episodios").then(function (data) {
+        if (data && data.length) {
+            try { localStorage.setItem("esp_tv_episodios", JSON.stringify(data)); } catch (e) {}
+        }
+    });
+    return local || [];
 }
 
 function getTvProgramacao() {
-    var programacao = getData("tv_programacao") || [];
-    programacao.sort(function(a, b) {
-        if (a.data && b.data) return new Date(a.data + ' ' + (a.hora || '00:00')) - new Date(b.data + ' ' + (b.hora || '00:00'));
-        return 0;
+    var cached = SupaDB.getCache()["tv_programacao"];
+    if (cached !== undefined && cached !== null) return cached;
+    var local = null;
+    try { local = JSON.parse(localStorage.getItem("esp_tv_programacao") || "null"); } catch (e) {}
+    if (local && local.length) return local;
+    SupaDB.getItem("tv_programacao").then(function (data) {
+        if (data && data.length) {
+            try { localStorage.setItem("esp_tv_programacao", JSON.stringify(data)); } catch (e) {}
+        }
     });
-    return programacao;
-}
-
-function setTvProgramacao(programacao) {
-    try { localStorage.setItem("esp_tv_programacao", JSON.stringify(programacao)); } catch (e) {}
-    setData("tv_programacao", programacao);
+    return local || [];
 }
 
 function adicionarTvEpisodio(data, url, tipo, titulo, hora) {
@@ -5007,49 +5012,58 @@ function renderizarProgramacaoTv() {
     var programacao = getTvProgramacao();
     var hoje = agora.toISOString().split('T')[0];
     var itensHoje = programacao.filter(function(p) { return p.data === hoje; });
+    container.innerHTML = "";
+    if (itensHoje.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📅</div><div class="empty-state-text">Nenhuma programacao para hoje.</div></div>';
+    } else {
+        container.innerHTML = '<div class="section-header"><h3>Programacao de Hoje</h3></div><div class="programacao-grid">';
+        itensHoje.forEach(function(p) {
+            var passou = agora > new Date(p.data + ' ' + (p.hora || '00:00'));
+            container.innerHTML += '<div class="programacao-card' + (passou ? ' programacao-passou' : '') + '">' +
+                '<div class="programacao-info">' +
+                    '<h4>' + esc(p.titulo) + '</h4>' +
+                    '<p>' + p.data + ' às ' + p.hora + '</p>' +
+                '</div>' +
+                (!passou ? '<div class="programacao-live-badge">AO VIVO</div>' : '') +
+            '</div>';
+        });
+        container.innerHTML += '</div>';
+    }
+}
+
+function renderizarProgramacaoTvProximos() {
+    var container = document.getElementById("programacaoTvProximos");
+    if (!container) return;
+    var agora = new Date();
+    var programacao = getTvProgramacao();
+    var hoje = agora.toISOString().split('T')[0];
     var itensProximos = programacao.filter(function(p) {
         if (p.data <= hoje) return false;
         var pDate = new Date(p.data + ' ' + (p.hora || '00:00'));
         var diff = (pDate - agora) / (1000 * 60 * 60);
         return diff <= 48;
     }).slice(0, 6);
-    
     container.innerHTML = "";
-    if (itensHoje.length === 0 && itensProximos.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📅</div><div class="empty-state-text">Nenhuma programacao agendada. Logue como admin para adicionar.</div></div>';
+    if (itensProximos.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📅</div><div class="empty-state-text">Nenhum programa proximo a transmissao.</div></div>';
         return;
     }
-    if (itensHoje.length > 0) {
-        container.innerHTML += '<div class="section-header"><h3>Programacao de Hoje</h3></div><div class="programacao-grid">';
-        itensHoje.forEach(function(p) {
-            container.innerHTML += '<div class="programacao-card ' + (agora > new Date(p.data + ' ' + (p.hora || '00:00'))) ? 'programacao-passou' : '' + ' onclick="abrirTvPrograma(\'' + p.id + '\')">' +
-                '<div class="programacao-info">' +
-                    '<h4>' + esc(p.titulo) + '</h4>' +
-                    '<p>' + p.data + ' às ' + p.hora + '</p>' +
-                '</div>' +
-                (agora <= new Date(p.data + ' ' + (p.hora || '00:00')) ? '<div class="programacao-live-badge">AO VIVO</div>' : '') +
-            '</div>';
-        });
-        container.innerHTML += '</div>';
-    }
-    if (itensProximos.length > 0) {
-        container.innerHTML += '<div class="section-header"><h3>Proximos a transmissionar</h3></div><div class="programacao-grid">';
-        itensProximos.forEach(function(p) {
-            var diff = new Date(p.data + ' ' + (p.hora || '00:00')) - agora;
-            var horas = Math.floor(diff / (1000 * 60 * 60));
-            var texto = '';
-            if (horas < 24) texto = horas + ' horas';
-            else texto = Math.floor(horas / 24) + ' dias';
-            container.innerHTML += '<div class="programacao-card" onclick="abrirTvPrograma(\'' + p.id + '\')">' +
-                '<div class="programacao-info">' +
-                    '<h4>' + esc(p.titulo) + '</h4>' +
-                    '<p>' + p.data + ' às ' + p.hora + '</p>' +
-                    '<span class="programacao-texto">' + texto + ' a partir de agora</span>' +
-                '</div>' +
-            '</div>';
-        });
-        container.innerHTML += '</div>';
-    }
+    container.innerHTML = '<div class="section-header"><h3>Proximos a transmissao</h3></div><div class="programacao-grid">';
+    itensProximos.forEach(function(p) {
+        var diff = new Date(p.data + ' ' + (p.hora || '00:00')) - agora;
+        var horas = Math.floor(diff / (1000 * 60 * 60));
+        var texto = '';
+        if (horas < 24) texto = horas + ' horas';
+        else texto = Math.floor(horas / 24) + ' dias';
+        container.innerHTML += '<div class="programacao-card" onclick="abrirTvPrograma(\'' + p.id + '\')">' +
+            '<div class="programacao-info">' +
+                '<h4>' + esc(p.titulo) + '</h4>' +
+                '<p>' + p.data + ' às ' + p.hora + '</p>' +
+                '<span class="programacao-texto">' + texto + ' a partir de agora</span>' +
+            '</div>' +
+        '</div>';
+    });
+    container.innerHTML += '</div>';
 }
 
 function getTvPrograma(id) { return getData("tv_programacao").find(function(p) { return p.id === id; }); }
@@ -5197,6 +5211,10 @@ function renderizarPaginaTv() {
                 '<div id="programacaoTvGrid" class="programacao-grid"></div>' +
             '</div>' +
         '</div>' +
+        '<div class="tv-section" id="programacaoTvProximosSection">' +
+            '<h3>Proximos a Transmissao</h3>' +
+            '<div id="programacaoTvProximos" class="programacao-grid"></div>' +
+        '</div>' +
         '<div class="tv-section admin-only" id="tvAdminPanel">' +
             '<h3>Gerenciar TV Esporte Sao Pedro</h3>' +
             '<div class="admin-form" style="display:block;margin-top:12px;border-color:var(--cinza-200);">' +
@@ -5225,18 +5243,38 @@ function renderizarPaginaTv() {
             '</div>' +
         '</div>' +
     '</div>';
-    var episodios = getTvEpisodios();
-    var progCount = getTvProgramacao().length;
-    var countEl1 = document.getElementById("tvEpisodiosCountAdmin");
-    var countEl2 = document.getElementById("tvProgramacaoCountAdmin");
-    if (countEl1) countEl1.textContent = episodios.length;
-    if (countEl2) countEl2.textContent = progCount;
-    renderizarTvEpisodios();
-    renderizarProgramacaoTv();
-    if (isAdmin()) {
-        renderAdminTvEpisodiosList();
-        renderAdminTvProgramacaoList();
+    SupaDB.getItem("tv_programacao").then(function(programacao) {
+        if (programacao && programacao.length) {
+            try { localStorage.setItem("esp_tv_programacao", JSON.stringify(programacao)); } catch (e) {}
+        }
+        SupaDB.getItem("tv_episodios").then(function(episodios) {
+            if (episodios && episodios.length) {
+                try { localStorage.setItem("esp_tv_episodios", JSON.stringify(episodios)); } catch (e) {}
+            }
+            atualizarEstatisticasTv();
+            renderizarTvEpisodios();
+            renderizarProgramacaoTv();
+            renderizarProgramacaoTvProximos();
+            if (isAdmin()) {
+                renderAdminTvEpisodiosList();
+                renderAdminTvProgramacaoList();
+            }
+        });
+    });
+}
+
+function atualizarEstatisticasTv() {
+    var eCount = document.getElementById("tvEpisodiosCountAdmin");
+    var pCount = document.getElementById("tvProgramacaoCountAdmin");
+    if (eCount) {
+        var eps = getTvEpisodios();
+        eCount.textContent = eps ? eps.length : 0;
     }
+    if (pCount) {
+        var progs = getTvProgramacao();
+        pCount.textContent = progs ? progs.length : 0;
+    }
+}
 }
 
 function renderAdminTvEpisodiosList() {
