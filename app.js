@@ -5079,30 +5079,21 @@ function getTvPrograma(id) { return getData("tv_programacao").find(function(p) {
 function abrirTvPrograma(id) {
     var p = getTvPrograma(id);
     if (!p) return;
-    var modal = document.getElementById("tvProgramaModal");
-    if (!modal) {
-        modal = document.createElement("div");
-        modal.id = "tvProgramaModal";
-        document.body.appendChild(modal);
-    }
-    modal.innerHTML = '<div class="modal-overlay active" onclick="fecharTvProgramaModal()">' +
-        '<div class="modal" onclick="event.stopPropagation()">' +
-            '<button class="modal-close" onclick="fecharTvProgramaModal()">&times;</button>' +
-            '<h2>' + esc(p.titulo) + '</h2>' +
-            '<p><strong>Data:</strong> ' + p.data + '</p>' +
-            '<p><strong>Horario:</strong> ' + p.hora + '</p>' +
-            '<p><strong>Duracao:</strong> ' + p.duracao + ' min</p>' +
-            '<div class="video-embed">' +
-                '<iframe src="' + getTvEmbedUrl(p.url, p.tipo) + '" allowfullscreen allow="autoplay; fullscreen"></iframe>' +
-            '</div>' +
-        '</div>' +
-    '</div>';
-    modal.style.display = "flex";
+    var container = document.getElementById("tvProgramaContent");
+    if (!container) return;
+    container.innerHTML = '<h2>' + esc(p.titulo) + '</h2>' +
+        '<p><strong>Data:</strong> ' + p.data + '</p>' +
+        '<p><strong>Horario:</strong> ' + p.hora + '</p>' +
+        '<p><strong>Duracao:</strong> ' + p.duracao + ' min</p>' +
+        '<div class="video-embed">' +
+            '<iframe src="' + getTvEmbedUrl(p.url, p.tipo) + '" allowfullscreen allow="autoplay; fullscreen"></iframe>' +
+        '</div>';
+    document.getElementById("tvProgramaModal").classList.add("active");
 }
 
 function fecharTvProgramaModal() {
     var modal = document.getElementById("tvProgramaModal");
-    if (modal) modal.remove();
+    if (modal) modal.classList.remove("active");
 }
 
 function editarTvPrograma(id) {
