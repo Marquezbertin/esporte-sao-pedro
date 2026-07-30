@@ -4890,6 +4890,14 @@ function getTvProgramacao() {
     return local || [];
 }
 
+function setTvProgramacao(data) {
+    SupaDB.setItem("tv_programacao", data);
+}
+
+function setTvEpisodios(data) {
+    SupaDB.setItem("tv_episodios", data);
+}
+
 function adicionarTvEpisodio(data, url, tipo, titulo, hora) {
     if (!requireAdmin()) return;
     var episodios = getTvEpisodios();
@@ -5273,7 +5281,6 @@ function atualizarEstatisticasTv() {
     if (pCount) {
         var progs = getTvProgramacao();
         pCount.textContent = progs ? progs.length : 0;
-    }
 }
 }
 
