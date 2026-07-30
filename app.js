@@ -4854,8 +4854,370 @@ var USAGE_DEFAULT_CONFIG = {
 var PORTAL_USAGE_KEYS = [
     "noticias", "jogos", "atletas", "galeria", "videos", "episodios", "patrocinadores",
     "campeonatos", "opinioes", "eventos", "enquetes", "conquistas", "resumos",
-    "times", "pautas", "newsletter", "sobre", "site_logo", "live", "views", "placar_vivo", "monitor_pautas"
+    "times", "pautas", "newsletter", "sobre", "site_logo", "live", "views", "placar_vivo", "monitor_pautas", "tv_programacao", "tv_episodios"
 ];
+
+// ===== SISTEMA TV SÃO PEDRO =====
+var TV_SESSAO_CACHE = {};
+var TV_CONTADOR_VISUALIZACOES = {};
+
+function getTvEpisodios() {
+    return getData("tv_episodios") || [];
+}
+
+function setTvEpisodios(episodios) {
+    setData("tv_episodios", episodios);
+}
+
+function getTvProgramacao() {
+    var programacao = getData("tv_programacao") || [];
+    programacao.sort(function(a, b) {
+        if (a.data && b.data) return new Date(a.data + ' ' + (a.hora || '00:00')) - new Date(b.data + ' ' + (b.hora || '00:00'));
+        return 0;
+    });
+    return programacao;
+}
+
+function setTvProgramacao(programacao) {
+    setData("tv_programacao", programacao);
+}
+
+function adicionarTvEpisodio(data, url, tipo, titulo, hora) {
+    if (!requireAdmin()) return;
+    var episodios = getTvEpisodios();
+    var episodio = {
+        id: gerarId(),
+        data: data || new Date().toISOString().split('T')[0],
+        url: url || '',
+        tipo: tipo || 'youtube',
+        titulo: titulo || 'Novo Episodio',
+        hora: hora || '00:00',
+        ativo: true,
+        visualizarAntesData: false
+    };
+    episodios.push(episodio);
+    setTvEpisodios(episodios);
+    renderizarTvEpisodios();
+    showToastSave("Episodio adicionado!");
+}
+
+function removerTvEpisodio(id) {
+    if (!requireAdmin()) return;
+    var episodios = getTvEpisodios().filter(function(e) { return e.id !== id; });
+    setTvEpisodios(episodios);
+    renderizarTvEpisodios();
+    showToastSave("Episodio removido!");
+}
+
+function contarVisualizacaoTv(episodioId) {
+    if (!TV_CONTADOR_VISUALIZACOES[episodioId]) {
+        TV_CONTADOR_VISUALIZACOES[episodioId] = true;
+        delete SupaDB.getCache()["views"];
+        SupaDB.getItem("views").then(function(freshViews) {
+            if (!freshViews || Array.isArray(freshViews) || typeof freshViews !== "object") freshViews = {};
+            var key = "tv_epi_" + episodioId;
+            freshViews[key] = (freshViews[key] || 0) + 1;
+            setData("views", freshViews);
+        });
+    }
+}
+
+function renderizarTvEpisodios() {
+    var container = document.getElementById("tvEpisodiosGrid");
+    if (!container) return;
+    var episodios = getTvEpisodios();
+    container.innerHTML = "";
+    if (episodios.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">&#129313;</div><div class="empty-state-text">Nenhum episodio adicionado. Logue como admin para adicionar.</div></div>';
+        return;
+    }
+    episodios.forEach(function(ep) {
+        container.innerHTML += '<div class="video-card" onclick="abrirTvEpisodio(\'' + ep.id + '\')">' +
+            '<div class="video-card-embed">' +
+                '<iframe src="' + getTvEmbedUrl(ep.url, ep.tipo) + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>' +
+            '</div>' +
+            '<div class="video-card-info">' +
+                '<strong>' + esc(ep.titulo) + '</strong>' +
+                '<span class="video-card-cat">' + ep.tipo + ' • ' + ep.data + '</span>' +
+            '</div>' +
+        '</div>';
+    });
+}
+
+function getTvEmbedUrl(url, tipo) {
+    if (!url) return "";
+    if (tipo === "youtube") {
+        var match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/);
+        return match ? "https://www.youtube.com/embed/" + match[1] + "?autoplay=1&playsinline=1" : "";
+    }
+    if (tipo === "twitch") {
+        var match = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/i);
+        return match ? "https://player.twitch.tv/?channel=" + match[1] + "&parent=" + location.hostname + "&playsinline=true" : "";
+    }
+    if (tipo === "facebook") {
+        return "https://www.facebook.com/plugins/video.php?href=" + encodeURIComponent(url) + "&show_text=0&autoplay=1";
+    }
+    if (tipo === "instagram") {
+        var match = url.match(/instagram\.com\/p\/([a-zA-Z0-9_-]+)/);
+        return match ? "https://www.instagram.com/p/" + match[1] + "/embed/" : url;
+    }
+    return url;
+}
+
+function abrirTvEpisodio(id) {
+    var episodios = getTvEpisodios();
+    var ep = episodios.find(function(e) { return e.id === id; });
+    if (!ep) return;
+    contarVisualizacaoTv(id);
+    var modal = document.getElementById("tvEpisodioModal");
+    if (!modal) return;
+    modal.innerHTML = '<div class="modal-overlay active" onclick="fecharTvEpisodioModal()">' +
+        '<div class="modal modal-wide" onclick="event.stopPropagation()">' +
+            '<button class="modal-close" onclick="fecharTvEpisodioModal()">&times;</button>' +
+            '<h2>' + esc(ep.titulo) + '</h2>' +
+            '<div class="video-embed">' +
+                '<iframe src="' + getTvEmbedUrl(ep.url, ep.tipo) + '" allowfullscreen allow="autoplay; fullscreen"></iframe>' +
+            '</div>' +
+            '<div class="episodio-info">' +
+                '<p><strong>Tipo:</strong> ' + ep.tipo + '</p>' +
+                '<p><strong>Data:</strong> ' + ep.data + '</p>' +
+                '<p><strong>Horario:</strong> ' + ep.hora + '</p>' +
+            '</div>' +
+        '</div>' +
+    '</div>';
+    modal.style.display = "flex";
+}
+
+function fecharTvEpisodioModal() {
+    var modal = document.getElementById("tvEpisodioModal");
+    if (modal) modal.remove();
+}
+
+function renderizarProgramacaoTv() {
+    var container = document.getElementById("programacaoTvGrid");
+    if (!container) return;
+    var agora = new Date();
+    var programacao = getTvProgramacao();
+    var hoje = agora.toISOString().split('T')[0];
+    var itensHoje = programacao.filter(function(p) { return p.data === hoje; });
+    var itensProximos = programacao.filter(function(p) {
+        if (p.data <= hoje) return false;
+        var pDate = new Date(p.data + ' ' + (p.hora || '00:00'));
+        var diff = (pDate - agora) / (1000 * 60 * 60);
+        return diff <= 48;
+    }).slice(0, 6);
+    
+    container.innerHTML = "";
+    if (itensHoje.length === 0 && itensProximos.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📅</div><div class="empty-state-text">Nenhuma programacao agendada. Logue como admin para adicionar.</div></div>';
+        return;
+    }
+    if (itensHoje.length > 0) {
+        container.innerHTML += '<div class="section-header"><h3>Programacao de Hoje</h3></div><div class="programacao-grid">';
+        itensHoje.forEach(function(p) {
+            container.innerHTML += '<div class="programacao-card ' + (agora > new Date(p.data + ' ' + (p.hora || '00:00'))) ? 'programacao-passou' : '' + ' onclick="abrirTvPrograma(\'' + p.id + '\')">' +
+                '<div class="programacao-info">' +
+                    '<h4>' + esc(p.titulo) + '</h4>' +
+                    '<p>' + p.data + ' às ' + p.hora + '</p>' +
+                '</div>' +
+                (agora <= new Date(p.data + ' ' + (p.hora || '00:00')) ? '<div class="programacao-live-badge">AO VIVO</div>' : '') +
+            '</div>';
+        });
+        container.innerHTML += '</div>';
+    }
+    if (itensProximos.length > 0) {
+        container.innerHTML += '<div class="section-header"><h3>Proximos a transmissionar</h3></div><div class="programacao-grid">';
+        itensProximos.forEach(function(p) {
+            var diff = new Date(p.data + ' ' + (p.hora || '00:00')) - agora;
+            var horas = Math.floor(diff / (1000 * 60 * 60));
+            var texto = '';
+            if (horas < 24) texto = horas + ' horas';
+            else texto = Math.floor(horas / 24) + ' dias';
+            container.innerHTML += '<div class="programacao-card" onclick="abrirTvPrograma(\'' + p.id + '\')">' +
+                '<div class="programacao-info">' +
+                    '<h4>' + esc(p.titulo) + '</h4>' +
+                    '<p>' + p.data + ' às ' + p.hora + '</p>' +
+                    '<span class="programacao-texto">' + texto + ' a partir de agora</span>' +
+                '</div>' +
+            '</div>';
+        });
+        container.innerHTML += '</div>';
+    }
+}
+
+function getTvPrograma(id) { return getData("tv_programacao").find(function(p) { return p.id === id; }); }
+
+function abrirTvPrograma(id) {
+    var p = getTvPrograma(id);
+    if (!p) return;
+    var modal = document.getElementById("tvProgramaModal");
+    if (!modal) return;
+    modal.innerHTML = '<div class="modal-overlay active" onclick="fecharTvProgramaModal()">' +
+        '<div class="modal" onclick="event.stopPropagation()">' +
+            '<button class="modal-close" onclick="fecharTvProgramaModal()">&times;</button>' +
+            '<h2>' + esc(p.titulo) + '</h2>' +
+            '<p><strong>Data:</strong> ' + p.data + '</p>' +
+            '<p><strong>Horario:</strong> ' + p.hora + '</p>' +
+            '<p><strong>Duracao:</strong> ' + p.duracao + ' min</p>' +
+            '<div class="video-embed">' +
+                '<iframe src="' + getTvEmbedUrl(p.url, p.tipo) + '" allowfullscreen allow="autoplay; fullscreen"></iframe>' +
+            '</div>' +
+        '</div>' +
+    '</div>';
+    modal.style.display = "flex";
+}
+
+function fecharTvProgramaModal() {
+    var modal = document.getElementById("tvProgramaModal");
+    if (modal) modal.remove();
+}
+
+function editarTvPrograma(id) {
+    var programas = getTvProgramacao();
+    var p = programas.find(function(programa) { return programa.id === id; });
+    if (!p) return;
+    document.getElementById("tvProgTitulo").value = p.titulo || '';
+    document.getElementById("tvProgData").value = p.data || '';
+    document.getElementById("tvProgHora").value = p.hora || '';
+    document.getElementById("tvProgUrl").value = p.url || '';
+    document.getElementById("tvProgTipo").value = p.tipo || 'youtube';
+    document.getElementById("tvProgDuracao").value = p.duracao || '60';
+    _tvEditando = id;
+    document.getElementById("tvProgSalvarBtn").textContent = "Atualizar Programa";
+    window.scrollTo({ top: document.getElementById("tvAdminPanel").offsetTop - 100, behavior: "smooth" });
+}
+
+function salvarTvPrograma() {
+    if (!requireAdmin()) return;
+    var titulo = document.getElementById("tvProgTitulo").value.trim();
+    var data = document.getElementById("tvProgData").value;
+    var hora = document.getElementById("tvProgHora").value;
+    var url = document.getElementById("tvProgUrl").value.trim();
+    var tipo = document.getElementById("tvProgTipo").value;
+    var duracao = parseInt(document.getElementById("tvProgDuracao").value) || 60;
+    if (!titulo || !data || !hora || !url) return showToastAviso("Preencha todos os campos obrigatorios.");
+    var programas = getTvProgramacao();
+    var novo = {
+        id: _tvEditando ? _tvEditando : gerarId(),
+        titulo: titulo,
+        data: data,
+        hora: hora,
+        url: url,
+        tipo: tipo,
+        duracao: duracao
+    };
+    if (_tvEditando) {
+        var idx = programas.findIndex(function(p) { return p.id === _tvEditando; });
+        if (idx !== -1) programas[idx] = novo;
+    } else {
+        programas.push(novo);
+    }
+    _tvEditando = null;
+    setTvProgramacao(programas);
+    renderizarProgramacaoTv();
+    document.getElementById("tvProgTitulo").value = "";
+    document.getElementById("tvProgData").value = "";
+    document.getElementById("tvProgHora").value = "";
+    document.getElementById("tvProgUrl").value = "";
+    document.getElementById("tvProgSalvarBtn").textContent = "Agendar Programa";
+    showToastSave(_tvEditando ? "Programa atualizado!" : "Programa agendado!");
+}
+
+function removerTvPrograma(id) {
+    if (!requireAdmin()) return;
+    if (!confirm("Excluir este programa?")) return;
+    var programas = getTvProgramacao().filter(function(p) { return p.id !== id; });
+    setTvProgramacao(programas);
+    renderizarProgramacaoTv();
+    showToastSave("Programa removido!");
+}
+
+var _tvEditando = null;
+
+function toggleAdminTv() {
+    var panel = document.getElementById("tvAdminPanel");
+    if (!panel) return;
+    if (panel.classList.contains("active")) {
+        panel.classList.remove("active");
+        limparFormularioTv();
+    } else {
+        panel.classList.add("active");
+        document.getElementById("tvProgTitulo").focus();
+    }
+}
+
+function limparFormularioTv() {
+    document.getElementById("tvProgTitulo").value = "";
+    document.getElementById("tvProgData").value = "";
+    document.getElementById("tvProgHora").value = "";
+    document.getElementById("tvProgUrl").value = "";
+    document.getElementById("tvProgTipo").value = "youtube";
+    document.getElementById("tvProgDuracao").value = "60";
+    _tvEditando = null;
+    document.getElementById("tvProgSalvarBtn").textContent = "Agendar Programa";
+}
+
+function navegarParaTv() {
+    navegar("tv", null);
+}
+
+function renderizarPaginaTv() {
+    var secao = document.getElementById("secao-tv");
+    if (!secao) return;
+    secao.innerHTML = '<div class="container">' +
+        '<div class="tv-header">' +
+            '<h2>TV São Pedro - Programacao Completa</h2>' +
+            '<p>Acompanhe todos os esportes ao vivo e gravados do Esporte Sao Pedro</p>' +
+            '<div class="tv-stats">' +
+                '<div class="tv-stat">' +
+                    '<span class="tv-stat-num" id="tvEpisodiosCount">0</span>' +
+                    '<span class="tv-stat-label">Episodios</span>' +
+                '</div>' +
+                '<div class="tv-stat">' +
+                    '<span class="tv-stat-num" id="tvProgramacaoCount">0</span>' +
+                    '<span class="tv-stat-label">Programas Agendados</span>' +
+                '</div>' +
+            '</div>' +
+        '</div>' +
+        '<div class="tv-grid">' +
+            '<div class="tv-section">' +
+                '<h3>Episodios Recentes</h3>' +
+                '<div id="tvEpisodiosGrid" class="video-grid"></div>' +
+            '</div>' +
+            '<div class="tv-section">' +
+                '<h3>Programacao de Hoje</h3>' +
+                '<div id="programacaoTvGrid" class="programacao-grid"></div>' +
+            '</div>' +
+        '</div>' +
+        '<div class="tv-section admin-only" id="tvAdminPanel">' +
+            '<h3>Gerenciar TV</h3>' +
+            '<div class="admin-form">' +
+                '<h4>' + (_tvEditando ? "Editar Programa" : "Agendar Novo Programa") + '</h4>' +
+                '<input type="text" id="tvProgTitulo" placeholder="Titulo do programa">' +
+                '<input type="date" id="tvProgData">' +
+                '<input type="time" id="tvProgHora">' +
+                '<input type="text" id="tvProgUrl" placeholder="URL do video (YouTube, Twitch, etc.)">' +
+                '<select id="tvProgTipo">' +
+                    '<option value="youtube">YouTube</option>' +
+                    '<option value="twitch">Twitch</option>' +
+                    '<option value="facebook">Facebook</option>' +
+                    '<option value="instagram">Instagram</option>' +
+                '</select>' +
+                '<input type="number" id="tvProgDuracao" placeholder="Duracao (min)" min="1" value="60">' +
+                '<button class="btn btn-primary" onclick="salvarTvPrograma()" id="tvProgSalvarBtn">Agendar Programa</button>' +
+                '<button class="btn btn-secondary" onclick="limparFormularioTv()">Cancelar</button>' +
+            '</div>' +
+            '<div class="admin-section">' +
+                '<button class="btn btn-secondary" onclick="toggleAdminTv()">Fechar painel de administracao</button>' +
+            '</div>' +
+        '</div>' +
+    '</div>';
+    var episodios = getTvEpisodios();
+    document.getElementById("tvEpisodiosCount").textContent = episodios.length;
+    document.getElementById("tvProgramacaoCount").textContent = getTvProgramacao().length;
+    renderizarTvEpisodios();
+    renderizarProgramacaoTv();
+}
 
 function bytesPortal(value) {
     var text = typeof value === "string" ? value : JSON.stringify(value == null ? null : value);

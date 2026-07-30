@@ -114,7 +114,14 @@ Lista de Funcionalidades e Valor do Projeto
     - Lista de noticias com busca e filtro por categoria.
     - Calendario editorial mensal.
 
-23. DASHBOARD FINANCEIRO
+24. TV SÃO PEDRO (TV DEDICADA)
+    - Canal de transmissao em tempo real (live) com botao "AO VIVO" no menu.
+    - Pagina dedicada da TV com layout de grade: videos, lives, clipes e repises.
+    - Episodios gravados / programacao de reprises agendados (data/horario).
+    - Lista de transmissao ao vivo: cache do video para exibicao offline (15s timer no navegador).
+    - Complementar ao existing "Transmissao ao Vivo" — focado na programacao da programacao.
+
+25. DASHBOARD FINANCEIRO
     - Cadastro de produtos publicitarios (banner, narrador, video, post patrocinado).
     - Calculadora de vendas com geracao de orcamentos.
     - Historico de orcamentos com status (orcamento, vendido, cancelado).
