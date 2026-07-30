@@ -5080,7 +5080,11 @@ function abrirTvPrograma(id) {
     var p = getTvPrograma(id);
     if (!p) return;
     var modal = document.getElementById("tvProgramaModal");
-    if (!modal) return;
+    if (!modal) {
+        modal = document.createElement("div");
+        modal.id = "tvProgramaModal";
+        document.body.appendChild(modal);
+    }
     modal.innerHTML = '<div class="modal-overlay active" onclick="fecharTvProgramaModal()">' +
         '<div class="modal" onclick="event.stopPropagation()">' +
             '<button class="modal-close" onclick="fecharTvProgramaModal()">&times;</button>' +
