@@ -5294,7 +5294,10 @@ function verificarProgramaAhora() {
         var inicio = new Date(ano, mes, dia, hora, min, 0).getTime();
         var fim = inicio + ((p.duracao || 60) * 60000);
         if (agoraMs >= inicio && agoraMs <= fim) {
-            abrirTvPrograma(p.id);
+            var modal = document.getElementById("tvProgramaModal");
+            if (!modal || !modal.classList.contains("active")) {
+                abrirTvPrograma(p.id);
+            }
         }
     });
 }
