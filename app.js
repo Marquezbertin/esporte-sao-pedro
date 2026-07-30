@@ -5263,11 +5263,29 @@ function renderizarPaginaTv() {
             renderizarTvEpisodios();
             renderizarProgramacaoTv();
             renderizarProgramacaoTvProximos();
+            verificarProgramaAhora();
             if (isAdmin()) {
                 renderAdminTvEpisodiosList();
                 renderAdminTvProgramacaoList();
             }
         });
+    });
+}
+
+function verificarProgramaAhora() {
+    var agora = new Date();
+    var programacao = getTvProgramacao();
+    if (!programacao || programacao.length === 0) return;
+    var hoje = agora.toISOString().split('T')[0];
+    var agoraMs = agora.getTime();
+    programacao.forEach(function(p) {
+        if (p.data !== hoje) return;
+        var partes = (p.hora || '00:00').split(':');
+        var inicio = new Date(p.data + 'T' + (partes[0] || '00') + ':' + (partes[1] || '00') + ':00').getTime();
+        var fim = inicio + ((p.duracao || 60) * 60000);
+        if (agoraMs >= inicio && agoraMs <= fim) {
+            abrirTvPrograma(p.id);
+        }
     });
 }
 
