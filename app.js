@@ -5281,7 +5281,13 @@ function verificarProgramaAhora() {
     programacao.forEach(function(p) {
         if (p.data !== hoje) return;
         var partes = (p.hora || '00:00').split(':');
-        var inicio = new Date(p.data + 'T' + (partes[0] || '00') + ':' + (partes[1] || '00') + ':00').getTime();
+        var partesData = p.data.split('-');
+        var ano = parseInt(partesData[0]);
+        var mes = parseInt(partesData[1]) - 1;
+        var dia = parseInt(partesData[2]);
+        var hora = parseInt(partes[0] || '00');
+        var min = parseInt(partes[1] || '00');
+        var inicio = new Date(ano, mes, dia, hora, min, 0).getTime();
         var fim = inicio + ((p.duracao || 60) * 60000);
         if (agoraMs >= inicio && agoraMs <= fim) {
             abrirTvPrograma(p.id);
