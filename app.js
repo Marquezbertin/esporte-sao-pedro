@@ -4968,7 +4968,7 @@ function getTvEmbedUrl(url, tipo) {
     if (!url) return "";
     if (tipo === "youtube") {
         var match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/);
-        return match ? "https://www.youtube.com/embed/" + match[1] + "?autoplay=1&playsinline=1" : "";
+        return match ? "https://www.youtube.com/embed/" + match[1] + "?autoplay=1&playsinline=1&mute=1" : "";
     }
     if (tipo === "twitch") {
         var match = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/i);
