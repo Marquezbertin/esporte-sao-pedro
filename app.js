@@ -4867,6 +4867,7 @@ function getTvEpisodios() {
 }
 
 function setTvEpisodios(episodios) {
+    try { localStorage.setItem("esp_tv_episodios", JSON.stringify(episodios)); } catch (e) {}
     setData("tv_episodios", episodios);
 }
 
@@ -4880,6 +4881,7 @@ function getTvProgramacao() {
 }
 
 function setTvProgramacao(programacao) {
+    try { localStorage.setItem("esp_tv_programacao", JSON.stringify(programacao)); } catch (e) {}
     setData("tv_programacao", programacao);
 }
 
@@ -4897,16 +4899,20 @@ function adicionarTvEpisodio(data, url, tipo, titulo, hora) {
         visualizarAntesData: false
     };
     episodios.push(episodio);
+    localStorage.setItem("esp_tv_episodios", JSON.stringify(episodios));
     setTvEpisodios(episodios);
     renderizarTvEpisodios();
+    renderAdminTvEpisodiosList();
     showToastSave("Episodio adicionado!");
 }
 
 function removerTvEpisodio(id) {
     if (!requireAdmin()) return;
     var episodios = getTvEpisodios().filter(function(e) { return e.id !== id; });
+    localStorage.setItem("esp_tv_episodios", JSON.stringify(episodios));
     setTvEpisodios(episodios);
     renderizarTvEpisodios();
+    renderAdminTvEpisodiosList();
     showToastSave("Episodio removido!");
 }
 
@@ -5114,14 +5120,16 @@ function salvarTvPrograma() {
         programas.push(novo);
     }
     _tvEditando = null;
+    localStorage.setItem("esp_tv_programacao", JSON.stringify(programas));
     setTvProgramacao(programas);
     renderizarProgramacaoTv();
+    renderAdminTvProgramacaoList();
     document.getElementById("tvProgTitulo").value = "";
     document.getElementById("tvProgData").value = "";
     document.getElementById("tvProgHora").value = "";
     document.getElementById("tvProgUrl").value = "";
     document.getElementById("tvProgSalvarBtn").textContent = "Agendar Programa";
-    showToastSave(_tvEditando ? "Programa atualizado!" : "Programa agendado!");
+    showToastSave("Programa agendado com sucesso!");
 }
 
 function removerTvPrograma(id) {
@@ -5138,12 +5146,10 @@ var _tvEditando = null;
 function toggleAdminTv() {
     var panel = document.getElementById("tvAdminPanel");
     if (!panel) return;
-    if (panel.classList.contains("active")) {
-        panel.classList.remove("active");
-        limparFormularioTv();
+    if (panel.style.display === "none") {
+        panel.style.display = "";
     } else {
-        panel.classList.add("active");
-        document.getElementById("tvProgTitulo").focus();
+        panel.style.display = "none";
     }
 }
 
@@ -5155,7 +5161,8 @@ function limparFormularioTv() {
     document.getElementById("tvProgTipo").value = "youtube";
     document.getElementById("tvProgDuracao").value = "60";
     _tvEditando = null;
-    document.getElementById("tvProgSalvarBtn").textContent = "Agendar Programa";
+    var btn = document.getElementById("tvProgSalvarBtn");
+    if (btn) btn.textContent = "Agendar Programa";
 }
 
 function navegarParaTv() {
@@ -5205,8 +5212,8 @@ function renderizarPaginaTv() {
                     '<option value="instagram">Instagram</option>' +
                 '</select>' +
                 '<input type="number" id="tvProgDuracao" placeholder="Duracao (min)" min="1" value="60">' +
-                '<button class="btn btn-primary" onclick="salvarTvPrograma()" id="tvProgSalvarBtn">Agendar Programa</button>' +
-                '<button class="btn btn-secondary" onclick="limparFormularioTv()">Cancelar</button>' +
+                '<button type="button" class="btn btn-primary" onclick="salvarTvPrograma()" id="tvProgSalvarBtn">Agendar Programa</button>' +
+                '<button type="button" class="btn btn-secondary" onclick="limparFormularioTv()">Cancelar</button>' +
             '</div>' +
             '<div style="margin-top:20px;">' +
                 '<h4>Episodios</h4>' +
