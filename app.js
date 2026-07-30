@@ -1416,7 +1416,8 @@ function navegar(secao, e) {
         case "conquistas": renderConquistas(); break;
         case "torcedor": renderTorcedorGaleria(); break;
         case "mapa": renderMapa(); renderAdminLocaisList(); break;
-        case "redacao": if (!isAdmin()) { navegar("inicio", null); return; } renderTemplatesPauta(); renderAdminPautas(); renderEditorialDashboard(); renderAdminNewsList(); renderCalendarioEditorial(); break;
+        case "redacao":     if (!isAdmin()) { navegar("inicio", null); return; } renderTemplatesPauta(); renderAdminPautas(); renderEditorialDashboard(); renderAdminNewsList(); renderCalendarioEditorial(); break;
+        case "tv-esporte": renderizarPaginaTv(); break;
         case "sobre": atualizarStorageInfo(); renderDashboardUsoPortal(); renderSobreEditavel(); atualizarLiveStatus(); renderAdminPatrocinadores(); renderAdminEnquetes(); renderAdminResumos(); renderAdminClassificacao(); renderAdminJogos(); renderAdminTimes(); renderNewsletterAdmin(); renderMonitorPautas(); renderConfigIA(); carregarBanner(); atualizarStatusPush(); renderAdminTorcedor(); renderAdminFinanceiro(); renderCalculadoraFinanceira(); renderOrcamentos(); renderAdminProgramacao(); break;
     }
 
@@ -5158,7 +5159,7 @@ function limparFormularioTv() {
 }
 
 function navegarParaTv() {
-    navegar("tv", null);
+    navegar("tv-esporte", null);
 }
 
 function renderizarPaginaTv() {
